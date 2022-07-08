@@ -22,7 +22,7 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
         SpringApplication.run(KnowledgeGraph.class, args);
     }
 
-    @GetMapping("test3")
+    @GetMapping("/test3")
     public String test3()
     {
         return "Test 3";

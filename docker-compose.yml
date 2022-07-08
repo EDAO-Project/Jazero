@@ -1,0 +1,19 @@
+services:
+  data-lake:
+    build:
+      context: .
+      dockerfile: data-lake/Dockerfile
+    ports:
+      - 8081:8081
+  entity-linker:
+    build:
+      context: .
+      dockerfile: entity-linker/Dockerfile
+    ports:
+      - 8082:8082
+  ekg-manager:
+    build:
+      context: .
+      dockerfile: knowledge-graph/Dockerfile
+    ports:
+      - 8083:8083
