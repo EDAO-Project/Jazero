@@ -6,7 +6,7 @@ RUN apt install openjdk-17-jre openjdk-17-jdk maven -y
 WORKDIR /home
 COPY .. .
 WORKDIR communication
-RUN mvn clean install
+RUN mvn clean install -DskipTests
 
 ARG MVNW=mvnw_unix
 

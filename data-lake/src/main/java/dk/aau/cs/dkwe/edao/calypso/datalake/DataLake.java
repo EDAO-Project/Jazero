@@ -4,10 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.server.ConfigurableWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @SpringBootApplication
 @RestController
@@ -24,13 +21,13 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         SpringApplication.run(DataLake.class, args);
     }
 
-    @RequestMapping(value = "/search", method = RequestMethod.GET)
-    public String search()
+    @GetMapping(value = "/search")
+    public String search(@RequestParam(value = "jsonQuery", defaultValue = "{}") String query)
     {
-        return "search";
+        return query;
     }
 
-    @RequestMapping(value = "/insert", method = RequestMethod.POST)
+    @PostMapping(value = "/insert")
     public String insert()
     {
         return "insert";
@@ -39,9 +36,9 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     /**
      * Used as handshake and to verify service is running
      */
-    @RequestMapping(value = "/ping", method = RequestMethod.GET)
+    @GetMapping(value = "/ping")
     public String ping()
     {
-        return "Pong";
+        return "pong";
     }
 }
