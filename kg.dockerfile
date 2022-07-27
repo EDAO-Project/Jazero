@@ -1,7 +1,7 @@
 FROM ubuntu
 
-RUN apt update
-RUN apt install wget default-jdk -y
+RUN apt-get update
+RUN apt install wget openjdk-11-jdk -y
 
 WORKDIR /home
 COPY *.ttl ./kg.ttl
