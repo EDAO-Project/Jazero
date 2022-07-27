@@ -5,7 +5,7 @@ Welcome to Calypso: A semantic data lake microservice architecture for semantica
 Place a knowledge graph turtle file to this repository and run the following command to insert the knowledge graph into a dockerized Neo4J instance
 
 ```bash
-docker build -f kg.dockerfile -t neo4j
+docker build -f kg.dockerfile -t neo4j .
 docker run -v ${PWD}/knowledge-graph/neo4j:/home neo4j
 ```
 
