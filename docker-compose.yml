@@ -17,3 +17,5 @@ services:
       dockerfile: knowledge-graph/Dockerfile
     ports:
       - 8083:8083
+    volumes:
+      - knowledge-graph/neo4j:/home/neo4j
