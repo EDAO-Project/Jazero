@@ -31,6 +31,13 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
             throw new RuntimeException("Neo4J has not been installed. Follow README instruction how to do so");
         }
 
+        boolean ret = Neo4JHandler.start();
+
+        if (!ret)
+        {
+            throw new RuntimeException("Failed to start Neo4J graph database");
+        }
+
         SpringApplication.run(KnowledgeGraph.class, args);
     }
 
@@ -63,47 +70,9 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
                     .body("{\"file\": " + reader.getGraphFile() + "}");
         }
 
-        catch (IOException exc)
+        catch (IOException | RuntimeException exc)
         {
             return ResponseEntity.internalServerError().body("Failed reading KG: " + exc.getMessage());
-        }
-    }
-
-    /**
-     * Inserts KG file into a Neo4J instance
-     * Header must contain entry Content-Type: application/json
-     * Body must be JSON and contain an entry "file": "<KG FILE>"
-     */
-    @PostMapping("/set-kg")
-    public synchronized ResponseEntity<String> setKG(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
-    {
-        if (!Neo4JHandler.isInstalled())
-        {
-            return ResponseEntity.internalServerError().body("Neo4J is not installed");
-        }
-
-        else if (!checkHeaders(headers))
-        {
-            return ResponseEntity.badRequest().body("Content-Type must be " + MediaType.APPLICATION_JSON);
-        }
-
-        else if (!body.containsKey("file"))
-        {
-            return ResponseEntity.badRequest().body("Missing 'file' entry in body that specifies KG file");
-        }
-
-        try
-        {
-            String file = body.get("file");
-            Neo4JWriter writer = new Neo4JWriter(file);
-            writer.performIO();
-
-            return ResponseEntity.ok().build();
-        }
-
-        catch (IOException exc)
-        {
-            return ResponseEntity.internalServerError().body("Failed inserting KG: " + exc.getMessage());
         }
     }
 

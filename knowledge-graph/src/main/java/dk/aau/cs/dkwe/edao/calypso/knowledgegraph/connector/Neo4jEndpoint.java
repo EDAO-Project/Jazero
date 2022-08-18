@@ -259,7 +259,7 @@ public class Neo4jEndpoint implements AutoCloseable {
                 return result.single().get("count").asLong();
             });
             return numNodes;
-        } 
+        }
     }
 
     /**
@@ -277,5 +277,4 @@ public class Neo4jEndpoint implements AutoCloseable {
             return numNeighbors;
         } 
     }
-
 }

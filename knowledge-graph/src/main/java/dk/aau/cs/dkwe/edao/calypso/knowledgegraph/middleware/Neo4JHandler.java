@@ -7,8 +7,11 @@ public abstract class Neo4JHandler
 {
     protected static final String BASE = "neo4j/";
     protected static final String HOME = BASE + "neo4j-server/";
-    protected static final String KG_DIR = Neo4JHandler.BASE + "kg";
+    protected static final String KG_DIR = Neo4JHandler.BASE + "kg/";
     private static final String INSTALL = BASE + "install.sh";
+    private static final String START = BASE + "start.sh";
+    private static final String STOP = BASE + "stop.sh";
+    private static final String RESTART = BASE + "restart.sh";
 
     public static boolean isInstalled()
     {
@@ -36,5 +39,47 @@ public abstract class Neo4JHandler
         {
            return false;
         }
+    }
+
+    private static boolean runScript(String script, String ... args)
+    {
+        if (!isInstalled())
+        {
+            return false;
+        }
+
+        StringBuilder builder = new StringBuilder();
+
+        for (String arg : args)
+        {
+            builder.append(arg).append(" ");
+        }
+
+        try
+        {
+            Runtime rt = Runtime.getRuntime();
+            Process command = rt.exec(script + " " + builder.deleteCharAt(builder.lastIndexOf(" ")));
+            return command.waitFor() == 0;
+        }
+
+        catch (IOException | InterruptedException e)
+        {
+            return false;
+        }
+    }
+
+    public static boolean start()
+    {
+        return runScript(START, HOME);
+    }
+
+    public static boolean stop()
+    {
+        return runScript(STOP, HOME);
+    }
+
+    public static boolean restart()
+    {
+        return runScript(RESTART, HOME);
     }
 }

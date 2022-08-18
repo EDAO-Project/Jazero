@@ -31,21 +31,17 @@ public class EKGManagerTest
     @Test
     public void testGetKG() throws Exception
     {
-
-    }
-
-    @Test
-    public void testSetKG() throws Exception
-    {
-        this.mvc.perform(MockMvcRequestBuilders.post("/set-kg")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"test\": \"null\"}"))
-                        .andExpect(content().string(equalTo("")));
+        this.mvc.perform(MockMvcRequestBuilders.get("/get-kg"))
+                                                .andExpect(status().isOk())
+                                                .andExpect(content().contentType(MediaType.APPLICATION_JSON));
     }
 
     @Test
     public void testInsertLinks() throws Exception
     {
-
+        this.mvc.perform(MockMvcRequestBuilders.post("/insert-links")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"folder\": \"test_folder\"}"))
+                .andExpect(status().isOk());
     }
 }
