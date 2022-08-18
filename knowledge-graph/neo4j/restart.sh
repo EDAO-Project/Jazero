@@ -3,4 +3,4 @@
 home=$1
 
 $home/bin/neo4j restart
-sleep 10
+sleep 20

@@ -16,8 +16,6 @@ export NEO4J_DATA_DIR=${NEO4J_HOME}/data
 
 rm -rf $NEO4J_DATA_DIR
 
-echo "INSTALLTION DIR: "$installation_dir
-
 # APOC_VERSION=4.1.0.2
 # APOC_FILE=apoc-${APOC_VERSION}-core.jar
 # there is a difference between `core` and `all`
@@ -49,22 +47,16 @@ echo 'dbms.unmanaged_extension_classes=n10s.endpoint=/rdf' >> ${NEO4J_HOME}/conf
 
 sed -i 's/#dbms.default_listen_address/dbms.default_listen_address/' ${NEO4J_HOME}/conf/neo4j.conf
 
-${NEO4J_HOME}/bin/neo4j start
-sleep 10
-
+./start.sh ${NEO4J_HOME}
 
 $NEO4J_HOME/bin/neo4j-admin set-initial-password admin
 
-
-$NEO4J_HOME/bin/neo4j restart
-sleep 10
-
+./restart.sh ${NEO4J_HOME}
 
 echo "Creating index"
 ${NEO4J_HOME}/bin/cypher-shell -u neo4j -p 'admin' "CREATE CONSTRAINT n10s_unique_uri ON (r:Resource) ASSERT r.uri IS UNIQUE;"
 
 ${NEO4J_HOME}/bin/cypher-shell -u neo4j -p 'admin' 'call n10s.graphconfig.init( { handleMultival: "OVERWRITE",  handleVocabUris: "SHORTEN", keepLangTag: false, handleRDFTypes: "NODES" })'
-
 
 echo Neo4j log:
 tail -n 12 $NEO4J_HOME/logs/neo4j.log

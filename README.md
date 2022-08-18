@@ -2,14 +2,14 @@
 Welcome to Calypso: A semantic data lake microservice architecture for semantically augmented table search.
 
 ## Setup
-Place a knowledge graph turtle file to this repository and run the following command to insert the knowledge graph into a dockerized Neo4J instance
+From the root directory of this repository, place a knowledge graph turtle file in knowledge-graph/neo4j/ and run the following commands to install Neo4J in Docker and insert the knowledge graph into a dockerized Neo4J instance
 
 ```bash
 docker build -f kg.dockerfile -t neo4j .
-docker run -v ${PWD}/knowledge-graph/neo4j:/home neo4j
+docker run --rm -v ${PWD}/knowledge-graph/neo4j:/srv neo4j bash -c "./install.sh /srv; ./import.sh <KG_FILE> neo4j-server; ./stop.sh neo4j-server"
 ```
 
-Now, the knowledge graph will be loaded into `knowledge-graph/neo4j/neo4j-server`.
+Substitute `<KG>` with the knowledge graph file name. Now, the knowledge graph will be loaded into `knowledge-graph/neo4j/neo4j-server`.
 
 ## Starting Calypso
 Setting up and running Calypso is very simple.
