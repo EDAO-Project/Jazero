@@ -3,6 +3,9 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+knowledge-graph/neo4j/neo4j-server
+knowledge-graph/neo4j/*.ttl
+knowledge-graph/neo4j/*.nt
 
 ### STS ###
 .apt_generated

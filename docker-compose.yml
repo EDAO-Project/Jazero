@@ -1,3 +1,4 @@
+version: "2"
 services:
   data-lake:
     build:
@@ -18,4 +19,4 @@ services:
     ports:
       - 8083:8083
     volumes:
-      - knowledge-graph/neo4j:/home/neo4j
+      - ${PWD}/knowledge-graph/neo4j:/home/knowledge-graph/neo4j
