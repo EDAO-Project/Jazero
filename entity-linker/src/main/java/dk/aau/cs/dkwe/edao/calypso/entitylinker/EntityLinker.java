@@ -4,6 +4,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.server.ConfigurableWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,9 +24,9 @@ public class EntityLinker implements WebServerFactoryCustomizer<ConfigurableWebS
         SpringApplication.run(EntityLinker.class, args);
     }
 
-    @GetMapping("/test2")
-    public String test2()
+    @GetMapping("/ping")
+    public ResponseEntity<String> ping()
     {
-        return "Test 2";
+        return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body("pong");
     }
 }
