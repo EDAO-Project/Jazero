@@ -1,2 +1,4 @@
 **/*.nt
 **/*.ttl
+
+knowledge-graph/neo4j/

@@ -4,7 +4,14 @@ RUN apt update
 RUN apt install wget openjdk-17-jre openjdk-17-jdk maven -y
 
 WORKDIR /home
-COPY .. .
+
+RUN mkdir communication
+RUN mkdir -p knowledge-graph/neo4j
+RUN mkdir data-lake
+COPY communication communication
+COPY data-lake data-lake
+COPY knowledge-graph knowledge-graph
+
 WORKDIR communication
 RUN mvn clean install -DskipTests
 

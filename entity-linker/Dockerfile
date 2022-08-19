@@ -4,7 +4,12 @@ RUN apt update
 RUN apt install openjdk-17-jre openjdk-17-jdk maven -y
 
 WORKDIR /home
-COPY .. .
+
+RUN mkdir communication
+RUN mkdir entity-linker
+COPY communication communication
+COPY entity-linker entity-linker
+
 WORKDIR communication
 RUN mvn clean install -DskipTests
 
