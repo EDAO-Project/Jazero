@@ -1,18 +1,21 @@
-version: "2"
+version: "3"
 services:
   data-lake:
+    network_mode: host
     build:
       context: .
       dockerfile: data-lake/Dockerfile
     ports:
       - 8081:8081
   entity-linker:
+    network_mode: host
     build:
       context: .
       dockerfile: entity-linker/Dockerfile
     ports:
       - 8082:8082
   ekg-manager:
+    network_mode: host
     build:
       context: .
       dockerfile: knowledge-graph/Dockerfile
