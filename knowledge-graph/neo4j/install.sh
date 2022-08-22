@@ -46,6 +46,7 @@ echo 'dbms.unmanaged_extension_classes=n10s.endpoint=/rdf' >> ${NEO4J_HOME}/conf
 
 
 sed -i 's/#dbms.default_listen_address/dbms.default_listen_address/' ${NEO4J_HOME}/conf/neo4j.conf
+mv ${NEO4J_HOME}/labs/*.jar ${NEO4J_HOME}/plugins/
 
 ./start.sh ${NEO4J_HOME}
 

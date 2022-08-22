@@ -33,7 +33,8 @@ public class EKGManagerTest
     {
         this.mvc.perform(MockMvcRequestBuilders.get("/get-kg"))
                                                 .andExpect(status().isOk())
-                                                .andExpect(content().contentType(MediaType.APPLICATION_JSON));
+                                                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                                                .andExpect(content().string(equalTo("{\"file\": neo4j-server/import/kg.ttl")));
     }
 
     @Test
@@ -42,6 +43,6 @@ public class EKGManagerTest
         this.mvc.perform(MockMvcRequestBuilders.post("/insert-links")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"folder\": \"test_folder\"}"))
-                .andExpect(status().isOk());
+                .andExpect(status().isInternalServerError());
     }
 }

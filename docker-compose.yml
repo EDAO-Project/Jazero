@@ -7,6 +7,8 @@ services:
       dockerfile: data-lake/Dockerfile
     ports:
       - 8081:8081
+    volumes:
+      - ./knowledge-graph/neo4j/:/home/knowledge-graph/neo4j  # To copy table links to
   entity-linker:
     network_mode: host
     build:
@@ -14,6 +16,8 @@ services:
       dockerfile: entity-linker/Dockerfile
     ports:
       - 8082:8082
+    volumes:
+      - ./knowledge-graph/neo4j/:/home/knowledge-graph/neo4j  # For entity linker to reference exported KG file
   ekg-manager:
     network_mode: host
     build:
