@@ -22,4 +22,4 @@ services:
     ports:
       - 8083:8083
     volumes:
-      - ${PWD}/knowledge-graph/neo4j:/home/knowledge-graph/neo4j
+      - ./knowledge-graph/neo4j/:/home/knowledge-graph/neo4j
