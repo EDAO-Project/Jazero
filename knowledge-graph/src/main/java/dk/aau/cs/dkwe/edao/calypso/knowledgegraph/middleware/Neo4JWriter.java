@@ -55,13 +55,13 @@ public class Neo4JWriter extends Neo4JHandler implements IndexIO
                 throw new IOException("Data import process did not complete");
             }
 
-            int terminationCode;
+            int exitCode;
             Process processCopy = rt.exec("mkdir -p " + Neo4JHandler.KG_DIR +
                     " && cp " + this.file + " " + Neo4JHandler.KG_DIR);
 
-            if ((terminationCode = processCopy.waitFor()) != 0)
+            if ((exitCode = processCopy.waitFor()) != 0)
             {
-                throw new IOException("Saving KG file failed: exit code " + terminationCode);
+                throw new IOException("Saving KG file failed: exit code " + exitCode);
             }
         }
 
@@ -97,19 +97,20 @@ public class Neo4JWriter extends Neo4JHandler implements IndexIO
 
         try
         {
+            int exitCode;
             Runtime rt = Runtime.getRuntime();
             Process process = rt.exec("./" + INSERT_LINKS_SCRIPT + " " + Neo4JHandler.HOME + " " + linksFolder);
 
-            if (process.waitFor() != 0)
+            if ((exitCode = process.waitFor()) != 0)
             {
-                throw new IOException("Table links insertion did not complete");
+                throw new IOException("Table links insertion did not complete: exit code " + exitCode);
             }
 
             Process processCopy = rt.exec("cp " + linksFolder + "/* " + KG_DIR);
 
-            if (processCopy.waitFor() != 0)
+            if ((exitCode = processCopy.waitFor()) != 0)
             {
-                throw new IOException("Saving table links file failed");
+                throw new IOException("Saving table links file failed: exit code " + exitCode);
             }
         }
 
