@@ -55,12 +55,13 @@ public class Neo4JWriter extends Neo4JHandler implements IndexIO
                 throw new IOException("Data import process did not complete");
             }
 
+            int terminationCode;
             Process processCopy = rt.exec("mkdir -p " + Neo4JHandler.KG_DIR +
                     " && cp " + this.file + " " + Neo4JHandler.KG_DIR);
 
-            if (processCopy.waitFor() != 0)
+            if ((terminationCode = processCopy.waitFor()) != 0)
             {
-                throw new IOException("Saving KG file failed");
+                throw new IOException("Saving KG file failed: exit code " + terminationCode);
             }
         }
 
