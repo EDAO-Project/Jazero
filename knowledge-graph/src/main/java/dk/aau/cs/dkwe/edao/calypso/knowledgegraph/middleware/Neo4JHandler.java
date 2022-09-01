@@ -8,7 +8,7 @@ public abstract class Neo4JHandler
     protected static final String BASE = "neo4j/";
     protected static final String HOME = BASE + "neo4j-server/";
     protected static final String HOME_IMPORT = HOME + "import/";
-    protected static final String KG_DIR = Neo4JHandler.BASE + "kg/";
+    protected static final String KG_DIR = BASE + "kg/";
     private static final String INSTALL = BASE + "install.sh";
     private static final String START = BASE + "start.sh";
     private static final String STOP = BASE + "stop.sh";

@@ -99,14 +99,21 @@ public class Neo4JWriter extends Neo4JHandler implements IndexIO
         {
             int exitCode;
             Runtime rt = Runtime.getRuntime();
-            Process process = rt.exec("./" + INSERT_LINKS_SCRIPT + " " + Neo4JHandler.HOME + " " + linksFolder);
+            Process process = rt.exec("mkdir -p " + Neo4JHandler.KG_DIR);
+
+            if ((exitCode = process.waitFor()) != 0)
+            {
+                throw new IOException("Could not create directory to save KG files");
+            }
+
+            process = rt.exec("./" + INSERT_LINKS_SCRIPT + " " + Neo4JHandler.HOME + " " + linksFolder);
 
             if ((exitCode = process.waitFor()) != 0)
             {
                 throw new IOException("Table links insertion did not complete: exit code " + exitCode);
             }
 
-            Process processCopy = rt.exec("cp " + linksFolder + "/* " + KG_DIR);
+            Process processCopy = rt.exec("cp " + linksFolder + "/* ~/" + KG_DIR);
 
             if ((exitCode = processCopy.waitFor()) != 0)
             {
