@@ -3,7 +3,7 @@ Welcome to Calypso: A semantic data lake microservice architecture for semantica
 
 ## Setup
 ### Loading Knowledge Graph
-`From the root directory of `this repository, place a knowledge graph turtle file in knowledge-graph/neo4j/ and run the following commands to install Neo4J in Docker and insert the knowledge graph into a dockerized Neo4J instance
+From the root directory of this repository, place a knowledge graph turtle file (or a folder of such files) in knowledge-graph/neo4j/ and run the following commands to install Neo4J in Docker and insert the knowledge graph into a dockerized Neo4J instance
 
 ```bash
 docker build -f kg.dockerfile -t neo4j .
@@ -11,10 +11,11 @@ docker run --rm -v ${PWD}/knowledge-graph/neo4j:/srv neo4j bash -c "./install.sh
 ```
 
 Substitute `<KG>` with the knowledge graph file name. Now, the knowledge graph will be loaded into `knowledge-graph/neo4j/neo4j-server`.
+If you substituted `<KG>` with a folder, pass directory to the folder where knowledge-graph/neo4j/ is the root directory.
 
 ### Choosing and Setting Up Storage Layer
 A storage layer is needed to store the table corpus.
-To options to choose between include Hadoop Distributed File System (HDFS) and Google File System (GFS).
+Two options to choose between include Hadoop Distributed File System (HDFS) and Google File System (GFS).
 Alternatively, the tables can also be stored natively on disk.
 
 ## Starting Calypso
