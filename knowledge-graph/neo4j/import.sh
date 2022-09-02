@@ -16,7 +16,7 @@ rm ${NEO4J_IMPORT}/*
 FILE_CLEAN="kg.ttl"
 touch ${NEO4J_IMPORT}/${FILE_CLEAN}
 
-if [ -d ${file} ]
+if [[ -d ${file} ]]
 then
   for f in ${file}/* ; \
   do
