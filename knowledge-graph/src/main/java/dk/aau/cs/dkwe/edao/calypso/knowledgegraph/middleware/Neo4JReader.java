@@ -57,7 +57,7 @@ public class Neo4JReader extends Neo4JHandler implements IndexIO
         }
 
         Map<String, Object> params = new HashMap<>();
-        params.put("entity", entity);
+        params.put("entity", entity.getUri());
 
         try (Session session = driver.session())
         {
