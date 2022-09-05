@@ -164,7 +164,7 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
 
         catch (RuntimeException e)
         {
-            ResponseEntity.internalServerError().body("Neo4J error: " + e.getMessage());
+            return ResponseEntity.internalServerError().body("Neo4J error: " + e.getMessage());
         }
     }
 }
