@@ -11,7 +11,7 @@ export NEO4J_IMPORT=${NEO4J_HOME}"/import"
 ulimit -n 65535
 
 echo "Moving and cleaning"
-rm ${NEO4J_IMPORT}/*
+rm -rf ${NEO4J_IMPORT}/*
 
 FILE_CLEAN="kg.ttl"
 touch ${NEO4J_IMPORT}/${FILE_CLEAN}
@@ -28,5 +28,8 @@ fi
 
 echo "importing $filename from ${NEO4J_HOME}"
 ${NEO4J_HOME}/bin/cypher-shell -u neo4j -p 'admin' "CALL  n10s.rdf.import.fetch(\"file://${NEO4J_IMPORT}/${FILE_CLEAN}\",\"Turtle\");"
+
+mkdir -p kg
+mv ${NEO4J_IMPORT}/${FILE_CLEAN} kg
 
 echo "Done"
