@@ -125,13 +125,13 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
 
     /**
      * Return JSON array of types of given entity
-     * @param headers must contain header entry "Entity": "<ENTITY>"
+     * @param headers must contain header entry "entity": "<ENTITY>"
      * @return JSON array of entity types of format {"types": ["<TYPE_1>", "<TYPE_2>", ..., "<TYPE_N>"]}
      */
     @GetMapping("/types")
     public synchronized ResponseEntity<String> entityTypes(@RequestHeader Map<String, String> headers)
     {
-        final String entry = "Entity";
+        final String entry = "entity";
 
         if (!Neo4JHandler.isInstalled())
         {
