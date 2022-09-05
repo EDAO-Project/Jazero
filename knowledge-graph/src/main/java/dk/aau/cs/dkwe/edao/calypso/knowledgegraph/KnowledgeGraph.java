@@ -1,5 +1,9 @@
 package dk.aau.cs.dkwe.edao.calypso.knowledgegraph;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Entity;
+import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Type;
 import dk.aau.cs.dkwe.edao.calypso.knowledgegraph.middleware.Neo4JHandler;
 import dk.aau.cs.dkwe.edao.calypso.knowledgegraph.middleware.Neo4JReader;
 import dk.aau.cs.dkwe.edao.calypso.knowledgegraph.middleware.Neo4JWriter;
@@ -12,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 @SpringBootApplication
@@ -96,7 +101,7 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
             return ResponseEntity.internalServerError().body("Neo4J is not installed");
         }
 
-        else if (!checkHeaders(headers))
+        else if (!headers.containsKey("Content-Type") || !headers.get("Content-Type").equals(MediaType.APPLICATION_JSON))
         {
             return ResponseEntity.badRequest().body("Content-Type must be " + MediaType.APPLICATION_JSON);
         }
@@ -118,8 +123,48 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
         }
     }
 
-    private static boolean checkHeaders(Map<String, String> headers)
+    /**
+     * Return JSON array of types of given entity
+     * @param headers must contain header entry "Entity": "<ENTITY>"
+     * @return JSON array of entity types of format {"types": ["<TYPE_1>", "<TYPE_2>", ..., "<TYPE_N>"]}
+     */
+    @GetMapping("/types")
+    public synchronized ResponseEntity<String> entityTypes(@RequestHeader Map<String, String> headers)
     {
-        return !headers.containsKey("Content-Type") || !headers.get("Content-Type").equals(MediaType.APPLICATION_JSON);
+        final String entry = "Entity";
+
+        if (!Neo4JHandler.isInstalled())
+        {
+            return ResponseEntity.internalServerError().body("Neo4J is not installed");
+        }
+
+        else if (!headers.containsKey("Content-Type") || !headers.get("Content-Type").equals(MediaType.APPLICATION_JSON))
+        {
+            return ResponseEntity.badRequest().body("Content-Type must be " + MediaType.APPLICATION_JSON);
+        }
+
+        else if (!headers.containsKey(entry))
+        {
+            return ResponseEntity.badRequest().body("Missing entry \"Entity\" to specify entity to find types of");
+        }
+
+        try
+        {
+            Neo4JReader reader = new Neo4JReader();
+            List<Type> types = reader.entityTypes(new Entity(headers.get(entry)));
+            JsonObject object = new JsonObject();
+            JsonArray array = new JsonArray(types.size());
+            types.forEach(t -> array.add(t.getType()));
+            object.add("types", array);
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(object.toString());
+        }
+
+        catch (RuntimeException e)
+        {
+            ResponseEntity.internalServerError().body("Neo4J error: " + e.getMessage());
+        }
     }
 }
