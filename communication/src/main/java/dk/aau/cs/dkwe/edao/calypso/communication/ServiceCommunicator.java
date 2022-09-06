@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Map;
 
 public class ServiceCommunicator implements Communicator
 {
@@ -48,11 +49,24 @@ public class ServiceCommunicator implements Communicator
         }
     }
 
+    /**
+     * Send POST request
+     * @param content Content to be send in request body
+     * @param headers Headers of POST request
+     * @return Response received
+     * @throws IOException
+     */
     @Override
-    public Object send(Object content) throws IOException
+    public Object send(Object content, Map<String, String> headers) throws IOException
     {
         HttpURLConnection connection = (HttpURLConnection) this.url.openConnection();
+        connection.setRequestMethod("POST");
         connection.setDoOutput(true);
+
+        for (Map.Entry<String, String> entry : headers.entrySet())
+        {
+            connection.setRequestProperty(entry.getKey(), entry.getValue());
+        }
 
         byte[] data = content.toString().getBytes();
         OutputStream stream = connection.getOutputStream();

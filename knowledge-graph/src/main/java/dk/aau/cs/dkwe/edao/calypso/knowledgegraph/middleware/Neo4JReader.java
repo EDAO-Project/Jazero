@@ -60,12 +60,15 @@ public class Neo4JReader extends Neo4JHandler implements IndexIO
         params.put("entity", entity.getUri());
 
         Session session = driver.session();
-        return session.readTransaction(tx -> {
+        List<Type> types = session.readTransaction(tx -> {
             Result result = tx.run("MATCH (a:Resource) -[l:rdf__type]-> (b:Resource)\n"
                     + "WHERE a.uri in [$entity]\n"
                     + "RETURN b.uri as mention", params);
             return result.list().stream().map(r -> new Type(r.get("mention").asString())).toList();
         });
+        session.close();
+
+        return types;
     }
 
     private Driver initDriver() throws IOException

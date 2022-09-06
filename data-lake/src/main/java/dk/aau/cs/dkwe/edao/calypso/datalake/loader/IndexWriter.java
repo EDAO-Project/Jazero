@@ -4,6 +4,7 @@ import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import dk.aau.cs.dkwe.edao.calypso.datalake.connector.service.ELService;
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.service.KGService;
 import dk.aau.cs.dkwe.edao.calypso.datalake.parser.TableParser;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.*;
@@ -15,6 +16,7 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Logger;
 import dk.aau.cs.dkwe.edao.calypso.datalake.tables.JsonTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.utilities.Utils;
+import dk.aau.cs.dkwe.edao.calypso.storagelayer.StorageHandler;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.*;
@@ -29,14 +31,15 @@ public class IndexWriter implements IndexIO
     private List<Path> files;
     private boolean logProgress;
     private File outputPath;
+    private StorageHandler storage;
     private int threads;
     private AtomicInteger loadedTables = new AtomicInteger(0),
             cellsWithLinks = new AtomicInteger(0), tableStatsCollected = new AtomicInteger(0);
     private final Object lock = new Object();
     private long elapsed = -1;
     private Map<Integer, Integer> cellToNumLinksFrequency = Collections.synchronizedMap(new HashMap<>());
-    private Map<Integer, Integer> linkToNumEntitiesFrequency = Collections.synchronizedMap(new HashMap<>());
     private KGService kg;
+    private ELService el;
     private SynchronizedLinker<String, String> linker;
     private SynchronizedIndex<Id, Entity> entityTable;
     private SynchronizedIndex<Id, List<String>> entityTableLink;
@@ -48,23 +51,19 @@ public class IndexWriter implements IndexIO
 
     private static final List<String> DISALLOWED_ENTITY_TYPES =
             Arrays.asList("http://www.w3.org/2002/07/owl#Thing", "http://www.wikidata.org/entity/Q5");
+    private static final String STATS_DIR = "statistics/";
 
-    public IndexWriter(List<Path> files, File outputDir, KGService kgService, int threads, boolean logProgress,
+    public IndexWriter(List<Path> files, StorageHandler.StorageType storageType, KGService kgService, ELService elService, int threads, boolean logProgress,
                        String wikiPrefix, String uriPrefix)
     {
-        if (!outputDir.exists())
-            outputDir.mkdirs();
-
-        else if (!outputDir.isDirectory())
-            throw new IllegalArgumentException("Output directory '" + outputDir + "' is not a directory");
-
-        else if (files.isEmpty())
+        if (files.isEmpty())
             throw new IllegalArgumentException("Missing files to load");
 
         this.files = files;
         this.logProgress = logProgress;
-        this.outputPath = outputDir;
+        this.storage = new StorageHandler(storageType);
         this.kg = kgService;
+        this.el = elService;
         this.threads = threads;
         this.linker = SynchronizedLinker.wrap(new EntityLinking(wikiPrefix, uriPrefix));
         this.entityTable = SynchronizedIndex.wrap(new EntityTable());
@@ -138,24 +137,22 @@ public class IndexWriter implements IndexIO
 
                         else
                         {
-                            List<String> tempLinks = this.kg.searchLink(link.replace("http://www.", "http://en."));
+                            String uri = this.el.link(link.replace("http://www.", "http://en."));
 
-                            if (!tempLinks.isEmpty())
+                            if (uri != null)
                             {
-                                String entity = tempLinks.get(0);
-                                List<String> entityTypes = this.kg.searchTypes(entity);
-                                matchesUris.add(entity);
-                                this.linker.addMapping(link, entity);
-                                this.linkToNumEntitiesFrequency.merge(tempLinks.size(), 1, Integer::sum);
+                                List<String> entityTypes = this.kg.searchTypes(uri);
+                                matchesUris.add(uri);
+                                this.linker.addMapping(link, uri);
 
                                 for (String type : DISALLOWED_ENTITY_TYPES)
                                 {
                                     entityTypes.remove(type);
                                 }
 
-                                Id entityId = ((EntityLinking) this.linker.getLinker()).uriLookup(entity);
+                                Id entityId = ((EntityLinking) this.linker.getLinker()).uriLookup(uri);
                                 this.entityTable.insert(entityId,
-                                        new Entity(entity, entityTypes.stream().map(Type::new).collect(Collectors.toList())));
+                                        new Entity(uri, entityTypes.stream().map(Type::new).collect(Collectors.toList())));
                             }
                         }
 
@@ -188,6 +185,7 @@ public class IndexWriter implements IndexIO
         }
 
         saveStats(table, FilenameUtils.removeExtension(tableName), entities.iterator(), entityMatches);
+        this.storage.insert(tablePath.toFile());
         return true;
     }
 
@@ -271,20 +269,15 @@ public class IndexWriter implements IndexIO
 
     private void writeStats()
     {
-        File statDir = new File(this.outputPath + "/statistics/");
+        File statDir = new File(this.outputPath + "/" + STATS_DIR);
 
         if (!statDir.exists())
             statDir.mkdir();
 
         try
         {
-            FileWriter writer = new FileWriter(statDir + "/" + Configuration.getWikiLinkToEntitiesFrequencyFile());
+            FileWriter writer = new FileWriter(statDir + "/" + Configuration.getCellToNumLinksFrequencyFile());
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            gson.toJson(this.linkToNumEntitiesFrequency, writer);
-            writer.flush();
-            writer.close();
-
-            writer = new FileWriter(statDir + "/" + Configuration.getCellToNumLinksFrequencyFile());
             gson.toJson(this.cellToNumLinksFrequency, writer);
             writer.flush();
             writer.close();
@@ -425,7 +418,7 @@ public class IndexWriter implements IndexIO
     }
 
     /**
-     * Elapsed time of loading
+     * Elapsed time of loading in nanoseconds
      * @return Elapsed time of loading
      */
     public long elapsedTime()

@@ -18,6 +18,7 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.system.Logger;
 import dk.aau.cs.dkwe.edao.calypso.datalake.tables.JsonTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.utilities.HungarianAlgorithm;
 import dk.aau.cs.dkwe.edao.calypso.datalake.utilities.Utils;
+import dk.aau.cs.dkwe.edao.calypso.storagelayer.StorageHandler;
 
 import java.io.File;
 import java.util.*;
@@ -66,13 +67,14 @@ public class TableSearch extends AbstractSearch
     private DBDriverBatch<List<Double>, String> embeddings;
     private Map<String, Stats> tableStats = new TreeMap<>();
     private final Object lock = new Object();
-    private Set<String> corpus;
+    private Iterator<File> corpus;
+    private int corpusSize;
 
-    public TableSearch(EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink, int topK,
-                           int threads, boolean useEmbeddings, CosineSimilarityFunction cosineFunction,
-                           boolean singleColumnPerQueryEntity, boolean weightedJaccard, boolean adjustedJaccard,
-                           boolean useMaxSimilarityPerColumn, boolean hungarianAlgorithmSameAlignmentAcrossTuples,
-                           SimilarityMeasure similarityMeasure, DBDriverBatch<List<Double>, String> embeddingStore)
+    public TableSearch(StorageHandler tableStorage, EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
+                       int topK, int threads, boolean useEmbeddings, CosineSimilarityFunction cosineFunction,
+                       boolean singleColumnPerQueryEntity, boolean weightedJaccard, boolean adjustedJaccard,
+                       boolean useMaxSimilarityPerColumn, boolean hungarianAlgorithmSameAlignmentAcrossTuples,
+                       SimilarityMeasure similarityMeasure, DBDriverBatch<List<Double>, String> embeddingStore)
     {
         super(linker, entityTable, entityTableLink);
         this.topK = topK;
@@ -86,20 +88,14 @@ public class TableSearch extends AbstractSearch
         this.useMaxSimilarityPerColumn = useMaxSimilarityPerColumn;
         this.measure = similarityMeasure;
         this.embeddings = embeddingStore;
-        this.corpus = distinctTables();
+        this.corpus = tableStorage.iterator();
+        this.corpusSize = tableStorage.count();
     }
 
-    public void setCorpus(Set<String> tableFiles)
+    public void setCorpus(Set<File> tableFiles)
     {
-        this.corpus = tableFiles;
-        this.corpus = this.corpus.stream().map(t -> {
-            String[] split = t.split("/");
-
-            if (split.length == 0)
-                return t;
-
-            return split[split.length - 1];
-        }).collect(Collectors.toSet());
+        this.corpusSize = tableFiles.size();
+        this.corpus = tableFiles.iterator();
     }
 
     /**
@@ -114,34 +110,34 @@ public class TableSearch extends AbstractSearch
 
         try
         {
-            Logger.logNewLine(Logger.Level.INFO, "There are " + this.corpus.size() + " files to be processed.");
+            Logger.logNewLine(Logger.Level.INFO, "There are " + this.corpusSize + " files to be processed.");
             ExecutorService threadPool = Executors.newFixedThreadPool(this.threads);
-            List<Future<Pair<String, Double>>> parsed = new ArrayList<>(this.corpus.size());
+            List<Future<Pair<File, Double>>> parsed = new ArrayList<>(this.corpusSize);
 
-            for (String table : this.corpus)
+            while (this.corpus.hasNext())
             {
-                Future<Pair<String, Double>> future = threadPool.submit(() -> searchTable(query, table));
+                Future<Pair<File, Double>> future = threadPool.submit(() -> searchTable(query, this.corpus.next()));
                 parsed.add(future);
             }
 
-            long done = 1, prev = 0, corpusSize = this.corpus.size();
+            long done = 1, prev = 0;
 
-            while (done != corpusSize)
+            while (done != this.corpusSize)
             {
                 done = parsed.stream().filter(Future::isDone).count();
 
                 if (done - prev >= 100)
                 {
-                    Logger.log(Logger.Level.INFO, "Processed " + done + "/" + corpusSize + " files...");
+                    Logger.log(Logger.Level.INFO, "Processed " + done + "/" + this.corpusSize + " files...");
                     prev = done;
                 }
             }
 
-            List<Pair<String, Double>> scores = new ArrayList<>();
+            List<Pair<File, Double>> scores = new ArrayList<>();
             long parsedTables = parsed.stream().filter(f -> {
                 try
                 {
-                    Pair<String, Double> tableScore = f.get();
+                    Pair<File, Double> tableScore = f.get();
 
                     if (tableScore != null)
                     {
@@ -187,9 +183,9 @@ public class TableSearch extends AbstractSearch
         }
     }
 
-    private Pair<String, Double> searchTable(Table<String> query, String table)
+    private Pair<File, Double> searchTable(Table<String> query, File table)
     {
-        JsonTable jTable = TableParser.parse(new File(this.getEntityTableLink().getDirectory() + table));
+        JsonTable jTable = TableParser.parse(table);
         Stats.StatBuilder statBuilder = Stats.build();
 
         if (jTable == null || jTable.numDataRows == 0)
@@ -285,7 +281,7 @@ public class TableSearch extends AbstractSearch
         statBuilder.entityMappedRows(numEntityMappedRows);
         statBuilder.fractionOfEntityMappedRows((double) numEntityMappedRows / jTable.numDataRows);
         Double score = aggregateTableSimilarities(query, scores, statBuilder);
-        this.tableStats.put(table, statBuilder.finish());
+        this.tableStats.put(table.getName(), statBuilder.finish());
 
         return new Pair<>(table, score);
     }
@@ -608,7 +604,7 @@ public class TableSearch extends AbstractSearch
                 tupleIDToScore.put(queryRow, 0.0);
         }
 
-        // TODO: Each tuple currently weighted equally. Maybe add extra weighting per tuple when taking average?
+        // TODO: Each tuple is currently weighted equally. Maybe add extra weighting per tuple when taking average?
         if (!tupleIDToScore.isEmpty())  // Get a single score for the current filename that is averaged across all query tuple scores
         {
             List<Double> queryRowScores = new ArrayList<>(tupleIDToScore.values());

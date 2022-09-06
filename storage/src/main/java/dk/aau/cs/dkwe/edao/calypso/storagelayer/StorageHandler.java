@@ -56,6 +56,9 @@ public class StorageHandler implements Storage<File>
         return this.storage.count();
     }
 
+    // TODO: Maybe we should implement our own iterator that only stores the file names without the path to the file
+    // TODO: When calling .next(), we prepend the path
+    // TODO: This will work as we require all files to be in the same directory
     @Override
     public Iterator<File> iterator()
     {

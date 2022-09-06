@@ -3,6 +3,7 @@ package dk.aau.cs.dkwe.edao.calypso.communication;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 import static org.junit.Assert.assertTrue;
 
@@ -22,8 +23,8 @@ public class TestServiceCommunicator
     @Test
     public void testSend() throws IOException
     {
-        ServiceCommunicator communicator = ServiceCommunicator.init("webhook.site", "df1f1234-cb3a-4bbd-8ff9-992920340013");
-        communicator.send("Hello, World");
+        ServiceCommunicator communicator = ServiceCommunicator.init("webhook.site", "/2174bbdc-20a4-438b-b9f3-1cc1eac923e9");
+        communicator.send("Hello, World", new HashMap<>());
         String response = (String) communicator.receive();
         assertTrue(response.isEmpty());
     }

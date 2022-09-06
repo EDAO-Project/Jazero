@@ -125,11 +125,14 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
 
     /**
      * Return JSON array of types of given entity
-     * @param headers must contain header entry "entity": "<ENTITY>"
+     * Body must contain a single JSON entry with entity URI:
+     *      {
+     *          "entity": "<URI>"
+     *      }
      * @return JSON array of entity types of format {"types": ["<TYPE_1>", "<TYPE_2>", ..., "<TYPE_N>"]}
      */
-    @GetMapping("/types")
-    public synchronized ResponseEntity<String> entityTypes(@RequestHeader Map<String, String> headers)
+    @PostMapping("/types")
+    public synchronized ResponseEntity<String> entityTypes(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
     {
         final String entry = "entity";
 
