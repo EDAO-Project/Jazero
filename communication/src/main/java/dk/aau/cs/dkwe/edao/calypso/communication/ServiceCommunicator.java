@@ -53,7 +53,7 @@ public class ServiceCommunicator implements Communicator
      * Send POST request
      * @param content Content to be send in request body
      * @param headers Headers of POST request
-     * @return Response received
+     * @return Response code
      * @throws IOException
      */
     @Override
@@ -74,7 +74,7 @@ public class ServiceCommunicator implements Communicator
 
         Object response = read(connection.getInputStream());
         connection.disconnect();
-        return response;
+        return connection.getResponseCode();
     }
 
     @Override

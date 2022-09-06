@@ -53,13 +53,14 @@ public class IndexWriter implements IndexIO
             Arrays.asList("http://www.w3.org/2002/07/owl#Thing", "http://www.wikidata.org/entity/Q5");
     private static final String STATS_DIR = "statistics/";
 
-    public IndexWriter(List<Path> files, StorageHandler.StorageType storageType, KGService kgService, ELService elService, int threads, boolean logProgress,
-                       String wikiPrefix, String uriPrefix)
+    public IndexWriter(List<Path> files, File outputPath, StorageHandler.StorageType storageType, KGService kgService,
+                       ELService elService, int threads, boolean logProgress, String wikiPrefix, String uriPrefix)
     {
         if (files.isEmpty())
             throw new IllegalArgumentException("Missing files to load");
 
         this.files = files;
+        this.outputPath = outputPath;
         this.logProgress = logProgress;
         this.storage = new StorageHandler(storageType);
         this.kg = kgService;

@@ -1,7 +1,5 @@
 package dk.aau.cs.dkwe.edao.calypso.datalake;
 
-import dk.aau.cs.dkwe.edao.calypso.communication.Communicator;
-import dk.aau.cs.dkwe.edao.calypso.communication.ServiceCommunicator;
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.service.ELService;
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.service.KGService;
 import dk.aau.cs.dkwe.edao.calypso.datalake.loader.IndexWriter;
@@ -37,6 +35,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     private static final int KG_PORT = 8083;
     private static final String ENTITY_LINKER_HOST = "http://localhost:8082";
     private static final int ENTITY_LINKER_PORT = 8082;
+    private static final File TTL_MAPPING_DIR = new File("./");
 
     @Override
     public void customize(ConfigurableWebServerFactory factory)
@@ -134,9 +133,15 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             Collections.sort(filePaths);
             Logger.logNewLine(Logger.Level.INFO, "There are " + filePaths.size() + " files to be processed.");
 
-            IndexWriter indexWriter = new IndexWriter(filePaths, storageType, kgService, elService, THREADS,
+            IndexWriter indexWriter = new IndexWriter(filePaths, TTL_MAPPING_DIR, storageType, kgService, elService, THREADS,
                     true, WIKI_PREFIX, URI_PREFIX);
             indexWriter.performIO();
+
+            if (!kgService.insertLinks(TTL_MAPPING_DIR))
+            {
+                Logger.logNewLine(Logger.Level.ERROR, "Failed inserting generated TTL mapping files into KG service");
+            }
+
             Logger.logNewLine(Logger.Level.INFO, "Elapsed time: " + indexWriter.elapsedTime() / (1e9) + " seconds\n");
 
             Set<Type> entityTypes = new HashSet<>();
