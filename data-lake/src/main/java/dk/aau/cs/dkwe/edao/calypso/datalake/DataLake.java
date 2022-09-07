@@ -5,9 +5,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.DBDriverBatch;
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.EmbeddingsFactory;
+import dk.aau.cs.dkwe.edao.calypso.datalake.connector.ExplainableCause;
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.service.ELService;
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.service.KGService;
 import dk.aau.cs.dkwe.edao.calypso.datalake.loader.IndexWriter;
+import dk.aau.cs.dkwe.edao.calypso.datalake.parser.EmbeddingsParser;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Type;
@@ -23,6 +25,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -182,25 +186,15 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
     /**
      * POST request to load embeddings
+     * In the embeddings file, each entity and embedding must be separated by new line
+     * In each line, start with the entity URI and follow by its embedding values
+     * Use the same delimiter to separate embedding values and entity URI from its embedding
      * @param headers Requires:
      *                Content-Type: application/json
-     * @param body JSON of embeddings on the following format:
+     * @param body Requires JSON with two entries:
      *             {
-     *                  "embeddings": [
-     *                      {
-     *                          "entity": "<ENTITY_1>",
-     *                          "embedding": [<VAL_1,1>, <VAL_1,2>, ..., <VAL_1,n>]
-     *                      },
-     *                      {
-     *                          "entity": "<ENTITY_2>",
-     *                          "embedding": [[<VAL_2,1>, <VAL_2,2>, ..., <VAL_2,n>]]
-     *                      },
-     *                      ...
-     *                      {
-     *                          "entity": "<ENTITY_n>",
-     *                          "embedding": [[<VAL_n,1>, <VAL_n,2>, ..., <VAL_n,n>]]
-     *                      },
-     *                  ]
+     *                  "file": "<PATH/TO/EMBEDDINGS>"
+     *                  "delimiter: " "<Delimiter separating each floating-point value and entity string>"
      *             }
      * @return
      */
@@ -212,60 +206,92 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             return ResponseEntity.badRequest().body("Content-Type header must be " + MediaType.APPLICATION_JSON);
         }
 
-        else if (!body.containsKey("embeddings"))
+        else if (!body.containsKey("file"))
         {
-            return ResponseEntity.badRequest().body("Missing 'embeddings' entry in JSON body of POST request");
+            return ResponseEntity.badRequest().body("Missing 'file' entry in JSON body of POST request");
+        }
+
+        else if (!body.containsKey("delimiter"))
+        {
+            return ResponseEntity.badRequest().body("Delimiter character has not been specified for embeddings file");
         }
 
         Configuration.setDBHost("127.0.0.1");
         Configuration.setDBPort(5432);
 
-        DBDriverBatch<List<Double>, String> db = EmbeddingsFactory.fromConfig(true);
-        JsonArray json = JsonParser.parseString(body.get("embeddings")).getAsJsonArray();
-        boolean insertSuccess = insertEmbeddings(db, 199, json);
-        db.close();
-
-        return insertSuccess ?
-                ResponseEntity.ok().build() : ResponseEntity.internalServerError().body("Failed inserting embeddings");
-    }
-
-    private boolean insertEmbeddings(DBDriverBatch<List<Double>, String> db, int batchSize, JsonArray json)
-    {
-        List<String> uris = new ArrayList<>(batchSize);
-        List<List<Float>> embeddings = new ArrayList<>(batchSize);
-        int loaded = 0, loadedBatch = 0;
-
         try
         {
-            for (JsonElement element : json)
+            EmbeddingsParser parser = new EmbeddingsParser(new FileInputStream(body.get("file")), body.get("delimiter").charAt(0));
+            DBDriverBatch<List<Double>, String> db = EmbeddingsFactory.fromConfig(true);
+            int batchSize = 100, batchSizeCount = batchSize;
+            double loaded = 0;
+
+            while (parser.hasNext())
             {
-                String entity = element.getAsJsonObject().get("entity").getAsString();
-                List<Float> embedding = new ArrayList<>();
-                JsonArray jsonEmbedding = element.getAsJsonObject().get("embedding").getAsJsonArray();
-                jsonEmbedding.forEach(je -> embedding.add(je.getAsFloat()));
-                uris.add(entity);
-                embeddings.add(embedding);
+                int bytes = insertEmbeddings(db, parser, batchSize);
+                loaded += (double) bytes / Math.pow(1024, 2);
 
-                loaded += entity.length() + 4 * embedding.size();
+                if (bytes == 0)
+                    Logger.logNewLine(Logger.Level.ERROR, "INSERTION ERROR: " + ((ExplainableCause) db).getError());
 
-                if (loaded++ % batchSize == 0)
-                {
-                    loadedBatch += batchSize;
-                    db.batchInsert(uris, embeddings);
-                    uris.clear();
-                    embeddings.clear();
-                    Logger.log(Logger.Level.INFO, "LOAD BATCH [" + loadedBatch + "] - " + loaded + " mb");
-                }
+                else
+                    Logger.log(Logger.Level.INFO, "LOAD BATCH [" + batchSizeCount + "] - " + loaded + " mb");
+
+                batchSizeCount += bytes > 0 ? batchSize : 0;
             }
 
-            db.batchInsert(uris, embeddings);
-            return true;
+            db.close();
+            return ResponseEntity.ok("Loaded " + batchSizeCount + " entity embeddings (" + loaded + " mb)");
         }
 
-        catch (IllegalStateException e)
+        catch (FileNotFoundException e)
         {
-            Logger.logNewLine(Logger.Level.ERROR, "EMBEDDINGS INSERTION ERROR: " + e.getMessage());
-            return false;
+            return ResponseEntity.badRequest().body("Embeddings file does not exist");
         }
+    }
+
+    private static int insertEmbeddings(DBDriverBatch<?, ?> db, EmbeddingsParser parser, int batchSize)
+    {
+        String entity = null;
+        List<List<Float>> vectors = new ArrayList<>(batchSize);
+        List<Float> embedding = new ArrayList<>();
+        List<String> iris = new ArrayList<>(batchSize);
+        int count = 0, loaded = 0;
+        EmbeddingsParser.EmbeddingToken prev = parser.prev(), token;
+
+        if (prev != null && prev.getToken() == EmbeddingsParser.EmbeddingToken.Token.ENTITY)
+        {
+            entity = prev.getLexeme();
+            iris.add(entity);
+            count++;
+            loaded = entity.length() + 1;
+        }
+
+        while (parser.hasNext() && count < batchSize && (token = parser.next()) != null)
+        {
+            if (token.getToken() == EmbeddingsParser.EmbeddingToken.Token.ENTITY)
+            {
+                if (entity != null)
+                    vectors.add(new ArrayList<>(embedding));
+
+                entity = token.getLexeme();
+                iris.add(entity);
+                embedding.clear();
+                count++;
+                loaded += entity.length() + 1;
+            }
+
+            else
+            {
+                String lexeme = token.getLexeme();
+                embedding.add(Float.parseFloat(lexeme));
+                loaded += lexeme.length() + 1;
+            }
+        }
+
+        if (!iris.isEmpty())
+            iris.remove(iris.size() - 1);
+
+        return db.batchInsert(iris, vectors) ? loaded : 0;
     }
 }

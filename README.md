@@ -58,6 +58,7 @@ These can be executed with `java -jar ...`.
 
 ## Working with Calypso
 [Here will be some instructions on using the CDLC driver and maybe also the API if we build that]
+[Describe how to populate with tables and how to insert embeddings]
 
 ## Setting Up Calypso in an IDE
 Most of the components in Calypso are dependent on the `communication` module.
