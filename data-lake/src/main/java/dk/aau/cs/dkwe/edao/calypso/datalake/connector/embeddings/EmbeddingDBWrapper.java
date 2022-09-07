@@ -38,7 +38,7 @@ public class EmbeddingDBWrapper implements DBDriverBatch<List<Double>, String>, 
                     EMBEDDING_FIELD + " FLOAT[] NOT NULL);"))
                 throw new RuntimeException("Setup failed: EmbeddingDBWrapper");
 
-            if (!sql.update("CREATE INDEX hash_idx ON " + COLLECTION_NAME + " using hash (" + IRI_FIELD + ");"))
+            if (!sql.update("CREATE INDEX IF NOT EXISTS hash_idx ON " + COLLECTION_NAME + " using hash (" + IRI_FIELD + ");"))
                 throw new RuntimeException("Creating hash index failed: EmbeddingDBWrapper\n" + ((Postgres) sql).getError());
         }
 
