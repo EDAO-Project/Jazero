@@ -10,7 +10,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,7 +43,7 @@ public class KGService extends Service
 
             if (responseCode != HttpStatus.OK.value())
             {
-                throw new RuntimeException("Received response code " + responseCode + " when requesting entity types from EKG Manager")
+                throw new RuntimeException("Received response code " + responseCode + " when requesting entity types from EKG Manager");
             }
 
             String received = (String) comm.receive();

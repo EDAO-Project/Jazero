@@ -1,11 +1,17 @@
 package dk.aau.cs.dkwe.edao.calypso.datalake;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import dk.aau.cs.dkwe.edao.calypso.datalake.connector.DBDriverBatch;
+import dk.aau.cs.dkwe.edao.calypso.datalake.connector.EmbeddingsFactory;
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.service.ELService;
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.service.KGService;
 import dk.aau.cs.dkwe.edao.calypso.datalake.loader.IndexWriter;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Type;
+import dk.aau.cs.dkwe.edao.calypso.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Logger;
 import dk.aau.cs.dkwe.edao.calypso.storagelayer.StorageHandler;
 import org.springframework.boot.SpringApplication;
@@ -35,7 +41,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     private static final int KG_PORT = 8083;
     private static final String ENTITY_LINKER_HOST = "http://localhost:8082";
     private static final int ENTITY_LINKER_PORT = 8082;
-    private static final File TTL_MAPPING_DIR = new File("./");
+    private static final File DATA_DIR = new File("./");
+    private static final File INDEX_DIR = new File(".indexes/");
 
     @Override
     public void customize(ConfigurableWebServerFactory factory)
@@ -98,6 +105,11 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     {
         final String bodyKey = "directory";
 
+        if (!INDEX_DIR.isDirectory())
+        {
+            INDEX_DIR.mkdir();
+        }
+
         if (!headers.containsKey("Content-Type") || !headers.get("Content-Type").equals(MediaType.APPLICATION_JSON))
         {
             return ResponseEntity.badRequest().body("Content-Type header must be " + MediaType.APPLICATION_JSON);
@@ -133,11 +145,11 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             Collections.sort(filePaths);
             Logger.logNewLine(Logger.Level.INFO, "There are " + filePaths.size() + " files to be processed.");
 
-            IndexWriter indexWriter = new IndexWriter(filePaths, TTL_MAPPING_DIR, storageType, kgService, elService, THREADS,
+            IndexWriter indexWriter = new IndexWriter(filePaths, INDEX_DIR, DATA_DIR, storageType, kgService, elService, THREADS,
                     true, WIKI_PREFIX, URI_PREFIX);
             indexWriter.performIO();
 
-            if (!kgService.insertLinks(TTL_MAPPING_DIR))
+            if (!kgService.insertLinks(DATA_DIR))
             {
                 Logger.logNewLine(Logger.Level.ERROR, "Failed inserting generated TTL mapping files into KG service");
             }
@@ -165,6 +177,95 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         catch (IOException e)
         {
             return ResponseEntity.badRequest().body("Error locating JSON table files: " + e.getMessage());
+        }
+    }
+
+    /**
+     * POST request to load embeddings
+     * @param headers Requires:
+     *                Content-Type: application/json
+     * @param body JSON of embeddings on the following format:
+     *             {
+     *                  "embeddings": [
+     *                      {
+     *                          "entity": "<ENTITY_1>",
+     *                          "embedding": [<VAL_1,1>, <VAL_1,2>, ..., <VAL_1,n>]
+     *                      },
+     *                      {
+     *                          "entity": "<ENTITY_2>",
+     *                          "embedding": [[<VAL_2,1>, <VAL_2,2>, ..., <VAL_2,n>]]
+     *                      },
+     *                      ...
+     *                      {
+     *                          "entity": "<ENTITY_n>",
+     *                          "embedding": [[<VAL_n,1>, <VAL_n,2>, ..., <VAL_n,n>]]
+     *                      },
+     *                  ]
+     *             }
+     * @return
+     */
+    @PostMapping(value = "/embeddings")
+    public ResponseEntity<String> loadEmbeddings(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
+    {
+        if (!headers.containsKey("Content-Type") || !headers.get("Content-Type").equals(MediaType.APPLICATION_JSON))
+        {
+            return ResponseEntity.badRequest().body("Content-Type header must be " + MediaType.APPLICATION_JSON);
+        }
+
+        else if (!body.containsKey("embeddings"))
+        {
+            return ResponseEntity.badRequest().body("Missing 'embeddings' entry in JSON body of POST request");
+        }
+
+        Configuration.setDBHost("127.0.0.1");
+        Configuration.setDBPort(5432);
+
+        DBDriverBatch<List<Double>, String> db = EmbeddingsFactory.fromConfig(true);
+        JsonArray json = JsonParser.parseString(body.get("embeddings")).getAsJsonArray();
+        boolean insertSuccess = insertEmbeddings(db, 199, json);
+        db.close();
+
+        return insertSuccess ?
+                ResponseEntity.ok().build() : ResponseEntity.internalServerError().body("Failed inserting embeddings");
+    }
+
+    private boolean insertEmbeddings(DBDriverBatch<List<Double>, String> db, int batchSize, JsonArray json)
+    {
+        List<String> uris = new ArrayList<>(batchSize);
+        List<List<Float>> embeddings = new ArrayList<>(batchSize);
+        int loaded = 0, loadedBatch = 0;
+
+        try
+        {
+            for (JsonElement element : json)
+            {
+                String entity = element.getAsJsonObject().get("entity").getAsString();
+                List<Float> embedding = new ArrayList<>();
+                JsonArray jsonEmbedding = element.getAsJsonObject().get("embedding").getAsJsonArray();
+                jsonEmbedding.forEach(je -> embedding.add(je.getAsFloat()));
+                uris.add(entity);
+                embeddings.add(embedding);
+
+                loaded += entity.length() + 4 * embedding.size();
+
+                if (loaded++ % batchSize == 0)
+                {
+                    loadedBatch += batchSize;
+                    db.batchInsert(uris, embeddings);
+                    uris.clear();
+                    embeddings.clear();
+                    Logger.log(Logger.Level.INFO, "LOAD BATCH [" + loadedBatch + "] - " + loaded + " mb");
+                }
+            }
+
+            db.batchInsert(uris, embeddings);
+            return true;
+        }
+
+        catch (IllegalStateException e)
+        {
+            Logger.logNewLine(Logger.Level.ERROR, "EMBEDDINGS INSERTION ERROR: " + e.getMessage());
+            return false;
         }
     }
 }

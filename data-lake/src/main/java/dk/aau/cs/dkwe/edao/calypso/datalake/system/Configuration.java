@@ -99,6 +99,15 @@ public class Configuration
         if (!props.contains("LogLevel"))
             props.setProperty("LogLevel", Logger.Level.INFO.toString());
 
+        if (!props.contains("DBName"))
+            props.setProperty("DBName", "embeddings");
+
+        if (!props.contains("DBUsername"))
+            props.setProperty("DBUsername", "calypso");
+
+        if (!props.contains("DBPassword"))
+            props.setProperty("DBPassword", "1234");
+
         writeProperties(props);
     }
 
@@ -130,16 +139,6 @@ public class Configuration
         Properties properties = readProperties();
         properties.setProperty(key, value);
         writeProperties(properties);
-    }
-
-    public static void setDB(String db)
-    {
-        addProperty("db", db);
-    }
-
-    public static String getDB()
-    {
-        return readProperties().getProperty("db");
     }
 
     public static void setDBPath(String path)
@@ -180,16 +179,6 @@ public class Configuration
     public static int getDBPort()
     {
         return Integer.parseInt(readProperties().getProperty("DBPort"));
-    }
-
-    public static void setEmbeddingsDimension(int dimension)
-    {
-        addProperty("EmbeddingsDim", String.valueOf(dimension));
-    }
-
-    public static int getEmbeddingsDimension()
-    {
-        return Integer.parseInt(readProperties().getProperty("EmbeddingsDim"));
     }
 
     public static void setDBUsername(String username)

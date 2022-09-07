@@ -29,34 +29,26 @@ public class EmbeddingDBWrapper implements DBDriverBatch<List<Double>, String>, 
         if (this.driver instanceof Setup)
             ((Setup) this.driver).setup();
 
-        if (this.driver instanceof SQLite || this.driver instanceof Postgres)
+        DBDriver<ResultSet, String> sql = (DBDriver<ResultSet, String>) this.driver;
+
+        if (this.driver instanceof Postgres)
         {
-            DBDriver<ResultSet, String> sql = (DBDriver<ResultSet, String>) this.driver;
+            if (!sql.update("CREATE TABLE IF NOT EXISTS " + COLLECTION_NAME + " (" +
+                    IRI_FIELD + " VARCHAR(1000) PRIMARY KEY, " +
+                    EMBEDDING_FIELD + " FLOAT[] NOT NULL);"))
+                throw new RuntimeException("Setup failed: EmbeddingDBWrapper");
 
-            if (this.driver instanceof Postgres)
-            {
-                if (!sql.update("CREATE TABLE IF NOT EXISTS " + COLLECTION_NAME + " (" +
-                        IRI_FIELD + " VARCHAR(1000) PRIMARY KEY, " +
-                        EMBEDDING_FIELD + " FLOAT[] NOT NULL);"))
-                    throw new RuntimeException("Setup failed: EmbeddingDBWrapper");
-
-                if (!sql.update("CREATE INDEX hash_idx ON " + COLLECTION_NAME + " using hash (" + IRI_FIELD + ");"))
-                    throw new RuntimeException("Creating hash index failed: EmbeddingDBWrapper\n" + ((Postgres) sql).getError());
-            }
-
-            else
-            {
-                if (!sql.update("CREATE TABLE IF NOT EXISTS " + COLLECTION_NAME + " (" +
-                        IRI_FIELD + " VARCHAR(1000) PRIMARY KEY, " +
-                        EMBEDDING_FIELD + " VARCHAR(1000) NOT NULL);"))
-                    throw new RuntimeException("Setup failed: EmbeddingDBWrapper");
-            }
+            if (!sql.update("CREATE INDEX hash_idx ON " + COLLECTION_NAME + " using hash (" + IRI_FIELD + ");"))
+                throw new RuntimeException("Creating hash index failed: EmbeddingDBWrapper\n" + ((Postgres) sql).getError());
         }
-    }
 
-    private static RuntimeException cannotDeriveException()
-    {
-        return new RuntimeException("Could not derive typ of DBDriver: EmbeddingDBWrapper");
+        else
+        {
+            if (!sql.update("CREATE TABLE IF NOT EXISTS " + COLLECTION_NAME + " (" +
+                    IRI_FIELD + " VARCHAR(1000) PRIMARY KEY, " +
+                    EMBEDDING_FIELD + " VARCHAR(1000) NOT NULL);"))
+                throw new RuntimeException("Setup failed: EmbeddingDBWrapper");
+        }
     }
 
     /**
@@ -67,45 +59,7 @@ public class EmbeddingDBWrapper implements DBDriverBatch<List<Double>, String>, 
     @Override
     public List<Double> select(String iri)
     {
-        if (this.driver instanceof SQLite)
-            return sqliteSelect(iri);
-
-        else if (this.driver instanceof Postgres)
-            return postgresSelect(iri);
-
-        else if (this.driver instanceof EmbeddingStore)
-            return milvusSelect(iri);
-
-        throw cannotDeriveException();
-    }
-
-    private List<Double> sqliteSelect(String iri)
-    {
-        SQLite sqlite = (SQLite) this.driver;
-        ResultSet rs = sqlite.select("SELECT " + EMBEDDING_FIELD +
-                " FROM " + COLLECTION_NAME +
-                " WHERE " + IRI_FIELD + "='" + iri + "';");
-
-        try
-        {
-            if (!rs.next())
-                return null;
-
-            String[] vector = rs.getString(1).split(",");
-            List<Double> embedding = new ArrayList<>(vector.length);
-
-            for (String e : vector)
-            {
-                embedding.add(Double.parseDouble(e));
-            }
-
-            return embedding;
-        }
-
-        catch (SQLException e)
-        {
-            return null;
-        }
+        return postgresSelect(iri);
     }
 
     private List<Double> postgresSelect(String iri)
@@ -129,12 +83,6 @@ public class EmbeddingDBWrapper implements DBDriverBatch<List<Double>, String>, 
         }
     }
 
-    private List<Double> milvusSelect(String iri)
-    {
-        EmbeddingStore store = (EmbeddingStore) this.driver;
-        return store.select(iri);
-    }
-
     /**
      * Used to insert embeddings only
      * @param query Entity IRI and embeddings seperated by space ' '
@@ -144,28 +92,7 @@ public class EmbeddingDBWrapper implements DBDriverBatch<List<Double>, String>, 
     @Override
     public boolean update(String query)
     {
-        if (this.driver instanceof SQLite)
-            return sqliteUpdate(query);
-
-        else if (this.driver instanceof Postgres)
-            return postgresUpdate(query);
-
-        else if (this.driver instanceof EmbeddingStore)
-            return milvusUpdate(query);
-
-        throw cannotDeriveException();
-    }
-
-    private boolean sqliteUpdate(String query)
-    {
-        SQLite sqLite = (SQLite) this.driver;
-        String[] split = query.split(" ");
-
-        if (split.length != 2)
-            return false;
-
-        return sqLite.update("INSERT INTO " + COLLECTION_NAME + " VALUES ('" +
-                split[0] + "', '" + split[1] + "');");
+        return postgresUpdate(query);
     }
 
     private boolean postgresUpdate(String query)
@@ -178,12 +105,6 @@ public class EmbeddingDBWrapper implements DBDriverBatch<List<Double>, String>, 
 
         return postgres.update("INSERT INTO " + COLLECTION_NAME + " VALUES ('"+
                 split[0] + "', '{" + split[1] + "}');");
-    }
-
-    private boolean milvusUpdate(String query)
-    {
-        EmbeddingStore store = (EmbeddingStore) this.driver;
-        return store.update(query);
     }
 
     @Override
@@ -212,16 +133,7 @@ public class EmbeddingDBWrapper implements DBDriverBatch<List<Double>, String>, 
     @Override
     public boolean batchInsert(List<String> iris, List<List<Float>> vectors)
     {
-        if (this.driver instanceof DBDriverBatch)
-            return ((DBDriverBatch<?, ?>) this.driver).batchInsert(iris, vectors);
-
-        else if (this.driver instanceof SQLite)
-            return relationalBatchInsert(iris, vectors, "'", "'");
-
-        else if (this.driver instanceof Postgres)
-            return relationalBatchInsert(iris, vectors, "'{", "}'");
-
-        throw cannotDeriveException();
+        return relationalBatchInsert(iris, vectors, "'{", "}'");
     }
 
     private boolean relationalBatchInsert(List<String> iris, List<List<Float>> vectors, String vecStart, String vecEnd)

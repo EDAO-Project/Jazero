@@ -10,7 +10,7 @@
     </parent>
     <groupId>dk.aau.cs.dkwe.edao.calypso</groupId>
     <artifactId>knowledge-graph</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0-SNAPSHOT</version>
     <name>knowledge-graph</name>
     <description>knowledge-graph</description>
 <!--    <properties>
@@ -37,7 +37,7 @@
         <dependency>
             <groupId>dk.aau.cs.dkwe.edao.calypso</groupId>
             <artifactId>data-lake</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
 
         <dependency>

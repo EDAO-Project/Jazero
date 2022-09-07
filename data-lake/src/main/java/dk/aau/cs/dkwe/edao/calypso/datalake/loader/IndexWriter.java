@@ -30,7 +30,7 @@ public class IndexWriter implements IndexIO
 {
     private List<Path> files;
     private boolean logProgress;
-    private File outputPath;
+    private File indexDir, dataDir;
     private StorageHandler storage;
     private int threads;
     private AtomicInteger loadedTables = new AtomicInteger(0),
@@ -53,14 +53,15 @@ public class IndexWriter implements IndexIO
             Arrays.asList("http://www.w3.org/2002/07/owl#Thing", "http://www.wikidata.org/entity/Q5");
     private static final String STATS_DIR = "statistics/";
 
-    public IndexWriter(List<Path> files, File outputPath, StorageHandler.StorageType storageType, KGService kgService,
+    public IndexWriter(List<Path> files, File indexPath, File dataOutputPath, StorageHandler.StorageType storageType, KGService kgService,
                        ELService elService, int threads, boolean logProgress, String wikiPrefix, String uriPrefix)
     {
         if (files.isEmpty())
             throw new IllegalArgumentException("Missing files to load");
 
         this.files = files;
-        this.outputPath = outputPath;
+        this.indexDir = indexPath;
+        this.dataDir = dataOutputPath;
         this.logProgress = logProgress;
         this.storage = new StorageHandler(storageType);
         this.kg = kgService;
@@ -270,7 +271,7 @@ public class IndexWriter implements IndexIO
 
     private void writeStats()
     {
-        File statDir = new File(this.outputPath + "/" + STATS_DIR);
+        File statDir = new File(this.dataDir + "/" + STATS_DIR);
 
         if (!statDir.exists())
             statDir.mkdir();
@@ -353,19 +354,19 @@ public class IndexWriter implements IndexIO
     {
         // Entity linker
         ObjectOutputStream outputStream =
-                new ObjectOutputStream(new FileOutputStream(this.outputPath + "/" + Configuration.getEntityLinkerFile()));
+                new ObjectOutputStream(new FileOutputStream(this.indexDir + "/" + Configuration.getEntityLinkerFile()));
         outputStream.writeObject(this.linker.getLinker());
         outputStream.flush();
         outputStream.close();
 
         // Entity table
-        outputStream = new ObjectOutputStream(new FileOutputStream(this.outputPath + "/" + Configuration.getEntityTableFile()));
+        outputStream = new ObjectOutputStream(new FileOutputStream(this.indexDir + "/" + Configuration.getEntityTableFile()));
         outputStream.writeObject(this.entityTable.getIndex());
         outputStream.flush();
         outputStream.close();
 
         // Entity to tables inverted index
-        outputStream = new ObjectOutputStream(new FileOutputStream(this.outputPath + "/" + Configuration.getEntityToTablesFile()));
+        outputStream = new ObjectOutputStream(new FileOutputStream(this.indexDir + "/" + Configuration.getEntityToTablesFile()));
         outputStream.writeObject(this.entityTableLink.getIndex());
         outputStream.flush();
         outputStream.close();
@@ -375,7 +376,7 @@ public class IndexWriter implements IndexIO
 
     private void genNeo4jTableMappings() throws IOException
     {
-        FileOutputStream outputStream = new FileOutputStream(this.outputPath + "/" + Configuration.getTableToEntitiesFile());
+        FileOutputStream outputStream = new FileOutputStream(this.dataDir + "/" + Configuration.getTableToEntitiesFile());
         OutputStreamWriter writer = new OutputStreamWriter(outputStream);
         Iterator<Id> entityIter = ((EntityLinking) this.linker.getLinker()).uriIds();
 
@@ -393,7 +394,7 @@ public class IndexWriter implements IndexIO
 
         writer.flush();
         writer.close();
-        outputStream = new FileOutputStream(this.outputPath + "/" + Configuration.getTableToTypesFile());
+        outputStream = new FileOutputStream(this.dataDir + "/" + Configuration.getTableToTypesFile());
         writer = new OutputStreamWriter(outputStream);
         Set<String> tables = new HashSet<>();
         Iterator<Id> entityIdIter = ((EntityLinking) this.linker.getLinker()).uriIds();
