@@ -7,10 +7,15 @@ WORKDIR /home
 
 RUN mkdir communication
 RUN mkdir data-lake
+RUN mkdir storage
 COPY communication communication
 COPY data-lake data-lake
+COPY storage storage
 
 WORKDIR communication
+RUN mvn clean install -DskipTests
+
+WORKDIR ../storage
 RUN mvn clean install -DskipTests
 
 ARG MVNW=mvnw_unix
