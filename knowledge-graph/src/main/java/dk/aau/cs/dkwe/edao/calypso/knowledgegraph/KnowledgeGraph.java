@@ -101,7 +101,7 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
             return ResponseEntity.internalServerError().body("Neo4J is not installed");
         }
 
-        else if (!headers.containsKey("Content-Type") || !headers.get("Content-Type").equals(MediaType.APPLICATION_JSON))
+        else if (!headers.containsKey("content-type") || !headers.get("Content-Type").equals(MediaType.APPLICATION_JSON))
         {
             return ResponseEntity.badRequest().body("Content-Type must be " + MediaType.APPLICATION_JSON);
         }

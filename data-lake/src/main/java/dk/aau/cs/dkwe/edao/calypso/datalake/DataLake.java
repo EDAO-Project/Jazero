@@ -110,7 +110,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             INDEX_DIR.mkdir();
         }
 
-        if (!headers.containsKey("Content-Type") || !headers.get("Content-Type").equals(MediaType.APPLICATION_JSON))
+        if (!headers.containsKey("content-type") || !headers.get("content-type").equals(MediaType.APPLICATION_JSON))
         {
             return ResponseEntity.badRequest().body("Content-Type header must be " + MediaType.APPLICATION_JSON);
         }
@@ -207,7 +207,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     @PostMapping(value = "/embeddings")
     public ResponseEntity<String> loadEmbeddings(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
     {
-        if (!headers.containsKey("Content-Type") || !headers.get("Content-Type").equals(MediaType.APPLICATION_JSON))
+        if (!headers.containsKey("content-type") || !headers.get("content-type").equals(MediaType.APPLICATION_JSON))
         {
             return ResponseEntity.badRequest().body("Content-Type header must be " + MediaType.APPLICATION_JSON);
         }
