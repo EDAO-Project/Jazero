@@ -1,8 +1,7 @@
 #!/bin/bash
-:'###################################################
-Populate the neo4j database for the www18 dataset
 #####################################################
-'
+# Populate the neo4j database for the www18 dataset #
+#####################################################
 
 neo4j=$1
 folder=$2
