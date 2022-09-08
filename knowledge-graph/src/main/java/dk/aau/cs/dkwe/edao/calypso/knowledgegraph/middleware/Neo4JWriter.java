@@ -1,6 +1,7 @@
 package dk.aau.cs.dkwe.edao.calypso.knowledgegraph.middleware;
 
 import dk.aau.cs.dkwe.edao.calypso.datalake.loader.IndexIO;
+import dk.aau.cs.dkwe.edao.calypso.knowledgegraph.connector.Neo4jEndpoint;
 
 import java.io.File;
 import java.io.IOException;
@@ -106,6 +107,7 @@ public class Neo4JWriter extends Neo4JHandler implements IndexIO
                 throw new IOException("Could not create directory to save KG files: exit code " + exitCode);
             }
 
+            Neo4JHandler.stop();
             process = rt.exec("./" + INSERT_LINKS_SCRIPT + " " + Neo4JHandler.HOME + " " + linksFolder);
 
             if ((exitCode = process.waitFor()) != 0)
@@ -124,6 +126,11 @@ public class Neo4JWriter extends Neo4JHandler implements IndexIO
         catch (InterruptedException e)
         {
             throw new IOException("Table links insertion was interrupted");
+        }
+
+        finally
+        {
+            Neo4JHandler.start();
         }
     }
 }

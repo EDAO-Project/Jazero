@@ -7,7 +7,7 @@ From the root directory of this repository, place a knowledge graph turtle file 
 
 ```bash
 docker build -f kg.dockerfile -t neo4j .
-docker run --rm -v ${PWD}/knowledge-graph/neo4j:/srv neo4j bash -c "./install.sh /srv; ./import.sh <KG_FILE> neo4j-server; ./stop.sh neo4j-server"
+docker run --rm -v ${PWD}/knowledge-graph/neo4j:/srv neo4j bash -c "./install.sh /srv; ./import.sh <KG> neo4j-server; ./stop.sh neo4j-server"
 ```
 
 Substitute `<KG>` with the knowledge graph file name. Now, the knowledge graph will be loaded into `knowledge-graph/neo4j/neo4j-server`.

@@ -153,7 +153,7 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
 
             if (types == null)
             {
-                return ResponseEntity.badRequest().body("Entity '" + headers.get(entry) + "' does not exist in KG");
+                return ResponseEntity.badRequest().body("An IOException was encountered when querying Neo4J");
             }
 
             JsonObject object = new JsonObject();
