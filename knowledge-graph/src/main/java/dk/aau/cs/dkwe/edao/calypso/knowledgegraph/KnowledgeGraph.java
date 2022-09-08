@@ -141,15 +141,15 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
             return ResponseEntity.internalServerError().body("Neo4J is not installed");
         }
 
-        else if (!headers.containsKey(entry))
+        else if (!body.containsKey(entry))
         {
-            return ResponseEntity.badRequest().body("Missing entry \"Entity\" to specify entity to find types of");
+            return ResponseEntity.badRequest().body("Missing entry \"" + entry + "\" to specify entity to find types of");
         }
 
         try
         {
             Neo4JReader reader = new Neo4JReader();
-            List<Type> types = reader.entityTypes(new Entity(headers.get(entry)));
+            List<Type> types = reader.entityTypes(new Entity(body.get(entry)));
 
             if (types == null)
             {
