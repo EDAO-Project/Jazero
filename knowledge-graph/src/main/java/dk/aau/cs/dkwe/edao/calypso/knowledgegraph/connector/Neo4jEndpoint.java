@@ -16,8 +16,6 @@ public class Neo4jEndpoint implements AutoCloseable {
     private final String dbUri;
     private final String dbUser;
     private final String dbPassword;
-    private final String isPrimaryTopicOf_rel_type_name;
-
     public Neo4jEndpoint(final String pathToConfigurationFile) throws IOException {
         this(new File(pathToConfigurationFile));
     }
@@ -37,7 +35,6 @@ public class Neo4jEndpoint implements AutoCloseable {
         this.dbUser = prop.getProperty("neo4j.user", "neo4j");
         this.dbPassword = prop.getProperty("neo4j.password", "admin");
         this.driver = GraphDatabase.driver(dbUri, AuthTokens.basic(dbUser, dbPassword));
-        this.isPrimaryTopicOf_rel_type_name = this.get_isPrimaryTopicOf_rel_type_name();
     }
 
 
@@ -46,7 +43,6 @@ public class Neo4jEndpoint implements AutoCloseable {
         this.dbUser = user;
         this.dbPassword = password;
         this.driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
-        this.isPrimaryTopicOf_rel_type_name = this.get_isPrimaryTopicOf_rel_type_name();
     }
 
 
@@ -113,33 +109,6 @@ public class Neo4jEndpoint implements AutoCloseable {
         }
 
 
-    }
-
-    /**
-     *
-     * @param link a specific wikipedia link
-     * @return a list of possible entity matches
-     */
-    public List<String> searchLink(String link) {
-
-        Map<String, Object> params = new HashMap<>();
-        params.put("link", link);
-
-        try (Session session = driver.session()) {
-            return session.readTransaction(tx -> {
-                List<String> entityUris = new ArrayList<>();
-
-                // Get all entity uri given a wikipedia link
-                Result result = tx.run("MATCH (a:Resource) -[l:"+this.isPrimaryTopicOf_rel_type_name+"]-> (b:Resource)" + "\n"
-                        + "WHERE b.uri in [$link]" + "\n"
-                        + "RETURN a.uri as mention", params);
-
-                for (Record r : result.list()) {
-                    entityUris.add(r.get("mention").asString());
-                }
-                return entityUris;
-            });
-        }
     }
 
     /**

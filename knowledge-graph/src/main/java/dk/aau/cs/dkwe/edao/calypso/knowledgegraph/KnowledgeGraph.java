@@ -150,6 +150,12 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
         {
             Neo4JReader reader = new Neo4JReader();
             List<Type> types = reader.entityTypes(new Entity(headers.get(entry)));
+
+            if (types == null)
+            {
+                return ResponseEntity.badRequest().body("Entity '" + headers.get(entry) + "' does not exist in KG");
+            }
+
             JsonObject object = new JsonObject();
             JsonArray array = new JsonArray(types.size());
             types.forEach(t -> array.add(t.getType()));
