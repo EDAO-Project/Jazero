@@ -39,7 +39,7 @@ public class ServiceCommunicator implements Communicator
         {
             HttpURLConnection connection = (HttpURLConnection) this.testUrl.openConnection();
             connection.connect();
-            boolean established = connection.getResponseCode() < 400 && "Pong".equals(connection.getResponseMessage());
+            boolean established = connection.getResponseCode() < 400 && "Pong".equals(read(connection.getInputStream()));
             connection.disconnect();
             return established;
         }
