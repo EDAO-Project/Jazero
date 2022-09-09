@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Type;
+import dk.aau.cs.dkwe.edao.calypso.knowledgegraph.connector.Neo4jEndpoint;
 import dk.aau.cs.dkwe.edao.calypso.knowledgegraph.middleware.Neo4JHandler;
 import dk.aau.cs.dkwe.edao.calypso.knowledgegraph.middleware.Neo4JReader;
 import dk.aau.cs.dkwe.edao.calypso.knowledgegraph.middleware.Neo4JWriter;
@@ -23,6 +24,8 @@ import java.util.Map;
 @RestController
 public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWebServerFactory>
 {
+    private static Neo4jEndpoint endpoint;
+
     @Override
     public void customize(ConfigurableWebServerFactory factory)
     {
@@ -43,7 +46,16 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
             throw new RuntimeException("Failed to start Neo4J graph database");
         }
 
-        SpringApplication.run(KnowledgeGraph.class, args);
+        try
+        {
+            endpoint = Neo4JHandler.getConnector();
+            SpringApplication.run(KnowledgeGraph.class, args);
+        }
+
+        catch (IOException e)
+        {
+            throw new RuntimeException("Could not create connection to Neo4J: " + e.getMessage());
+        }
     }
 
     @GetMapping("/ping")
@@ -67,7 +79,7 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
 
         try
         {
-            Neo4JReader reader = new Neo4JReader();
+            Neo4JReader reader = new Neo4JReader(endpoint);
             reader.performIO();
 
             return ResponseEntity.ok()
@@ -148,7 +160,7 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
 
         try
         {
-            Neo4JReader reader = new Neo4JReader();
+            Neo4JReader reader = new Neo4JReader(endpoint);
             List<Type> types = reader.entityTypes(new Entity(body.get(entry)));
 
             if (types == null)

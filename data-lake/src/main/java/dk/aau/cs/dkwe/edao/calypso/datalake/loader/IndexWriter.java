@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 public class IndexWriter implements IndexIO
 {
     private List<Path> files;
-    private boolean logProgress;
     private File indexDir, dataDir;
     private StorageHandler storage;
     private int threads;
@@ -54,7 +53,7 @@ public class IndexWriter implements IndexIO
     private static final String STATS_DIR = "statistics/";
 
     public IndexWriter(List<Path> files, File indexPath, File dataOutputPath, StorageHandler.StorageType storageType, KGService kgService,
-                       ELService elService, int threads, boolean logProgress, String wikiPrefix, String uriPrefix)
+                       ELService elService, int threads, String wikiPrefix, String uriPrefix)
     {
         if (files.isEmpty())
             throw new IllegalArgumentException("Missing files to load");
@@ -62,7 +61,6 @@ public class IndexWriter implements IndexIO
         this.files = files;
         this.indexDir = indexPath;
         this.dataDir = dataOutputPath;
-        this.logProgress = logProgress;
         this.storage = new StorageHandler(storageType);
         this.kg = kgService;
         this.el = elService;

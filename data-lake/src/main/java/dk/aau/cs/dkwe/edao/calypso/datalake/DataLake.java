@@ -246,7 +246,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             Logger.logNewLine(Logger.Level.INFO, "There are " + filePaths.size() + " files to be processed.");
 
             IndexWriter indexWriter = new IndexWriter(filePaths, INDEX_DIR, DATA_DIR, storageType, kgService, elService, THREADS,
-                    true, WIKI_PREFIX, URI_PREFIX);
+                    WIKI_PREFIX, URI_PREFIX);
             indexWriter.performIO();
 
             if (!kgService.insertLinks(DATA_DIR))

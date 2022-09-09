@@ -22,8 +22,14 @@ import java.util.stream.Collectors;
  */
 public class Neo4JReader extends Neo4JHandler implements IndexIO
 {
+    private Neo4jEndpoint endpoint;
     private static final String KG_FILE = Neo4JHandler.HOME_IMPORT +  "kg.ttl";
     private static final String EXPORT_SCRIPT = Neo4JHandler.BASE + "export.sh";
+
+    public Neo4JReader(Neo4jEndpoint endpoint)
+    {
+        this.endpoint = endpoint;
+    }
 
     @Override
     public void performIO() throws IOException
@@ -46,15 +52,7 @@ public class Neo4JReader extends Neo4JHandler implements IndexIO
 
     public List<Type> entityTypes(Entity entity)
     {
-        try (Neo4jEndpoint endpoint = new Neo4jEndpoint(CONFIG_FILE))
-        {
-            List<String> typesStr = endpoint.searchTypes(entity.getUri());
-            return typesStr.stream().map(Type::new).collect(Collectors.toList());
-        }
-
-        catch (IOException e)
-        {
-            return null;
-        }
+        List<String> typesStr = this.endpoint.searchTypes(entity.getUri());
+        return typesStr.stream().map(Type::new).collect(Collectors.toList());
     }
 }

@@ -1,5 +1,7 @@
 package dk.aau.cs.dkwe.edao.calypso.knowledgegraph.middleware;
 
+import dk.aau.cs.dkwe.edao.calypso.knowledgegraph.connector.Neo4jEndpoint;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -83,5 +85,10 @@ public abstract class Neo4JHandler
     public static boolean restart()
     {
         return runScript(RESTART, HOME);
+    }
+
+    public static Neo4jEndpoint getConnector() throws IOException
+    {
+        return new Neo4jEndpoint(CONFIG_FILE);
     }
 }
