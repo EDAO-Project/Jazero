@@ -49,7 +49,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     private static final String URI_PREFIX = "http://dbpedia.org/";
     private static final String KG_HOST = "http://localhost/";
     private static final int KG_PORT = 8083;
-    private static final String ENTITY_LINKER_HOST = "http://localhost:8082";
+    private static final String ENTITY_LINKER_HOST = "http://localhost/";
     private static final int ENTITY_LINKER_PORT = 8082;
     private static final File DATA_DIR = new File("./");
     private static final File INDEX_DIR = new File(".indexes/");

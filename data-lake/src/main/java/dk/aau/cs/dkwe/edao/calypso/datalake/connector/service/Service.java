@@ -17,7 +17,8 @@ public abstract class Service
 
         if (!testConnection())
         {
-            throw new RuntimeException("Could not connect to service '" + null + "'. Make sure the service is running.");
+            throw new RuntimeException("Could not connect to service '" + this.host + ":" + this.port +
+                "'. Make sure the service is running.");
         }
     }
 
