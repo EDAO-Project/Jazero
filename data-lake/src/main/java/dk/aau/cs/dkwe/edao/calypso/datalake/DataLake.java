@@ -51,7 +51,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     private static final int KG_PORT = 8083;
     private static final String ENTITY_LINKER_HOST = "127.0.0.1";
     private static final int ENTITY_LINKER_PORT = 8082;
-    private static final File DATA_DIR = new File("./");
+    private static final File DATA_DIR = new File(".mappings/");
     private static final File INDEX_DIR = new File(".indexes/");
 
     @Override
@@ -208,6 +208,11 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         if (!INDEX_DIR.isDirectory())
         {
             INDEX_DIR.mkdir();
+        }
+
+        if (!DATA_DIR.mkdir())
+        {
+            DATA_DIR.mkdir();
         }
 
         if (!headers.containsKey("content-type") || !headers.get("content-type").equals(MediaType.APPLICATION_JSON_VALUE))
