@@ -1,5 +1,7 @@
 package dk.aau.cs.dkwe.edao.calypso.datalake.system;
 
+import dk.aau.cs.dkwe.edao.calypso.storagelayer.StorageHandler;
+
 import java.io.*;
 import java.util.Properties;
 
@@ -259,5 +261,35 @@ public class Configuration
     public static String getLogLevel()
     {
         return readProperties().getProperty("LogLevel");
+    }
+
+    public static void setIndexesLoaded(boolean value)
+    {
+        addProperty("IndexesLoaded", String.valueOf(value));
+    }
+
+    public static boolean areIndexesLoaded()
+    {
+        return Boolean.parseBoolean(readProperties().getProperty("IndexesLoaded"));
+    }
+
+    public static void setEmbeddingsLoaded(boolean value)
+    {
+        addProperty("EmbeddingsLoaded", String.valueOf(value));
+    }
+
+    public static boolean areEmbeddingsLoaded()
+    {
+        return Boolean.parseBoolean(readProperties().getProperty("EmbeddingsLoaded"));
+    }
+
+    public static void setStorageType(StorageHandler.StorageType type)
+    {
+        addProperty("StorageType", type.name());
+    }
+
+    public static StorageHandler.StorageType getStorageType()
+    {
+        return StorageHandler.StorageType.valueOf(readProperties().getProperty("StorageType"));
     }
 }

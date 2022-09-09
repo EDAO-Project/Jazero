@@ -1,15 +1,18 @@
 package dk.aau.cs.dkwe.edao.calypso.datalake;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.DBDriverBatch;
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.EmbeddingsFactory;
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.ExplainableCause;
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.service.ELService;
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.service.KGService;
+import dk.aau.cs.dkwe.edao.calypso.datalake.loader.IndexReader;
 import dk.aau.cs.dkwe.edao.calypso.datalake.loader.IndexWriter;
 import dk.aau.cs.dkwe.edao.calypso.datalake.parser.EmbeddingsParser;
+import dk.aau.cs.dkwe.edao.calypso.datalake.search.Result;
+import dk.aau.cs.dkwe.edao.calypso.datalake.search.TableSearch;
+import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityLinking;
+import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTable;
+import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTableLink;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Type;
@@ -38,10 +41,13 @@ import java.util.stream.Stream;
 @RestController
 public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServerFactory>
 {
+    private static EntityLinking linker;
+    private static EntityTable entityTable;
+    private static EntityTableLink tableLink;
     private static final int THREADS = 4;
     private static final String WIKI_PREFIX = "http://www.wikipedia.org/";
     private static final String URI_PREFIX = "http://dbpedia.org/";
-    private static final String KG_HOST = "http://localhost";
+    private static final String KG_HOST = "http://localhost/";
     private static final int KG_PORT = 8083;
     private static final String ENTITY_LINKER_HOST = "http://localhost:8082";
     private static final int ENTITY_LINKER_PORT = 8082;
@@ -56,6 +62,24 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
     public static void main(String[] args)
     {
+        if (Configuration.areIndexesLoaded())
+        {
+            try
+            {
+                IndexReader indexReader = new IndexReader(INDEX_DIR, true, true);
+                indexReader.performIO();
+
+                linker = indexReader.getLinker();
+                entityTable = indexReader.getEntityTable();
+                tableLink = indexReader.getEntityTableLink();
+            }
+
+            catch (IOException e)
+            {
+                throw new RuntimeException("IOException when reading indexes: " + e.getMessage());
+            }
+        }
+
         SpringApplication.run(DataLake.class, args);
     }
 
@@ -70,10 +94,18 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
     /**
      * POST request to query data lake.
-     * @param headers Requires Content-Type: application/json
+     * @param headers Requires:
+     *                Content-Type: application/json
+     *                Top-K: <K VALUE>
      * @param body Query as JSON string on the form:
      *             {
-     *                  "queries": [
+     *                  "top-k": "<INTEGER VALUE>",
+     *                  "use-embeddings": "<BOOLEAN VALUE>",
+     *                  "single-column-per-query-entity": "<BOOLEAN VALUE>",
+     *                  "weighted-jaccard": "<BOOLEAN VALUE>,
+     *                  "adjusted-jaccard": "<BOOLEAN VALUE>",
+     *                  "use-max-similarity-per-column": "<BOOLEAN VALUE>",
+     *                  "query": [
      *                      [<TUPLE_1,1>, <TUPLE_1,2>, ..., <TUPLE_1,n>],
      *                      [<TUPLE_2,1>, <TUPLE_2,2>, ..., <TUPLE_2,n>],
      *                      ...
@@ -85,6 +117,70 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     @PostMapping(value = "/search")
     public ResponseEntity<String> search(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
     {
+        if (!Configuration.areIndexesLoaded())
+        {
+            return ResponseEntity.badRequest().body("Indexes have not been loaded. Use the '/insert' endpoint.");
+        }
+
+        else if (!Configuration.areEmbeddingsLoaded())
+        {
+            return ResponseEntity.badRequest().body("Embeddings have not been loaded. Use the '/embeddings' endpoint.");
+        }
+
+        else if (!headers.containsKey("content-type") || !headers.get("content-type").equals(MediaType.APPLICATION_JSON_VALUE))
+        {
+            return ResponseEntity.badRequest().body("Content-Type header must be " + MediaType.APPLICATION_JSON);
+        }
+
+        else if (!body.containsKey("query"))
+        {
+            return ResponseEntity.badRequest().body("Missing 'query' in JSON body");
+        }
+
+        else if (!body.containsKey("top-k"))
+        {
+            return ResponseEntity.badRequest().body("Missing 'Top-K' in JSON body");
+        }
+
+        else if (!body.containsKey("use-embeddings"))
+        {
+            return ResponseEntity.badRequest().body("Missing 'use-embeddings' in JSON body");
+        }
+
+        else if (!body.containsKey("single-column-per-query-entity"))
+        {
+            return ResponseEntity.badRequest().body("Missing 'single-column-per-query-entity' in JSON body");
+        }
+
+        else if (!body.containsKey("weighted-jaccard"))
+        {
+            return ResponseEntity.badRequest().body("Missing 'weighted-jaccard' in JSON body");
+        }
+
+        else if (!body.containsKey("adjusted-jaccard"))
+        {
+            return ResponseEntity.badRequest().body("Missing 'adjusted-jaccard' in JSON body");
+        }
+
+        else if (!body.containsKey("use-max-similarity-per-column"))
+        {
+            return ResponseEntity.badRequest().body("Missing 'use-max-similarity-per-column' in JSON body");
+        }
+
+        int topK = Integer.parseInt(body.get("top-k"));
+        boolean useEmbeddings = Boolean.parseBoolean(body.get("use-embeddings"));
+        boolean singleColumnPerEntity = Boolean.parseBoolean(body.get("single-column-per-query-entity"));
+        boolean weightedJaccard = Boolean.parseBoolean(body.get("weighted-jaccard"));
+        boolean adjustedJaccard = Boolean.parseBoolean(body.get("adjusted-jaccard"));
+        boolean useMaxSimilarityPerColumn = Boolean.parseBoolean(body.get("use-max-similarity-per-column"));
+        StorageHandler storageHandler = new StorageHandler(Configuration.getStorageType());
+        DBDriverBatch<List<Double>, String> embeddingsDB = EmbeddingsFactory.fromConfig(false);
+        TableSearch search = new TableSearch(storageHandler, linker, entityTable, tableLink, topK, THREADS, useEmbeddings,
+                null, singleColumnPerEntity, weightedJaccard, adjustedJaccard, useMaxSimilarityPerColumn, false,
+                null, embeddingsDB);
+        Result result = search.search(null);
+        embeddingsDB.close();
+
         return ResponseEntity.ok().build();
     }
 
@@ -119,8 +215,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             return ResponseEntity.badRequest().body("Content-Type header must be " + MediaType.APPLICATION_JSON);
         }
 
-        else if (!headers.containsKey("Storage-Type") ||
-                !headers.get("Storage-Type").equals("native") || !headers.get("Storage-Type").equals("HDFS"))
+        else if (!headers.containsKey("storage-type") ||
+                (!headers.get("storage-type").equals("native") && !headers.get("storage-type").equals("HDFS")))
         {
             return ResponseEntity.badRequest().body("Storage-Type header must be either 'native' or 'HDFS'");
         }
@@ -131,7 +227,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         }
 
         File dir = new File(body.get(bodyKey));
-        StorageHandler.StorageType storageType = headers.get("Storage-Type").equals("native") ?
+        StorageHandler.StorageType storageType = headers.get("storage-type").equals("native") ?
                 StorageHandler.StorageType.NATIVE : StorageHandler.StorageType.HDFS;
 
         if (!dir.exists() || !dir.isDirectory())
@@ -174,12 +270,14 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             Logger.logNewLine(Logger.Level.INFO, "Found an approximate total of " + indexWriter.getApproximateEntityMentions() + " unique entity mentions across " + indexWriter.cellsWithLinks() + " cells \n");
             Logger.logNewLine(Logger.Level.INFO, "There are in total " + entityTypes.size() + " unique entity types across all discovered entities.");
             Logger.logNewLine(Logger.Level.INFO, "Indexing took " + indexWriter.elapsedTime() + " ns");
+            Configuration.setIndexesLoaded(true);
 
             return ResponseEntity.ok("Loaded tables: " + indexWriter.loadedTables() + "\nElapsed time: " + indexWriter.elapsedTime() + "ns");
         }
 
         catch (IOException e)
         {
+            Configuration.setIndexesLoaded(false);
             return ResponseEntity.badRequest().body("Error locating JSON table files: " + e.getMessage());
         }
     }
@@ -240,12 +338,15 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 batchSizeCount += bytes > 0 ? batchSize : 0;
             }
 
+            Configuration.setEmbeddingsLoaded(true);
             db.close();
+
             return ResponseEntity.ok("Loaded " + batchSizeCount + " entity embeddings (" + loaded + " mb)");
         }
 
         catch (FileNotFoundException e)
         {
+            Configuration.setEmbeddingsLoaded(false);
             return ResponseEntity.badRequest().body("Embeddings file does not exist");
         }
     }
