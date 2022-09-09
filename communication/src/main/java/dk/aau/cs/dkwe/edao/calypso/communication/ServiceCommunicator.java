@@ -32,6 +32,10 @@ public class ServiceCommunicator implements Communicator
         this.testUrl = new URL(this.url.getProtocol(), this.url.getHost(), this.url.getPort(), "/ping");
     }
 
+    /**
+     * Test connection to Calypso service
+     * @return True if connection has been established and can get a response from a GET request to service
+     */
     @Override
     public boolean testConnection()
     {
@@ -39,7 +43,7 @@ public class ServiceCommunicator implements Communicator
         {
             HttpURLConnection connection = (HttpURLConnection) this.testUrl.openConnection();
             connection.connect();
-            boolean established = connection.getResponseCode() < 400 && "Pong".equals(read(connection.getInputStream()));
+            boolean established = connection.getResponseCode() < 400 && "pong".equals(read(connection.getInputStream()));
             connection.disconnect();
             return established;
         }
