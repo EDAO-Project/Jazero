@@ -62,7 +62,7 @@ public class ServiceCommunicator implements Communicator
      * @throws IOException
      */
     @Override
-    public Object send(Object content, Map<String, String> headers) throws IOException
+    public Response send(Object content, Map<String, String> headers) throws IOException
     {
         HttpURLConnection connection = (HttpURLConnection) this.url.openConnection();
         connection.setRequestMethod("POST");
@@ -79,7 +79,7 @@ public class ServiceCommunicator implements Communicator
 
         Object response = read(connection.getInputStream());
         connection.disconnect();
-        return connection.getResponseCode();
+        return new Response(connection.getResponseCode(), response);
     }
 
     @Override

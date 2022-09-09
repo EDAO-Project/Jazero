@@ -2,6 +2,7 @@ package dk.aau.cs.dkwe.edao.calypso.datalake.connector.service;
 
 import com.google.gson.*;
 import dk.aau.cs.dkwe.edao.calypso.communication.Communicator;
+import dk.aau.cs.dkwe.edao.calypso.communication.Response;
 import dk.aau.cs.dkwe.edao.calypso.communication.ServiceCommunicator;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -39,15 +40,15 @@ public class KGService extends Service
             JsonObject content = new JsonObject();
             content.add("entity", new JsonPrimitive(entity));
 
-            int responseCode = (int) comm.send(content.toString(), headers);
+            Response response = comm.send(content.toString(), headers);
 
-            if (responseCode != HttpStatus.OK.value())
+            if (response.getResponseCode() != HttpStatus.OK.value())
             {
-                throw new RuntimeException("Received response code " + responseCode + " when requesting entity types from EKG Manager");
+                throw new RuntimeException("Received response code " + response.getResponseCode() +
+                        " when requesting entity types from EKG Manager");
             }
 
-            String received = (String) comm.receive();
-            JsonElement parsed = JsonParser.parseString(received);
+            JsonElement parsed = JsonParser.parseString((String) response.getResponse());
             JsonArray array = parsed.getAsJsonObject().getAsJsonArray("types").getAsJsonArray();
             List<String> types = new ArrayList<>();
 
@@ -82,9 +83,9 @@ public class KGService extends Service
 
             JsonObject folder = new JsonObject();
             folder.add("folder", new JsonPrimitive(KG_SERVICE_DIR));
-            int responseCode = (int) comm.send(folder.toString(), headers);
 
-            return responseCode == HttpStatus.OK.value();
+            Response response = comm.send(folder.toString(), headers);
+            return response.getResponseCode() == HttpStatus.OK.value();
         }
 
         catch (MalformedURLException e)
