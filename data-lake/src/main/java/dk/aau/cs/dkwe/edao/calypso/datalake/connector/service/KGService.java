@@ -4,6 +4,7 @@ import com.google.gson.*;
 import dk.aau.cs.dkwe.edao.calypso.communication.Communicator;
 import dk.aau.cs.dkwe.edao.calypso.communication.Response;
 import dk.aau.cs.dkwe.edao.calypso.communication.ServiceCommunicator;
+import org.apache.commons.io.FileUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 
@@ -75,7 +76,7 @@ public class KGService extends Service
     {
         try
         {
-            Files.move(dir.toPath(), new File(KG_SERVICE_DIR).toPath(), StandardCopyOption.REPLACE_EXISTING);
+            FileUtils.moveDirectory(dir, new File(KG_SERVICE_DIR));
 
             Communicator comm = ServiceCommunicator.init(getHost(), getPort(), "insert-links");
             Map<String, String> headers = new HashMap<>();
