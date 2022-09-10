@@ -33,7 +33,7 @@ Now, Calypso is accessible on localhost or on the machine's IP address.
 Alternatively, but not recommended, you can build each service manually and run the built .jar file.
 This requires having Java 17 install and Maven.
 
-First, enter the `communication` module to install it as a dependency with `mvn clean install`.
+First, enter the `communication` module to install it as a dependency with `mvn clean install`. Now, do the same with the `storage` module.
 Enter each of the folders `data-lake`, `entity-linker`, and `knowledge graph` and build the executables with `./mvnw clean package`.
 You can run the following script to do all of this in one go:
 
