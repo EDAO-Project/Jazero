@@ -95,7 +95,7 @@ public class Neo4JWriter extends Neo4JHandler implements IndexIO
             throw new IOException("Missing script to insert table links");
         }
 
-        else if (links.isDirectory())
+        else if (!links.isDirectory())
         {
             throw new IOException("Folder of table links could not be found");
         }
@@ -114,7 +114,10 @@ public class Neo4JWriter extends Neo4JHandler implements IndexIO
                 throw new IOException("Table links insertion did not complete: exit code " + exitCode);
             }
 
-            FileUtils.moveDirectory(links, kgDir);
+            else if (FileUtil.move(links, kgDir) != 0)
+            {
+                throw new IOException("Failed moving mappings to KG folder");
+            }
         }
 
         catch (InterruptedException e)
