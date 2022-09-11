@@ -66,6 +66,6 @@ public class FileUtilTest
         assertEquals("Copy operation of directory did not return exit code 0",
                 0, FileUtil.copy(this.testDir1, this.testDir2));
         assertTrue("Directory was not copied",
-                new File(this.testDir2.toString() + "/" + this.testDir1).exists());
+                new File(this.testDir2.toString() + "/" + this.testDir1.getName()).exists());
     }
 }
