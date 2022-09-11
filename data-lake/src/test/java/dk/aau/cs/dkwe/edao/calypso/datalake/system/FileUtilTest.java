@@ -25,12 +25,10 @@ public class FileUtilTest
     }
 
     @AfterEach
-    public  void tearDown()
+    public  void tearDown() throws IOException
     {
-        this.testFile.delete();
-        this.testDir1.delete();
-        this.testDir2.delete();
-        new File("test/").delete();
+        Runtime rt = Runtime.getRuntime();
+        rt.exec("rm -rf test");
     }
 
     @Test
@@ -38,8 +36,10 @@ public class FileUtilTest
     {
         assertEquals("Move operation of file did not return exit code 0",
                 0, FileUtil.move(this.testFile, this.testDir2));
-        assertTrue("File was not moved",
-                new File(this.testDir2.toString() + "/" + this.testFile.getName()).exists());
+
+        File moved = new File(this.testDir2.toString() + "/" + this.testFile.getName());
+        assertTrue("File was not moved", moved.exists());
+        moved.delete();
     }
 
     @Test
@@ -47,8 +47,10 @@ public class FileUtilTest
     {
         assertEquals("Move operation of directory did not return exit code 0",
                 0, FileUtil.move(this.testDir1, this.testDir2));
-        assertTrue("Directory was not moved",
-                new File(this.testDir2.toString() + "/" + this.testDir1.getName()).isDirectory());
+
+        File moved = new File(this.testDir2.toString() + "/" + this.testDir1.getName());
+        assertTrue("Directory was not moved", moved.isDirectory());
+        moved.delete();
     }
 
     @Test
@@ -56,8 +58,10 @@ public class FileUtilTest
     {
         assertEquals("Copy operation of file did not return exit code 0",
                 0, FileUtil.copy(this.testFile, this.testDir2));
-        assertTrue("File was not copied",
-                new File(this.testDir2.toString() + "/" + this.testFile.getName()).exists());
+
+        File copied = new File(this.testDir2.toString() + "/" + this.testFile.getName());
+        assertTrue("File was not copied", copied.exists());
+        copied.delete();
     }
 
     @Test
@@ -65,8 +69,10 @@ public class FileUtilTest
     {
         assertEquals("Copy operation of directory did not return exit code 0",
                 0, FileUtil.copy(this.testDir1, this.testDir2));
-        assertTrue("Directory was not copied",
-                new File(this.testDir2.toString() + "/" + this.testDir1.getName()).exists());
+
+        File copied = new File(this.testDir2.toString() + "/" + this.testDir1.getName());
+        assertTrue("Directory was not copied", copied.exists());
+        copied.delete();
     }
 
     @Test
