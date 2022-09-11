@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -274,10 +275,12 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
             Logger.logNewLine(Logger.Level.INFO, "Found an approximate total of " + indexWriter.getApproximateEntityMentions() + " unique entity mentions across " + indexWriter.cellsWithLinks() + " cells \n");
             Logger.logNewLine(Logger.Level.INFO, "There are in total " + entityTypes.size() + " unique entity types across all discovered entities.");
-            Logger.logNewLine(Logger.Level.INFO, "Indexing took " + indexWriter.elapsedTime() + " ns");
+            Logger.logNewLine(Logger.Level.INFO, "Indexing took " +
+                    TimeUnit.SECONDS.convert(indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s");
             Configuration.setIndexesLoaded(true);
 
-            return ResponseEntity.ok("Loaded tables: " + indexWriter.loadedTables() + "\nElapsed time: " + indexWriter.elapsedTime() + "ns");
+            return ResponseEntity.ok("Loaded tables: " + indexWriter.loadedTables() + "\nElapsed time: " +
+                    TimeUnit.SECONDS.convert(indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s");
         }
 
         catch (IOException e)
