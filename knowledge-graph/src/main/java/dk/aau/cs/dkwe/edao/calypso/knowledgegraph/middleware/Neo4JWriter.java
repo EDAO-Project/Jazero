@@ -1,7 +1,9 @@
 package dk.aau.cs.dkwe.edao.calypso.knowledgegraph.middleware;
 
 import dk.aau.cs.dkwe.edao.calypso.datalake.loader.IndexIO;
+import dk.aau.cs.dkwe.edao.calypso.datalake.system.FileUtil;
 import dk.aau.cs.dkwe.edao.calypso.knowledgegraph.connector.Neo4jEndpoint;
+import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -81,6 +83,8 @@ public class Neo4JWriter extends Neo4JHandler implements IndexIO
      */
     public static void insertTableToEntities(String linksFolder) throws IOException
     {
+        File links = new File(linksFolder);
+
         if (!Neo4JHandler.isInstalled())
         {
             throw new IOException("Neo4J has not been installed");
@@ -91,35 +95,26 @@ public class Neo4JWriter extends Neo4JHandler implements IndexIO
             throw new IOException("Missing script to insert table links");
         }
 
-        else if (!new File(linksFolder).isDirectory())
+        else if (links.isDirectory())
         {
             throw new IOException("Folder of table links could not be found");
         }
 
         try
         {
+            File kgDir = new File(Neo4JHandler.KG_DIR);
+            kgDir.mkdirs();
+
             int exitCode;
             Runtime rt = Runtime.getRuntime();
-            Process process = rt.exec("mkdir -p " + Neo4JHandler.KG_DIR);
-
-            if ((exitCode = process.waitFor()) != 0)
-            {
-                throw new IOException("Could not create directory to save KG files: exit code " + exitCode);
-            }
-
-            process = rt.exec("./" + INSERT_LINKS_SCRIPT + " " + Neo4JHandler.HOME + " " + linksFolder);
+            Process process = rt.exec("./" + INSERT_LINKS_SCRIPT + " " + Neo4JHandler.HOME + " " + linksFolder);
 
             if ((exitCode = process.waitFor()) != 0)
             {
                 throw new IOException("Table links insertion did not complete: exit code " + exitCode);
             }
 
-            Process processCopy = rt.exec("mv " + linksFolder + " " + KG_DIR);
-
-            if ((exitCode = processCopy.waitFor()) != 0)
-            {
-                throw new IOException("Saving table links file failed: exit code " + exitCode);
-            }
+            FileUtils.moveDirectory(links, kgDir);
         }
 
         catch (InterruptedException e)

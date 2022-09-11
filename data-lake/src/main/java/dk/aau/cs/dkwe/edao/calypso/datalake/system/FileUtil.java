@@ -5,6 +5,22 @@ import java.io.IOException;
 
 public final class FileUtil
 {
+    private static int runCommand(String command)
+    {
+        try
+        {
+            Runtime rt = Runtime.getRuntime();
+            Process proc = rt.exec(command);
+
+            return proc.waitFor();
+        }
+
+        catch (IOException | InterruptedException e)
+        {
+            return -1;
+        }
+    }
+
     /**
      * Copy file or directory to target directory
      * @param src Source directory or file
@@ -18,19 +34,8 @@ public final class FileUtil
             return -1;
         }
 
-        try
-        {
-            String command = "cp" + (src.isDirectory() ? " -r " : " ") + src.getAbsolutePath() + " " + tar.getAbsolutePath();
-            Runtime rt = Runtime.getRuntime();
-            Process proc = rt.exec(command);
-
-            return proc.waitFor();
-        }
-
-        catch (IOException | InterruptedException e)
-        {
-            return -1;
-        }
+        String command = "cp" + (src.isDirectory() ? " -r " : " ") + src.getAbsolutePath() + " " + tar.getAbsolutePath();
+        return runCommand(command);
     }
 
     public static int move(File src, File tar)
@@ -40,19 +45,8 @@ public final class FileUtil
             return -1;
         }
 
-        try
-        {
-            String command = "mv " + src.getAbsolutePath() + " " + tar.getAbsolutePath();
-            Runtime rt = Runtime.getRuntime();
-            Process proc = rt.exec(command);
-
-            return proc.waitFor();
-        }
-
-        catch (IOException | InterruptedException e)
-        {
-            return -1;
-        }
+        String command = "mv " + src.getAbsolutePath() + " " + tar.getAbsolutePath();
+        return runCommand(command);
     }
 
     /**
@@ -67,18 +61,7 @@ public final class FileUtil
             return -1;
         }
 
-        try
-        {
-            String command = "rm -rf " + f.getAbsolutePath();
-            Runtime rt = Runtime.getRuntime();
-            Process proc = rt.exec(command);
-
-            return proc.waitFor();
-        }
-
-        catch (IOException | InterruptedException e)
-        {
-            return -1;
-        }
+        String command = "rm -rf " + f.getAbsolutePath();
+        return runCommand(command);
     }
 }
