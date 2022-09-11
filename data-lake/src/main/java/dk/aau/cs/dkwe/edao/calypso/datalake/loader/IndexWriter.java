@@ -269,7 +269,7 @@ public class IndexWriter implements IndexIO
 
     private void writeStats()
     {
-        File statDir = new File(this.dataDir + "/" + STATS_DIR);
+        File statDir = new File(this.indexDir + "/" + STATS_DIR);
 
         if (!statDir.exists())
             statDir.mkdir();

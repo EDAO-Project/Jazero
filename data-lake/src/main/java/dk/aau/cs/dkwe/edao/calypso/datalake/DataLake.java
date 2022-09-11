@@ -260,8 +260,6 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 Logger.logNewLine(Logger.Level.ERROR, "Failed inserting generated TTL mapping files into KG service");
             }
 
-            Logger.logNewLine(Logger.Level.INFO, "Elapsed time: " + indexWriter.elapsedTime() / (1e9) + " seconds\n");
-
             Set<Type> entityTypes = new HashSet<>();
             Iterator<Id> idIter = indexWriter.getEntityLinker().uriIds();
 
