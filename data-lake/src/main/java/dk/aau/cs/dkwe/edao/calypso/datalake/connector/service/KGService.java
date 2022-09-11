@@ -20,8 +20,6 @@ import java.util.Map;
  */
 public class KGService extends Service
 {
-    private static final String KG_SERVICE_DIR = "/home/knowledge-graph/neo4j";
-
     public KGService(String host, int port)
     {
         super(host, port);
@@ -78,7 +76,7 @@ public class KGService extends Service
             headers.put("Content-Type", MediaType.APPLICATION_JSON_VALUE);
 
             JsonObject folder = new JsonObject();
-            folder.add("folder", new JsonPrimitive(KG_SERVICE_DIR));
+            folder.add("folder", new JsonPrimitive(dir.getAbsolutePath()));
 
             Response response = comm.send(folder.toString(), headers);
             return response.getResponseCode() == HttpStatus.OK.value();
