@@ -69,6 +69,8 @@ public class KGService extends Service
 
     public boolean insertLinks(File dir)
     {
+        String responseMessage = null;
+
         try
         {
             Communicator comm = ServiceCommunicator.init(getHost(), getPort(), "insert-links");
@@ -79,6 +81,8 @@ public class KGService extends Service
             folder.add("folder", new JsonPrimitive(dir.getAbsolutePath()));
 
             Response response = comm.send(folder.toString(), headers);
+            responseMessage = (String) response.getResponse();
+
             return response.getResponseCode() == HttpStatus.OK.value();
         }
 
@@ -89,7 +93,8 @@ public class KGService extends Service
 
         catch (IOException e)
         {
-            throw new RuntimeException("IOException when sending POST request to insert table links: " + e.getMessage());
+            throw new RuntimeException("IOException when sending POST request to insert table links: " + e.getMessage() +
+                    " - Response: " + responseMessage);
         }
     }
 }
