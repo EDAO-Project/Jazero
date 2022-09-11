@@ -42,7 +42,34 @@ public final class FileUtil
 
         try
         {
-            String command = "mv " + src.getAbsolutePath() + " " + tar.getAbsolutePath();
+            String command = "mv -rf" + src.getAbsolutePath() + " " + tar.getAbsolutePath();
+            Runtime rt = Runtime.getRuntime();
+            Process proc = rt.exec(command);
+
+            return proc.waitFor();
+        }
+
+        catch (IOException | InterruptedException e)
+        {
+            return -1;
+        }
+    }
+
+    /**
+     * Forcibly removes file or directory
+     * @param f File or directory to remove
+     * @return Exit code
+     */
+    public static int remove(File f)
+    {
+        if (!f.exists())
+        {
+            return -1;
+        }
+
+        try
+        {
+            String command = "rm -rf " + f.getAbsolutePath();
             Runtime rt = Runtime.getRuntime();
             Process proc = rt.exec(command);
 

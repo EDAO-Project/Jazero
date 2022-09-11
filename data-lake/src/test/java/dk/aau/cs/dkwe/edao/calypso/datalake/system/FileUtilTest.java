@@ -68,4 +68,20 @@ public class FileUtilTest
         assertTrue("Directory was not copied",
                 new File(this.testDir2.toString() + "/" + this.testDir1.getName()).exists());
     }
+
+    @Test
+    public void testRemoveFile()
+    {
+        assertEquals("Remove operation of file did not return exit code 0",
+                0, FileUtil.remove(this.testFile));
+        assertTrue("File was not removed", !this.testFile.exists());
+    }
+
+    @Test
+    public void testRemoveDir()
+    {
+        assertEquals("Remove operation of directory did not return exit code 0",
+                0, FileUtil.remove(this.testDir1));
+        assertTrue("Directory was not removed", !this.testDir1.exists());
+    }
 }
