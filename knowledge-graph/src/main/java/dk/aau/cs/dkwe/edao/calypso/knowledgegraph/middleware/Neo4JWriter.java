@@ -102,6 +102,13 @@ public class Neo4JWriter extends Neo4JHandler implements IndexIO
 
         try
         {
+            File preExisting = new File(Neo4JHandler.KG_DIR + links.getName());
+
+            if (preExisting.exists())
+            {
+                preExisting.delete();
+            }
+
             File kgDir = new File(Neo4JHandler.KG_DIR);
             kgDir.mkdirs();
 
