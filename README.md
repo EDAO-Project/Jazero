@@ -10,13 +10,11 @@ docker build -f kg.dockerfile -t neo4j .
 docker run --rm -v ${PWD}/knowledge-graph/neo4j:/srv neo4j bash -c "./install.sh /srv; ./import.sh <KG> neo4j-server; ./stop.sh neo4j-server"
 ```
 
-Substitute `<KG>` with the knowledge graph file name. Now, the knowledge graph will be loaded into `knowledge-graph/neo4j/neo4j-server`.
-If you substituted `<KG>` with a folder, pass directory to the folder where knowledge-graph/neo4j/ is the root directory.
+Substitute `<KG>` with the knowledge graph file name or folder of graph files. This path is from the `knowledge-graph/neo4j/` as root. Now, the knowledge graph will be loaded into `knowledge-graph/neo4j/neo4j-server`.
+If you substituted `<KG>` with a folder, pass directory to the folder where `knowledge-graph/neo4j/` directory is the root directory.
 
-### Choosing and Setting Up Storage Layer
-A storage layer is needed to store the table corpus.
-Two options to choose between include Hadoop Distributed File System (HDFS) and Google File System (GFS).
-Alternatively, the tables can also be stored natively on disk.
+### Loading Calypso
+Tables in Calypso are loaded and stored either natively on disk or in HDFS.
 
 ## Starting Calypso
 Setting up and running Calypso is very simple.

@@ -278,7 +278,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             Configuration.setIndexesLoaded(true);
 
             return ResponseEntity.ok("Loaded tables: " + indexWriter.loadedTables() + "\nElapsed time: " +
-                    TimeUnit.SECONDS.convert(indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s");
+                    TimeUnit.SECONDS.convert(System.nanoTime() - indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s");
         }
 
         catch (IOException e)
