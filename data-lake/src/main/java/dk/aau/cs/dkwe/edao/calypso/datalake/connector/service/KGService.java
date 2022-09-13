@@ -92,4 +92,23 @@ public class KGService extends Service
             throw new RuntimeException("IOException when sending POST request to insert table links: " + e.getMessage());
         }
     }
+
+    public long size()
+    {
+        try
+        {
+            Communicator comm = ServiceCommunicator.init(getHost(), getPort(), "size");
+            return Long.parseLong((String) comm.receive());
+        }
+
+        catch (MalformedURLException e)
+        {
+            throw new RuntimeException("URL for EKG Manager to get EKG size is malformed: " + e.getMessage());
+        }
+
+        catch (IOException e)
+        {
+            throw new RuntimeException("IOException when sending GET request to get size of EKG: " + e.getMessage());
+        }
+    }
 }

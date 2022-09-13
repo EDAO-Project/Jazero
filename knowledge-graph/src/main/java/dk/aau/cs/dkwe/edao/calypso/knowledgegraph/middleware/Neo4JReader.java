@@ -55,4 +55,9 @@ public class Neo4JReader extends Neo4JHandler implements IndexIO
         List<String> typesStr = this.endpoint.searchTypes(entity.getUri());
         return typesStr.stream().map(Type::new).collect(Collectors.toList());
     }
+
+    public long size()
+    {
+        return this.endpoint.getNumNodes();
+    }
 }

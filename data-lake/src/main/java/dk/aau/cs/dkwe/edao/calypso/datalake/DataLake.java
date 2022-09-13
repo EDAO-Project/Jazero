@@ -243,8 +243,15 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
         try
         {
+            long totalTime = System.nanoTime();
             KGService kgService = new KGService(KG_HOST, KG_PORT);
             ELService elService = new ELService(ENTITY_LINKER_HOST, ENTITY_LINKER_PORT);
+
+            if (kgService.size() < 1)
+            {
+                Logger.logNewLine(Logger.Level.ERROR, "KG is empty. Make sure to load the KG according to README. Continuing...");
+            }
+
             Stream<Path> fileStream = Files.find(dir.toPath(), Integer.MAX_VALUE,
                     (filePath, fileAttr) -> fileAttr.isRegularFile() && filePath.getFileName().toString().endsWith(".json"));
             List<Path> filePaths = fileStream.collect(Collectors.toList());
@@ -271,14 +278,16 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                     entityTypes.addAll(entity.getTypes());
             }
 
+            totalTime = System.nanoTime() - totalTime;
             Logger.logNewLine(Logger.Level.INFO, "Found an approximate total of " + indexWriter.getApproximateEntityMentions() + " unique entity mentions across " + indexWriter.cellsWithLinks() + " cells \n");
             Logger.logNewLine(Logger.Level.INFO, "There are in total " + entityTypes.size() + " unique entity types across all discovered entities.");
             Logger.logNewLine(Logger.Level.INFO, "Indexing took " +
                     TimeUnit.SECONDS.convert(indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s");
             Configuration.setIndexesLoaded(true);
 
-            return ResponseEntity.ok("Loaded tables: " + indexWriter.loadedTables() + "\nElapsed time: " +
-                    TimeUnit.SECONDS.convert(System.nanoTime() - indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s");
+            return ResponseEntity.ok("Loaded tables: " + indexWriter.loadedTables() + "\nIndex time: " +
+                    TimeUnit.SECONDS.convert(indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s\nTotal elapsed time: " +
+                    TimeUnit.SECONDS.convert(totalTime, TimeUnit.NANOSECONDS));
         }
 
         catch (IOException e)

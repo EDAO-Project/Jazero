@@ -183,4 +183,16 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
             return ResponseEntity.internalServerError().body("Neo4J error: " + e.getMessage());
         }
     }
+
+    @GetMapping("/size")
+    public synchronized ResponseEntity<String> size(@RequestHeader Map<String, String> headers)
+    {
+        if (!Neo4JHandler.isInstalled())
+        {
+            return ResponseEntity.internalServerError().body("Neo4J is not installed");
+        }
+
+        Neo4JReader reader = new Neo4JReader(endpoint);
+        return ResponseEntity.ok(String.valueOf(reader.size()));
+    }
 }

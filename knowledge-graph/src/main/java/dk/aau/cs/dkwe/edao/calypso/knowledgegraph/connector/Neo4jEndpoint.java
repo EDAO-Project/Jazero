@@ -125,7 +125,7 @@ public class Neo4jEndpoint implements AutoCloseable {
                 List<String> entity_types = new ArrayList<>();
 
                 // Get all entity uri given a wikipedia link
-                Result result = tx.run("MATCH (a:Resource) -[l:rdf__type]-> (b:Resource)" + "\n"
+                Result result = tx.run("MATCH (a:Resource)-[l:rdf__type]->(b:Resource)" + "\n"
                         + "WHERE a.uri in [$entity]" + "\n"
                         + "RETURN b.uri as mention", params);
 

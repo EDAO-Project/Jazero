@@ -3,6 +3,8 @@
 # Populate the neo4j database for the www18 dataset #
 #####################################################
 
+set -e
+
 neo4j=$1
 folder=$2
 
