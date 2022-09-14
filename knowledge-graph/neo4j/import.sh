@@ -2,8 +2,8 @@
 
 set -e
 
-file="${PWD}/$1"
-neo4j="${PWD}/$2"
+input="${PWD}/input"
+neo4j="${PWD}/$1"
 
 export NEO4J_HOME=$neo4j
 export NEO4J_IMPORT=${NEO4J_HOME}"/import"
@@ -16,17 +16,11 @@ rm -rf ${NEO4J_IMPORT}/*
 FILE_MOVED="kg.ttl"
 touch ${NEO4J_IMPORT}/${FILE_CLEAN}
 
-if [[ -d ${file} ]]
-then
-  for f in ${file}/* ; \
-  do
-    FILE_CLEAN="$(basename "${f}")"
-    iconv -f utf-8 -t ascii -c "${f}" | grep -E '^<(https?|ftp|file)://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[A-Za-z0-9\+&@#/%?=~_|]>\W<' | grep -Fv 'xn--b1aew' > ${NEO4J_IMPORT}/${FILE_CLEAN}
-  done
-else
-  FILE_CLEAN="$(basename ${file})"
-  iconv -f utf-8 -t ascii -c "${file}" | grep -E '^<(https?|ftp|file)://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[A-Za-z0-9\+&@#/%?=~_|]>\W<' | grep -Fv 'xn--b1aew' >> ${NEO4J_IMPORT}/${FILE_CLEAN}
-fi
+for f in ${input}/* ; \
+do
+  FILE_CLEAN="$(basename "${f}")"
+  iconv -f utf-8 -t ascii -c "${f}" | grep -E '^<(https?|ftp|file)://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[A-Za-z0-9\+&@#/%?=~_|]>\W<' | grep -Fv 'xn--b1aew' > ${NEO4J_IMPORT}/${FILE_CLEAN}
+done
 
 mkdir -p kg
 
