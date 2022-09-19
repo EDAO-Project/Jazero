@@ -1,5 +1,8 @@
 package dk.aau.cs.dkwe.edao.calypso.datalake;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.DBDriverBatch;
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.EmbeddingsFactory;
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.ExplainableCause;
@@ -14,6 +17,7 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTableLink;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Id;
+import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Pair;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Type;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Configuration;
@@ -113,7 +117,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      *                      [<TUPLE_n,1>, <TUPLE_n,2>, ..., <TUPLE_n,n>]
      *                  ]
      *             }
-     * @return JSON array of found tables
+     * @return JSON array of found tables. Each element is a pair of table ID and score.
      */
     @PostMapping(value = "/search")
     public ResponseEntity<String> search(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
@@ -182,7 +186,24 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         Result result = search.search(null);
         embeddingsDB.close();
 
-        return ResponseEntity.ok().build();
+        JsonObject object = new JsonObject();
+        JsonArray array = new JsonArray(result.getK());
+        Iterator<Pair<File, Double>> scores = result.getResults();
+
+        while (scores.hasNext())
+        {
+            Pair<File, Double> score = scores.next();
+            JsonObject jsonScore = new JsonObject();
+            jsonScore.add("table", new JsonPrimitive(score.getFirst().getName()));
+            jsonScore.add("score", new JsonPrimitive(score.getSecond()));
+            array.add(jsonScore);
+        }
+
+        object.add("scores", array);
+        return ResponseEntity
+                .ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(object.toString());
     }
 
     /**
