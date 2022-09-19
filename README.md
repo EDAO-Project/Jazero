@@ -3,11 +3,18 @@ Welcome to Calypso: A semantic data lake microservice architecture for semantica
 
 ## Setup
 ### Loading Knowledge Graph
-From the root directory of this repository, place a knowledge graph turtle file (or a folder of such files) in knowledge-graph/neo4j/ and run the following commands to install Neo4J in Docker and insert the knowledge graph into a dockerized Neo4J instance
+From the root directory of this repository, create a folder `input` in in `knowledge-graph/neo4j/`
+
+```bash
+mkdir knowledge-graph/neo4j/input
+```
+
+Place all your knowledge graph turtle files in this new folder `input`.
+Run the following commands to install Neo4J in Docker and insert the knowledge graph into a dockerized Neo4J instance
 
 ```bash
 docker build -f kg.dockerfile -t neo4j .
-docker run --rm -v ${PWD}/knowledge-graph/neo4j:/srv neo4j bash -c "./install.sh /srv; ./import.sh <KG> neo4j-server; ./stop.sh neo4j-server"
+docker run --rm -v ${PWD}/knowledge-graph/neo4j:/srv neo4j bash -c "./install.sh /srv; ./import.sh neo4j-server; ./stop.sh neo4j-server"
 ```
 
 Substitute `<KG>` with the knowledge graph file name or folder of graph files. This path is from the `knowledge-graph/neo4j/` as root. Now, the knowledge graph will be loaded into `knowledge-graph/neo4j/neo4j-server`.
