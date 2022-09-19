@@ -20,6 +20,8 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Pair;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Type;
+import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.DynamicTable;
+import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.Table;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Logger;
 import dk.aau.cs.dkwe.edao.calypso.storagelayer.StorageHandler;
@@ -101,22 +103,20 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      * POST request to query data lake.
      * @param headers Requires:
      *                Content-Type: application/json
-     *                Top-K: <K VALUE>
      * @param body Query as JSON string on the form:
      *             {
      *                  "top-k": "<INTEGER VALUE>",
      *                  "use-embeddings": "<BOOLEAN VALUE>",
      *                  "single-column-per-query-entity": "<BOOLEAN VALUE>",
-     *                  "weighted-jaccard": "<BOOLEAN VALUE>,
-     *                  "adjusted-jaccard": "<BOOLEAN VALUE>",
      *                  "use-max-similarity-per-column": "<BOOLEAN VALUE>",
-     *                  "query": [
-     *                      [<TUPLE_1,1>, <TUPLE_1,2>, ..., <TUPLE_1,n>],
-     *                      [<TUPLE_2,1>, <TUPLE_2,2>, ..., <TUPLE_2,n>],
-     *                      ...
-     *                      [<TUPLE_n,1>, <TUPLE_n,2>, ..., <TUPLE_n,n>]
-     *                  ]
+     *                  ["weighted-jaccard": "<BOOLEAN VALUE>,]
+     *                  ["adjusted-jaccard": "<BOOLEAN VALUE>",]
+     *                  ["cosine-function": "NORM_COS|ABS_COS|ANG_COS"]
+     *                  "query": "<QUERY STRING>"
      *             }
+     *
+     *             The <QUERY STRING> is a list of tuples, each tuple separated by a hash tag (#),
+     *             and each tuple element is separated by a diamond (<>).
      * @return JSON array of found tables. Each element is a pair of table ID and score.
      */
     @PostMapping(value = "/search")
@@ -157,33 +157,53 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             return ResponseEntity.badRequest().body("Missing 'single-column-per-query-entity' in JSON body");
         }
 
-        else if (!body.containsKey("weighted-jaccard"))
-        {
-            return ResponseEntity.badRequest().body("Missing 'weighted-jaccard' in JSON body");
-        }
-
-        else if (!body.containsKey("adjusted-jaccard"))
-        {
-            return ResponseEntity.badRequest().body("Missing 'adjusted-jaccard' in JSON body");
-        }
-
         else if (!body.containsKey("use-max-similarity-per-column"))
         {
             return ResponseEntity.badRequest().body("Missing 'use-max-similarity-per-column' in JSON body");
         }
 
+        else if (!body.containsKey("similarity-measure"))
+        {
+            return ResponseEntity.badRequest().body("Missing 'similarity-measure' in JSON body");
+        }
+
         int topK = Integer.parseInt(body.get("top-k"));
         boolean useEmbeddings = Boolean.parseBoolean(body.get("use-embeddings"));
         boolean singleColumnPerEntity = Boolean.parseBoolean(body.get("single-column-per-query-entity"));
+        boolean useMaxSimilarityPerColumn = Boolean.parseBoolean(body.get("use-max-similarity-per-column"));
+        TableSearch.SimilarityMeasure similarityMeasure = TableSearch.SimilarityMeasure.valueOf(body.get("similarity-measure"));
+
+        if (useEmbeddings && !body.containsKey("cosine-function"))
+        {
+            return ResponseEntity.badRequest().body("Missing cosine similarity function when searching using embeddings");
+        }
+
+        else if (!useEmbeddings)
+        {
+            if (!body.containsKey("weighted-jaccard") || !body.containsKey("adjusted-jaccard"))
+            {
+                return ResponseEntity.badRequest().body("Missing 'weighted-jaccard' or 'adjusted-jaccard' when searching using entity types");
+            }
+        }
+
         boolean weightedJaccard = Boolean.parseBoolean(body.get("weighted-jaccard"));
         boolean adjustedJaccard = Boolean.parseBoolean(body.get("adjusted-jaccard"));
-        boolean useMaxSimilarityPerColumn = Boolean.parseBoolean(body.get("use-max-similarity-per-column"));
+        TableSearch.CosineSimilarityFunction cosineFunction = TableSearch.CosineSimilarityFunction.valueOf(body.get("cosine-function"));
+        Table<String> query = new DynamicTable<>();
+        String[] queryStrTuples = body.get("query").split("#");
         StorageHandler storageHandler = new StorageHandler(Configuration.getStorageType());
         DBDriverBatch<List<Double>, String> embeddingsDB = EmbeddingsFactory.fromConfig(false);
         TableSearch search = new TableSearch(storageHandler, linker, entityTable, tableLink, topK, THREADS, useEmbeddings,
-                null, singleColumnPerEntity, weightedJaccard, adjustedJaccard, useMaxSimilarityPerColumn, false,
-                null, embeddingsDB);
-        Result result = search.search(null);
+                cosineFunction, singleColumnPerEntity, weightedJaccard, adjustedJaccard, useMaxSimilarityPerColumn,
+                false, similarityMeasure, embeddingsDB);
+
+        for (String tuple : queryStrTuples)
+        {
+            String[] entities = tuple.split("<>");
+            query.addRow(new Table.Row<>(entities));
+        }
+
+        Result result = search.search(query);
         embeddingsDB.close();
 
         JsonObject object = new JsonObject();
