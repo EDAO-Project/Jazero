@@ -171,11 +171,18 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         boolean useEmbeddings = Boolean.parseBoolean(body.get("use-embeddings"));
         boolean singleColumnPerEntity = Boolean.parseBoolean(body.get("single-column-per-query-entity"));
         boolean useMaxSimilarityPerColumn = Boolean.parseBoolean(body.get("use-max-similarity-per-column"));
+        boolean weightedJaccard = false, adjustedJaccard = false;
         TableSearch.SimilarityMeasure similarityMeasure = TableSearch.SimilarityMeasure.valueOf(body.get("similarity-measure"));
+        TableSearch.CosineSimilarityFunction cosineFunction = TableSearch.CosineSimilarityFunction.ABS_COS;
 
-        if (useEmbeddings && !body.containsKey("cosine-function"))
+        if (useEmbeddings)
         {
-            return ResponseEntity.badRequest().body("Missing cosine similarity function when searching using embeddings");
+            if (!body.containsKey("cosine-function"))
+            {
+                return ResponseEntity.badRequest().body("Missing cosine similarity function when searching using embeddings");
+            }
+
+            cosineFunction = TableSearch.CosineSimilarityFunction.valueOf(body.get("cosine-function"));
         }
 
         else if (!useEmbeddings)
@@ -184,11 +191,11 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             {
                 return ResponseEntity.badRequest().body("Missing 'weighted-jaccard' or 'adjusted-jaccard' when searching using entity types");
             }
+
+            weightedJaccard = Boolean.parseBoolean(body.get("weighted-jaccard"));
+            adjustedJaccard = Boolean.parseBoolean(body.get("adjusted-jaccard"));
         }
 
-        boolean weightedJaccard = Boolean.parseBoolean(body.get("weighted-jaccard"));
-        boolean adjustedJaccard = Boolean.parseBoolean(body.get("adjusted-jaccard"));
-        TableSearch.CosineSimilarityFunction cosineFunction = TableSearch.CosineSimilarityFunction.valueOf(body.get("cosine-function"));
         Table<String> query = new DynamicTable<>();
         String[] queryStrTuples = body.get("query").split("#");
         StorageHandler storageHandler = new StorageHandler(Configuration.getStorageType());
@@ -276,6 +283,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         File dir = new File(body.get(bodyKey));
         StorageHandler.StorageType storageType = headers.get("storage-type").equals("native") ?
                 StorageHandler.StorageType.NATIVE : StorageHandler.StorageType.HDFS;
+        Configuration.setStorageType(storageType);
 
         if (!dir.exists() || !dir.isDirectory())
         {
