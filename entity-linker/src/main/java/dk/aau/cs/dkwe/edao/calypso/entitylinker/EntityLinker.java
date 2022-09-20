@@ -44,6 +44,6 @@ public class EntityLinker implements WebServerFactoryCustomizer<ConfigurableWebS
     @PostMapping("/link")
     public ResponseEntity<String> link(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
     {
-        return ResponseEntity.ok("https://dbpedia.org/page/Barack_Obama");
+        return ResponseEntity.ok("http://dbpedia.org/page/Barack_Obama");
     }
 }
