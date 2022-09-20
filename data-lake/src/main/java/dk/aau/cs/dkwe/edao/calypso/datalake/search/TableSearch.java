@@ -9,6 +9,7 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTableLink;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Pair;
+import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Type;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.DynamicTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.Table;
@@ -557,7 +558,12 @@ public class TableSearch extends AbstractSearch
             for (int column = 0; column < rowSize; column++)
             {
                 Id entityId = getLinker().uriLookup(query.getRow(queryRow).get(column));
-                curRowIDFScores.add(getEntityTable().find(entityId).getIDF());
+                Entity entity = getEntityTable().find(entityId);
+
+                if (entity != null)
+                {
+                    curRowIDFScores.add(entity.getIDF());
+                }
             }
 
             queryRowToWeightVector.put(queryRow, Utils.normalizeVector(curRowIDFScores));

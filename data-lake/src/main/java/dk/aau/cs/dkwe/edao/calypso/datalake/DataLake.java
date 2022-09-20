@@ -336,7 +336,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
             return ResponseEntity.ok("Loaded tables: " + indexWriter.loadedTables() + "\nIndex time: " +
                     TimeUnit.SECONDS.convert(indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s\nTotal elapsed time: " +
-                    TimeUnit.SECONDS.convert(totalTime, TimeUnit.NANOSECONDS));
+                    TimeUnit.SECONDS.convert(totalTime, TimeUnit.NANOSECONDS) + "s");
         }
 
         catch (IOException e)
