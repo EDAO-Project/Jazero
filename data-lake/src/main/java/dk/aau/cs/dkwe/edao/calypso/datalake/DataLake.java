@@ -69,6 +69,12 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
     public static void main(String[] args)
     {
+        loadIndexes();
+        SpringApplication.run(DataLake.class, args);
+    }
+
+    private static void loadIndexes()
+    {
         if (Configuration.areIndexesLoaded())
         {
             try
@@ -86,8 +92,6 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 throw new RuntimeException("IOException when reading indexes: " + e.getMessage());
             }
         }
-
-        SpringApplication.run(DataLake.class, args);
     }
 
     /**
@@ -333,6 +337,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             Logger.logNewLine(Logger.Level.INFO, "Indexing took " +
                     TimeUnit.SECONDS.convert(indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s");
             Configuration.setIndexesLoaded(true);
+            loadIndexes();
 
             return ResponseEntity.ok("Loaded tables: " + indexWriter.loadedTables() + "\nIndex time: " +
                     TimeUnit.SECONDS.convert(indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s\nTotal elapsed time: " +
