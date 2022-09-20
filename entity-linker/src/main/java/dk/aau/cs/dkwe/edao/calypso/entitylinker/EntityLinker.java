@@ -6,8 +6,9 @@ import org.springframework.boot.web.server.ConfigurableWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @SpringBootApplication
 @RestController
@@ -28,5 +29,21 @@ public class EntityLinker implements WebServerFactoryCustomizer<ConfigurableWebS
     public ResponseEntity<String> ping()
     {
         return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body("pong");
+    }
+
+    /**
+     * Entry for linking input entity to KG entity
+     * @param headers Requires:
+     *                Content-Type: application/json
+     * @param body This is a JSON body on the following format with one entry:
+     *             {
+     *                 "input": "<INPUT ENTITY>"
+     *             }
+     * @return String of KG entity node
+     */
+    @PostMapping("/link")
+    public ResponseEntity<String> link(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
+    {
+        return ResponseEntity.ok("https://dbpedia.org/page/Barack_Obama");
     }
 }
