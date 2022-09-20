@@ -1,7 +1,5 @@
 package dk.aau.cs.dkwe.edao.calypso.datalake.search;
 
-// TODO: This has to be changed to use other services
-
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.DBDriverBatch;
 import dk.aau.cs.dkwe.edao.calypso.datalake.loader.Stats;
 import dk.aau.cs.dkwe.edao.calypso.datalake.parser.TableParser;
@@ -67,8 +65,7 @@ public class TableSearch extends AbstractSearch
     private DBDriverBatch<List<Double>, String> embeddings;
     private Map<String, Stats> tableStats = new TreeMap<>();
     private final Object lock = new Object();
-    private Iterator<File> corpus;
-    private int corpusSize;
+    private StorageHandler storage;
 
     public TableSearch(StorageHandler tableStorage, EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
                        int topK, int threads, boolean useEmbeddings, CosineSimilarityFunction cosineFunction,
@@ -88,18 +85,16 @@ public class TableSearch extends AbstractSearch
         this.useMaxSimilarityPerColumn = useMaxSimilarityPerColumn;
         this.measure = similarityMeasure;
         this.embeddings = embeddingStore;
-        this.corpus = tableStorage.iterator();
-        this.corpusSize = tableStorage.count();
+        this.storage = tableStorage;
     }
 
-    public void setCorpus(Set<File> tableFiles)
+    public void setCorpus(StorageHandler handler)
     {
-        this.corpusSize = tableFiles.size();
-        this.corpus = tableFiles.iterator();
+        this.storage = handler;
     }
 
     /**
-     * Entrpy point for analogous search
+     * Entry point for analogous search
      * @param query Input table query
      * @return Top-K ranked result container
      */
@@ -110,25 +105,26 @@ public class TableSearch extends AbstractSearch
 
         try
         {
-            Logger.logNewLine(Logger.Level.INFO, "There are " + this.corpusSize + " files to be processed.");
+            Logger.logNewLine(Logger.Level.INFO, "There are " + this.storage.count() + " files to be processed.");
             ExecutorService threadPool = Executors.newFixedThreadPool(this.threads);
-            List<Future<Pair<File, Double>>> parsed = new ArrayList<>(this.corpusSize);
+            List<Future<Pair<File, Double>>> parsed = new ArrayList<>(this.storage.count());
+            Set<File> tableFiles = this.storage.elements();
 
-            while (this.corpus.hasNext())
+            for (File f : tableFiles)
             {
-                Future<Pair<File, Double>> future = threadPool.submit(() -> searchTable(query, this.corpus.next()));
+                Future<Pair<File, Double>> future = threadPool.submit(() -> searchTable(query, f));
                 parsed.add(future);
             }
 
             long done = 1, prev = 0;
 
-            while (done != this.corpusSize)
+            while (done != this.storage.count())
             {
                 done = parsed.stream().filter(Future::isDone).count();
 
                 if (done - prev >= 100)
                 {
-                    Logger.log(Logger.Level.INFO, "Processed " + done + "/" + this.corpusSize + " files...");
+                    Logger.log(Logger.Level.INFO, "Processed " + done + "/" + this.storage.count() + " files...");
                     prev = done;
                 }
             }

@@ -6,6 +6,7 @@ import dk.aau.cs.dkwe.edao.calypso.storagelayer.layer.Storage;
 
 import java.io.File;
 import java.util.Iterator;
+import java.util.Set;
 
 public class StorageHandler implements Storage<File>
 {
@@ -63,5 +64,11 @@ public class StorageHandler implements Storage<File>
     public Iterator<File> iterator()
     {
         return this.storage.iterator();
+    }
+
+    @Override
+    public Set<File> elements()
+    {
+        return this.storage.elements();
     }
 }

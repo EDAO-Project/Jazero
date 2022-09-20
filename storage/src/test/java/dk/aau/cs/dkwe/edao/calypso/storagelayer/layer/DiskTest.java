@@ -94,4 +94,27 @@ public class DiskTest
         new File(dir + "/" + this.source3.getName()).delete();
         dir.delete();
     }
+
+    @Test
+    public void testElements()
+    {
+        File dir = new File("test/");
+        Disk d = new Disk(dir);
+        d.insert(this.source1);
+        d.insert(this.source2);
+        d.insert(this.source3);
+
+        assertTrue(dir.exists());
+
+        Set<File> files = d.elements();
+        assertEquals(3, files.size());
+        assertTrue(files.contains(new File("test/source1.txt")));
+        assertTrue(files.contains(new File("test/source2.txt")));
+        assertTrue(files.contains(new File("test/source3.txt")));
+
+        new File(dir + "/" + this.source1.getName()).delete();
+        new File(dir + "/" + this.source2.getName()).delete();
+        new File(dir + "/" + this.source3.getName()).delete();
+        dir.delete();
+    }
 }

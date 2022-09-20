@@ -4,9 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Disk implements Storage<File>
 {
@@ -60,5 +59,12 @@ public class Disk implements Storage<File>
     public Iterator<File> iterator()
     {
         return List.of(Objects.requireNonNull(this.dir.listFiles())).iterator();
+    }
+
+    @Override
+    public Set<File> elements()
+    {
+        Set<String> filesStr = Set.of(Objects.requireNonNull(this.dir.list()));
+        return filesStr.stream().map(s -> new File(this.dir.toString() + "/" + s)).collect(Collectors.toSet());
     }
 }

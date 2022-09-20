@@ -108,4 +108,31 @@ public class StorageHandlerTest
         testIteratorFromStorage(this.handlerNative);
         //testIteratorFromStorage(this.handlerHDFS);
     }
+
+    private void testElementsInStorage(StorageHandler handler)
+    {
+        handler.insert(this.source1);
+        handler.insert(this.source2);
+        handler.insert(this.source3);
+
+        assertTrue(handler.getStorageDirectory().exists());
+
+        Set<File> files = handler.elements();
+        assertEquals(3, files.size());
+        assertTrue(files.contains(new File(handler.getStorageDirectory() + "/" + this.source1.getName())));
+        assertTrue(files.contains(new File(handler.getStorageDirectory() + "/" + this.source2.getName())));
+        assertTrue(files.contains(new File(handler.getStorageDirectory() + "/" + this.source3.getName())));
+
+        new File(handler.getStorageDirectory() + "/" + this.source1.getName()).delete();
+        new File(handler.getStorageDirectory() + "/" + this.source2.getName()).delete();
+        new File(handler.getStorageDirectory() + "/" + this.source3.getName()).delete();
+        handler.getStorageDirectory().delete();
+    }
+
+    @Test
+    public void testElements()
+    {
+        testElementsInStorage(this.handlerNative);
+        //testElementsInStorage(this.handlerHDFS);
+    }
 }
