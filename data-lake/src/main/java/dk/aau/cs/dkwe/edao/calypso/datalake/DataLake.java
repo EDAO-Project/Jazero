@@ -33,10 +33,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -113,6 +110,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      *                  "use-embeddings": "<BOOLEAN VALUE>",
      *                  "single-column-per-query-entity": "<BOOLEAN VALUE>",
      *                  "use-max-similarity-per-column": "<BOOLEAN VALUE>",
+     *                  "output": "<OUTPUT FOLDER>",
      *                  ["weighted-jaccard": "<BOOLEAN VALUE>,]
      *                  ["adjusted-jaccard": "<BOOLEAN VALUE>",]
      *                  ["cosine-function": "NORM_COS|ABS_COS|ANG_COS"]
@@ -171,11 +169,17 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             return ResponseEntity.badRequest().body("Missing 'similarity-measure' in JSON body");
         }
 
+        else if (!body.containsKey("output"))
+        {
+            return ResponseEntity.badRequest().body("Missing 'output' to specify directory to write results");
+        }
+
         int topK = Integer.parseInt(body.get("top-k"));
         boolean useEmbeddings = Boolean.parseBoolean(body.get("use-embeddings"));
         boolean singleColumnPerEntity = Boolean.parseBoolean(body.get("single-column-per-query-entity"));
         boolean useMaxSimilarityPerColumn = Boolean.parseBoolean(body.get("use-max-similarity-per-column"));
         boolean weightedJaccard = false, adjustedJaccard = false;
+        String outputDir = body.get("output");
         TableSearch.SimilarityMeasure similarityMeasure = TableSearch.SimilarityMeasure.valueOf(body.get("similarity-measure"));
         TableSearch.CosineSimilarityFunction cosineFunction = TableSearch.CosineSimilarityFunction.ABS_COS;
 
@@ -231,10 +235,35 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         }
 
         object.add("scores", array);
-        return ResponseEntity
-                .ok()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(object.toString());
+
+        try
+        {
+            writeResults(result, outputDir);
+            return ResponseEntity
+                    .ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(object.toString());
+        }
+
+        catch (IOException e)
+        {
+            return ResponseEntity.badRequest().body("IOException: " + e.getMessage() + "\nScores: " + object);
+        }
+    }
+
+    private static void writeResults(Result result, String path) throws IOException
+    {
+        File dir = new File(path);
+
+        if (!dir.exists() && !dir.mkdirs())
+        {
+            throw new IOException("Could not create directory '" + path + "' to save results");
+        }
+
+        ObjectOutputStream output = new ObjectOutputStream(new FileOutputStream(dir + "/scores.json"));
+        output.writeObject(result);
+        output.flush();
+        output.close();
     }
 
     /**
