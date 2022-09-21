@@ -70,23 +70,27 @@ public class Result implements Externalizable
         {
             Pair<File, Double> result = results.next();
             String tableID = result.getFirst().getName();
-            int entityMappedRows = this.stats.get(tableID).entityMappedRows();
-            double entityMappedRowsFraction = this.stats.get(tableID).fractionOfEntityMappedRows();
-            List<Double> tupleScores = this.stats.get(tableID).queryRowScores();
-            List<List<Double>> tupleVectors = this.stats.get(tableID).queryRowVectors();
-            List<List<String>> tupleQueryAlignment = this.stats.get(tableID).tupleQueryAlignment();
-
             JsonObject tmp = new JsonObject();
-            tmp.addProperty("tableID", result.getFirst().getName());
+            tmp.addProperty("tableID", tableID);
             tmp.addProperty("score", result.getSecond());
-            tmp.addProperty("numEntityMappedRows", String.valueOf(entityMappedRows));
-            tmp.addProperty("fractionOfEntityMappedRows", String.valueOf(entityMappedRowsFraction));
-            tmp.addProperty("tupleScores", String.valueOf(tupleScores));
-            tmp.addProperty("tupleVectors", String.valueOf(tupleVectors));
 
-            if (tupleQueryAlignment != null)
+            if (this.stats.containsKey(tableID))
             {
-                tmp.addProperty("tupleQueryAlignment", String.valueOf(tupleQueryAlignment));
+                int entityMappedRows = this.stats.get(tableID).entityMappedRows();
+                double entityMappedRowsFraction = this.stats.get(tableID).fractionOfEntityMappedRows();
+                List<Double> tupleScores = this.stats.get(tableID).queryRowScores();
+                List<List<Double>> tupleVectors = this.stats.get(tableID).queryRowVectors();
+                List<List<String>> tupleQueryAlignment = this.stats.get(tableID).tupleQueryAlignment();
+
+                tmp.addProperty("numEntityMappedRows", String.valueOf(entityMappedRows));
+                tmp.addProperty("fractionOfEntityMappedRows", String.valueOf(entityMappedRowsFraction));
+                tmp.addProperty("tupleScores", String.valueOf(tupleScores));
+                tmp.addProperty("tupleVectors", String.valueOf(tupleVectors));
+
+                if (tupleQueryAlignment != null)
+                {
+                    tmp.addProperty("tupleQueryAlignment", String.valueOf(tupleQueryAlignment));
+                }
             }
 
             innerObjs.add(tmp);
