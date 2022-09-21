@@ -564,6 +564,11 @@ public class TableSearch extends AbstractSearch
                 {
                     curRowIDFScores.add(entity.getIDF());
                 }
+
+                else
+                {
+                    curRowIDFScores.add(1.0);
+                }
             }
 
             queryRowToWeightVector.put(queryRow, Utils.normalizeVector(curRowIDFScores));
