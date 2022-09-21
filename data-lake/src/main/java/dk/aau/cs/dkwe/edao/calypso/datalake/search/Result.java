@@ -97,7 +97,7 @@ public class Result implements Externalizable
         }
 
         jsonObj.add("scores", innerObjs);
-        out.writeObject(jsonObj);
+        out.writeObject(jsonObj.toString());
     }
 
     @Override
