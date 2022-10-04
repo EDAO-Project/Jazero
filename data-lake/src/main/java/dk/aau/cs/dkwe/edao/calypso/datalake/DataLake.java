@@ -235,35 +235,10 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         }
 
         object.add("scores", array);
-
-        try
-        {
-            writeResults(result, outputDir);
-            return ResponseEntity
-                    .ok()
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(object.toString());
-        }
-
-        catch (IOException e)
-        {
-            return ResponseEntity.badRequest().body("IOException: " + e.getMessage() + "\nScores: " + object);
-        }
-    }
-
-    private static void writeResults(Result result, String path) throws IOException
-    {
-        File dir = new File(path);
-
-        if (!dir.exists() && !dir.mkdirs())
-        {
-            throw new IOException("Could not create directory '" + path + "' to save results");
-        }
-
-        ObjectOutputStream output = new ObjectOutputStream(new FileOutputStream(dir + "/scores.json"));
-        output.writeObject(result);
-        output.flush();
-        output.close();
+        return ResponseEntity
+                .ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(object.toString());
     }
 
     /**
