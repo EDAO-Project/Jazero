@@ -2,13 +2,9 @@ package dk.aau.cs.dkwe.edao.calypso.knowledgegraph.middleware;
 
 import dk.aau.cs.dkwe.edao.calypso.datalake.loader.IndexIO;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.FileUtil;
-import dk.aau.cs.dkwe.edao.calypso.knowledgegraph.connector.Neo4jEndpoint;
-import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
-
-// TODO: Remember to handle insertion of table links
 
 /**
  * Saves a knowledge graph in a running instance of Neo4J
@@ -102,19 +98,19 @@ public class Neo4JWriter extends Neo4JHandler implements IndexIO
 
         try
         {
-            File preExisting = new File(Neo4JHandler.KG_DIR + links.getName());
-
-            if (preExisting.exists())
-            {
-                preExisting.delete();
-            }
-
             File kgDir = new File(Neo4JHandler.KG_DIR);
             kgDir.mkdirs();
 
             int exitCode;
             Runtime rt = Runtime.getRuntime();
-            Process process = rt.exec("./" + INSERT_LINKS_SCRIPT + " " + Neo4JHandler.HOME + " " + linksFolder);
+            Process process = rt.exec("rm -rf " + Neo4JHandler.KG_DIR + links.getName());
+
+            if ((exitCode = process.waitFor()) != 0)
+            {
+                throw new IOException("Failed deleting old mappings folder if it existed: exit code " + exitCode);
+            }
+
+            process = rt.exec("./" + INSERT_LINKS_SCRIPT + " " + Neo4JHandler.HOME + " " + linksFolder);
 
             if ((exitCode = process.waitFor()) != 0)
             {
