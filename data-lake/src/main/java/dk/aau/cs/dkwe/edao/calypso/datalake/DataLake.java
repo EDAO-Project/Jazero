@@ -250,9 +250,13 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      *
      * @param body JSON string with path to directory of JSON table files. Format:
      *             {
-     *                  "directory": "<DIRECTORY>"
+     *                  "directory": "<DIRECTORY>",
+     *                  "table-prefix": "<TABLE PREFIX>",
+     *                  "kg-prefix": "<KG PREFIX>"
      *             }
      *
+     *             "table-prefix" is the common prefix for table entities, just like kg-prefix. If the prefix differs
+     *             from entity to entity, use the empty string.
      *             Optionally, an entry 'disallowed_types' for a JSON array of entity types can be added to indicated
      *             entity types that should be removed
      * @return
@@ -260,7 +264,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     @PostMapping(value = "/insert")
     public ResponseEntity<String> insert(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
     {
-        final String bodyKey = "directory";
+        final String dirKey = "directory", tablePrefixKey = "table-prefix", kgPrefixKey = "kg-prefix";
 
         if (!INDEX_DIR.isDirectory())
         {
@@ -283,12 +287,22 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             return ResponseEntity.badRequest().body("Storage-Type header must be either 'native' or 'HDFS'");
         }
 
-        else if (!body.containsKey(bodyKey))
+        else if (!body.containsKey(dirKey))
         {
-            return ResponseEntity.badRequest().body("Body must be a JSON string containing a single entry '" + bodyKey + "'");
+            return ResponseEntity.badRequest().body("Body must be a JSON string containing a single entry '" + dirKey + "'");
         }
 
-        File dir = new File(body.get(bodyKey));
+        else if (!body.containsKey(tablePrefixKey))
+        {
+            return ResponseEntity.badRequest().body("Missing table entity prefix '" + tablePrefixKey + "' in JSON string");
+        }
+
+        else if (!body.containsKey(kgPrefixKey))
+        {
+            return ResponseEntity.badRequest().body("Missing table entity prefix '" + kgPrefixKey + "' in JSON string");
+        }
+
+        File dir = new File(body.get(dirKey));
         StorageHandler.StorageType storageType = headers.get("storage-type").equals("native") ?
                 StorageHandler.StorageType.NATIVE : StorageHandler.StorageType.HDFS;
         Configuration.setStorageType(storageType);
@@ -316,7 +330,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             Logger.logNewLine(Logger.Level.INFO, "There are " + filePaths.size() + " files to be processed.");
 
             IndexWriter indexWriter = new IndexWriter(filePaths, INDEX_DIR, DATA_DIR, storageType, kgService, elService, THREADS,
-                    WIKI_PREFIX, URI_PREFIX);
+                    body.get(tablePrefixKey), body.get(kgPrefixKey));
             indexWriter.performIO();
 
             if (!kgService.insertLinks(DATA_DIR))
