@@ -41,6 +41,12 @@ public class WikipediaEntityLinker implements EntityLink<String, String>
         {
             Communicator comm = ServiceCommunicator.init("en.wikipedia.org", mapping, true);
             JsonElement json = JsonParser.parseString((String) comm.receive());
+
+            if (json == null)
+            {
+                return null;
+            }
+
             Set<Map.Entry<String, JsonElement>> entrySet =
                     json.getAsJsonObject().get("query").getAsJsonObject().get("pages").getAsJsonObject().entrySet();
             String pageId = getFirstPageId(entrySet);
