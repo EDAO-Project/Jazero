@@ -220,12 +220,6 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
         }
 
         List<String> kgEntities = endpoint.searchWikiLink(body.get(entityKey));
-
-        if (kgEntities.isEmpty())
-        {
-            return ResponseEntity.badRequest().body("No KG entities found with link to '" + body.get(entityKey) + "'");
-        }
-
-        return ResponseEntity.ok(kgEntities.get(0));
+        return ResponseEntity.ok(kgEntities.isEmpty() ? "None" : kgEntities.get(0));
     }
 }

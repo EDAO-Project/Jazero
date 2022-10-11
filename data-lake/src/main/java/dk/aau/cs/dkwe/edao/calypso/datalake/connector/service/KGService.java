@@ -124,13 +124,14 @@ public class KGService extends Service
             wikiURL.add("wiki", new JsonPrimitive(wikiLink));
 
             Response response = comm.send(wikiURL.toString(), headers);
+            String entity = (String) response.getResponse();
 
             if (response.getResponseCode() != HttpStatus.OK.value())
             {
                 return null;
             }
 
-            return (String) response.getResponse();
+            return !entity.equals("None") ? entity : null;
         }
 
         catch (MalformedURLException e)
