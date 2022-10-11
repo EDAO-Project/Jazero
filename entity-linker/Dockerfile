@@ -6,13 +6,18 @@ RUN apt install openjdk-17-jre openjdk-17-jdk maven -y
 WORKDIR /home
 
 RUN mkdir communication
+RUN mkdir storage
 RUN mkdir data-lake
 RUN mkdir entity-linker
 COPY communication communication
+COPY storage storage
 COPY data-lake data-lake
 COPY entity-linker entity-linker
 
 WORKDIR communication
+RUN mvn clean install -DskipTests
+
+WORKDIR ../storage
 RUN mvn clean install -DskipTests
 
 ARG MVNW=mvnw_unix
