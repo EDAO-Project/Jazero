@@ -49,12 +49,6 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     private static EntityTable entityTable;
     private static EntityTableLink tableLink;
     private static final int THREADS = 4;
-    private static final String WIKI_PREFIX = "http://www.wikipedia.org/";
-    private static final String URI_PREFIX = "http://dbpedia.org/";
-    private static final String KG_HOST = "127.0.0.1";
-    private static final int KG_PORT = 8083;
-    private static final String ENTITY_LINKER_HOST = "127.0.0.1";
-    private static final int ENTITY_LINKER_PORT = 8082;
     private static final File DATA_DIR = new File("../knowledge-graph/neo4j/mappings/");
     private static final File INDEX_DIR = new File(".indexes/");
 
@@ -315,8 +309,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         try
         {
             long totalTime = System.nanoTime();
-            KGService kgService = new KGService(KG_HOST, KG_PORT);
-            ELService elService = new ELService(ENTITY_LINKER_HOST, ENTITY_LINKER_PORT);
+            KGService kgService = new KGService(Configuration.getEKGManagerHost(), Configuration.getEKGManagerPort());
+            ELService elService = new ELService(Configuration.getEntityLinkerHost(), Configuration.getEntityLinkerPort());
 
             if (kgService.size() < 1)
             {

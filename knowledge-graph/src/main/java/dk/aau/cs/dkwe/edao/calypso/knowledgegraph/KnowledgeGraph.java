@@ -136,7 +136,7 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
     }
 
     /**
-     * Return JSON array of types of given entity
+     * Returns JSON array of types of given entity
      * Body must contain a single JSON entry with entity URI:
      *      {
      *          "entity": "<URI>"
@@ -194,5 +194,38 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
 
         Neo4JReader reader = new Neo4JReader(endpoint);
         return ResponseEntity.ok(String.valueOf(reader.size()));
+    }
+
+    /**
+     * Looks for entities that has link to given Wikipedia entity.
+     * Body must contain a single JSON entry:
+     *      {
+     *          "wiki": "<WIKIPEDIA ENTITY>"
+     *      }
+     * @return KG entity corresponding to Wikipedia URL
+     */
+    @PostMapping("/from-wiki-link")
+    public synchronized ResponseEntity<String> wikiToKG(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
+    {
+        final String entityKey = "wiki";
+
+        if (!Neo4JHandler.isInstalled())
+        {
+            return ResponseEntity.internalServerError().body("Neo4J is not installed");
+        }
+
+        else if (!body.containsKey(entityKey))
+        {
+            return ResponseEntity.badRequest().body("Missing \"" + entityKey + "\" entry in JSON body as input entity");
+        }
+
+        List<String> kgEntities = endpoint.searchWikiLink(body.get(entityKey));
+
+        if (kgEntities.isEmpty())
+        {
+            return ResponseEntity.badRequest().body("No KG entities found with link to '" + body.get(entityKey) + "'");
+        }
+
+        return ResponseEntity.ok(kgEntities.get(0));
     }
 }

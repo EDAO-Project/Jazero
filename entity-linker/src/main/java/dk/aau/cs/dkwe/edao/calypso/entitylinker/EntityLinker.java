@@ -1,5 +1,6 @@
 package dk.aau.cs.dkwe.edao.calypso.entitylinker;
 
+import dk.aau.cs.dkwe.edao.calypso.entitylinker.link.WikipediaEntityLinker;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.server.ConfigurableWebServerFactory;
@@ -44,6 +45,13 @@ public class EntityLinker implements WebServerFactoryCustomizer<ConfigurableWebS
     @PostMapping("/link")
     public ResponseEntity<String> link(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
     {
-        return ResponseEntity.ok("http://dbpedia.org/resource/1._FC_Germania_Egestorf/Langreder__Hendrik_Weydandt__1");
+        if (!body.containsKey("input"))
+        {
+            return ResponseEntity.badRequest().body("Missing 'input' entry in body specifying entity to be linked to the EKG");
+        }
+
+        String input = body.get("input");
+        String linkedEntity = WikipediaEntityLinker.make().link(input);
+        return ResponseEntity.ok(linkedEntity);
     }
 }

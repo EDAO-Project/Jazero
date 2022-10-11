@@ -16,6 +16,8 @@ public class Neo4jEndpoint implements AutoCloseable {
     private final String dbUri;
     private final String dbUser;
     private final String dbPassword;
+    private final String isPrimaryTopicOfPropertyName;
+
     public Neo4jEndpoint(final String pathToConfigurationFile) throws IOException {
         this(new File(pathToConfigurationFile));
     }
@@ -35,14 +37,15 @@ public class Neo4jEndpoint implements AutoCloseable {
         this.dbUser = prop.getProperty("neo4j.user", "neo4j");
         this.dbPassword = prop.getProperty("neo4j.password", "admin");
         this.driver = GraphDatabase.driver(dbUri, AuthTokens.basic(dbUser, dbPassword));
+        this.isPrimaryTopicOfPropertyName = getIsPrimaryTopicProperty();
     }
-
 
     public Neo4jEndpoint(String uri, String user, String password) {
         this.dbUri = uri;
         this.dbUser = user;
         this.dbPassword = password;
         this.driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
+        this.isPrimaryTopicOfPropertyName = getIsPrimaryTopicProperty();
     }
 
 
@@ -66,7 +69,7 @@ public class Neo4jEndpoint implements AutoCloseable {
      * @return a string with the name of the link corresponding to the isPrimaryTopicOf in the knowledgebase.
      * Return a null string if it is not found
      */
-    public String get_isPrimaryTopicOf_rel_type_name() {
+    public String getIsPrimaryTopicProperty() {
         try (Session session = driver.session()) {
             return session.readTransaction(tx -> {
                 // Get list of all relationship types (i.e. all link names)
@@ -89,7 +92,7 @@ public class Neo4jEndpoint implements AutoCloseable {
      * @param links a list of wikipedia links [https://en.wikipedia.org/wiki/Yellow_Yeiyah, ...]
      * @return a list of mapped dbpedia links [http://dbpedia.org/resource/Yellow_Yeiyah, ...]
      */
-    public List<String> searchLinks(Iterable<String> links) {
+    public List<String> searchWikiLinks(Iterable<String> links) {
         Map<String, Object> params = new HashMap<>();
 
         params.put("linkList", links);
@@ -139,7 +142,7 @@ public class Neo4jEndpoint implements AutoCloseable {
     }
 
 
-    public List<Pair<String, String>> searchLinkMentions(List<String> links) {
+    public List<Pair<String, String>> searchWikiLinks(List<String> links) {
 
         Map<String, Object> params = new HashMap<>();
 
@@ -159,6 +162,32 @@ public class Neo4jEndpoint implements AutoCloseable {
         }
     }
 
+    /**
+     *
+     * @param link a specific wikipedia link
+     * @return a list of possible entity matches
+     */
+    public List<String> searchWikiLink(String link) {
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("link", link);
+
+        try (Session session = driver.session()) {
+            return session.readTransaction(tx -> {
+                List<String> entityUris = new ArrayList<>();
+
+                // Get all entity uri given a wikipedia link
+                Result result = tx.run("MATCH (a:Resource) -[l:" + this.isPrimaryTopicOfPropertyName + "]-> (b:Resource)" + "\n"
+                        + "WHERE b.uri in [$link]" + "\n"
+                        + "RETURN a.uri as mention", params);
+
+                for (Record r : result.list()) {
+                    entityUris.add(r.get("mention").asString());
+                }
+                return entityUris;
+            });
+        }
+    }
 
     /**
      * Run PPR over the semantic datalake given 

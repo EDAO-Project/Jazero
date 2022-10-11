@@ -111,4 +111,37 @@ public class KGService extends Service
             throw new RuntimeException("IOException when sending GET request to get size of EKG: " + e.getMessage());
         }
     }
+
+    public String getFromWikiLink(String wikiLink)
+    {
+        try
+        {
+            Communicator comm = ServiceCommunicator.init(getHost(), getPort(), "from-wiki-link");
+            Map<String, String> headers = new HashMap<>();
+            headers.put("Content-Type", MediaType.APPLICATION_JSON_VALUE);
+
+            JsonObject wikiURL = new JsonObject();
+            wikiURL.add("wiki", new JsonPrimitive(wikiLink));
+
+            Response response = comm.send(wikiURL.toString(), headers);
+
+            if (response.getResponseCode() != HttpStatus.OK.value())
+            {
+                throw new RuntimeException("Received response code " + response.getResponseCode() +
+                        " when requesting entity link from EKG Manager");
+            }
+
+            return (String) response.getResponse();
+        }
+
+        catch (MalformedURLException e)
+        {
+            throw new RuntimeException("URL for EKG Manager to retrieve entity link is malformed: " + e.getMessage());
+        }
+
+        catch (IOException e)
+        {
+            throw new RuntimeException("IOException when sending POST request to get entity link: " + e.getMessage());
+        }
+    }
 }

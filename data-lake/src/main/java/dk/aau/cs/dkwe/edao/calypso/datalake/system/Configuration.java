@@ -110,6 +110,24 @@ public class Configuration
         if (!props.contains("DBPassword"))
             props.setProperty("DBPassword", "1234");
 
+        if (!props.contains("SDLHost"))
+            props.setProperty("SDLHost", "127.0.0.1");
+
+        if (!props.contains("SDLPort"))
+            props.setProperty("SDLPort", "8081");
+
+        if (!props.contains("EntityLinkerHost"))
+            props.setProperty("EntityLinkerHost", "127.0.0.1");
+
+        if (!props.contains("EntityLinkerPort"))
+            props.setProperty("EntityLinkerPort", "8082");
+
+        if (!props.contains("EKGManagerHost"))
+            props.setProperty("EKGManagerHost", "127.0.0.1");
+
+        if (!props.contains("EKGManagerPort"))
+            props.setProperty("EKGManagerPort", "8083");
+
         writeProperties(props);
     }
 
@@ -291,5 +309,65 @@ public class Configuration
     public static StorageHandler.StorageType getStorageType()
     {
         return StorageHandler.StorageType.valueOf(readProperties().getProperty("StorageType"));
+    }
+
+    public static void setSDLManagerHost(String host)
+    {
+        addProperty("SDLHost", host);
+    }
+
+    public static String getSDLManagerHost()
+    {
+        return readProperties().getProperty("SDLHost");
+    }
+
+    public static void setSDLManagerPort(int port)
+    {
+        addProperty("SDLPort", String.valueOf(port));
+    }
+
+    public static int getSDLManagerPort()
+    {
+        return Integer.parseInt(readProperties().getProperty("SDLPort"));
+    }
+
+    public static void setEntityLinkerHost(String host)
+    {
+        addProperty("EntityLinkerHost", host);
+    }
+
+    public static String getEntityLinkerHost()
+    {
+        return readProperties().getProperty("EntityLinkerHost");
+    }
+
+    public static void setEntityLinkerPort(int port)
+    {
+        addProperty("EntityLinkerPort", String.valueOf(port));
+    }
+
+    public static int getEntityLinkerPort()
+    {
+        return Integer.parseInt(readProperties().getProperty("EntityLinkerPort"));
+    }
+
+    public static void setEKGManagerHost(String host)
+    {
+        addProperty("EKGManagerHost", host);
+    }
+
+    public static String getEKGManagerHost()
+    {
+        return readProperties().getProperty("EKGManagerHost");
+    }
+
+    public static void setEKGManagerPort(int port)
+    {
+        addProperty("EKGManagerPort", String.valueOf(port));
+    }
+
+    public static int getEKGManagerPort()
+    {
+        return Integer.parseInt(readProperties().getProperty("EKGManagerPort"));
     }
 }

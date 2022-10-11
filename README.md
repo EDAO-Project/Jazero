@@ -22,6 +22,16 @@ If you substituted `<KG>` with a folder, pass directory to the folder where `kno
 
 ### Loading Calypso
 Tables in Calypso are loaded and stored either natively on disk or in HDFS.
+```bash
+here will be instructions on how to load Calypso and choosing storage layer
+```
+
+Calypso can additionally use RDF embeddings for similarity search.
+Generate an embeddings file of the knowledge graph using <a href="https://github.com/EDAO-Project/DBpediaEmbedding">this</a> repository and run the following command to load the embeddings into Calypso.
+
+```bash
+
+```
 
 ## Starting Calypso
 Setting up and running Calypso is very simple.
