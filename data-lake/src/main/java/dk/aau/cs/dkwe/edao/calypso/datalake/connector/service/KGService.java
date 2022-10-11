@@ -127,8 +127,7 @@ public class KGService extends Service
 
             if (response.getResponseCode() != HttpStatus.OK.value())
             {
-                throw new RuntimeException("Received response code " + response.getResponseCode() +
-                        " when requesting entity link from EKG Manager");
+                return null;
             }
 
             return (String) response.getResponse();

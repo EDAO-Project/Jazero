@@ -59,6 +59,6 @@ public class EntityLinker implements WebServerFactoryCustomizer<ConfigurableWebS
         }
 
         String linkedEntity = WikipediaEntityLinker.make().link(input);
-        return ResponseEntity.ok(linkedEntity);
+        return ResponseEntity.ok(linkedEntity != null ? linkedEntity : "None");
     }
 }

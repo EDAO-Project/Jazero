@@ -50,7 +50,7 @@ public class WikipediaEntityLinker implements EntityLink<String, String>
                 throw new RuntimeException("Entity '" + entity + "' did not return any Wikipedia results");
             }
 
-            mapping = "/w/api.php?action=query&prop=info&pageids=" + pageId + "&inprop=url";
+            mapping = "/w/api.php?action=query&format=json&prop=info&pageids=" + pageId + "&inprop=url";
             comm = ServiceCommunicator.init("en.wikipedia.org", mapping, true);
             json = JsonParser.parseString((String) comm.receive());
 

@@ -1,6 +1,7 @@
 FROM ubuntu
 
 RUN apt update
+RUN apt-get update
 RUN apt install wget openjdk-17-jre openjdk-17-jdk maven -y
 
 WORKDIR /home

@@ -42,7 +42,8 @@ public class ELService extends Service
                         " when requesting entity link from entity linker");
             }
 
-            return (String) response.getResponse();
+            String entity = (String) response.getResponse();
+            return !entity.equals("None") ? entity : null;
         }
 
         catch (MalformedURLException e)
