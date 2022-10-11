@@ -51,6 +51,13 @@ public class EntityLinker implements WebServerFactoryCustomizer<ConfigurableWebS
         }
 
         String input = body.get("input");
+
+        if (input.contains("http"))
+        {
+            String[] split = input.split("/");
+            input = split[split.length - 1].replace('_', ' ');
+        }
+
         String linkedEntity = WikipediaEntityLinker.make().link(input);
         return ResponseEntity.ok(linkedEntity);
     }
