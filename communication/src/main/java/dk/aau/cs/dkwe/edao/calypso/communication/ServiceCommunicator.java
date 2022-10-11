@@ -12,10 +12,10 @@ public class ServiceCommunicator implements Communicator
 {
     private URL url, testUrl;
 
-    public static ServiceCommunicator init(String hostName, String mapping) throws MalformedURLException
+    public static ServiceCommunicator init(String hostName, String mapping, boolean secure) throws MalformedURLException
     {
         String m = (mapping.startsWith("/") ? "" : "/") + mapping;
-        URL url = new URL("http", hostName, m);
+        URL url = new URL("http" + (secure ? "s" : ""), hostName, m);
         return new ServiceCommunicator(url);
     }
 

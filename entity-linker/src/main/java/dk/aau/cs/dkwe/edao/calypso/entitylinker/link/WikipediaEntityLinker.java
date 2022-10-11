@@ -39,7 +39,7 @@ public class WikipediaEntityLinker implements EntityLink<String, String>
 
         try
         {
-            Communicator comm = ServiceCommunicator.init("en.wikipedia.org", mapping);
+            Communicator comm = ServiceCommunicator.init("en.wikipedia.org", mapping, true);
             JsonElement json = JsonParser.parseString((String) comm.receive());
             Set<Map.Entry<String, JsonElement>> entrySet =
                     json.getAsJsonObject().get("query").getAsJsonObject().get("pages").getAsJsonObject().entrySet();
@@ -51,7 +51,7 @@ public class WikipediaEntityLinker implements EntityLink<String, String>
             }
 
             mapping = "/w/api.php?action=query&prop=info&pageids=" + pageId + "&inprop=url";
-            comm = ServiceCommunicator.init("en.wikipedia.org", mapping);
+            comm = ServiceCommunicator.init("en.wikipedia.org", mapping, true);
             json = JsonParser.parseString((String) comm.receive());
 
             String url = json.getAsJsonObject()
