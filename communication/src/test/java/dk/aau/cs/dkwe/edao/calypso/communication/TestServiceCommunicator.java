@@ -12,7 +12,7 @@ public class TestServiceCommunicator
     @Test
     public void testReceive() throws IOException
     {
-        ServiceCommunicator communicator = ServiceCommunicator.init("ip.jsontest.com", "");
+        ServiceCommunicator communicator = ServiceCommunicator.init("ip.jsontest.com", "", false);
         String response = (String) communicator.receive();
         assertTrue(response.startsWith("{"));
     }
@@ -23,7 +23,7 @@ public class TestServiceCommunicator
     @Test
     public void testSend() throws IOException
     {
-        ServiceCommunicator communicator = ServiceCommunicator.init("webhook.site", "/2174bbdc-20a4-438b-b9f3-1cc1eac923e9");
+        ServiceCommunicator communicator = ServiceCommunicator.init("webhook.site", "/2174bbdc-20a4-438b-b9f3-1cc1eac923e9", false);
         communicator.send("Hello, World", new HashMap<>());
         String response = (String) communicator.receive();
         assertTrue(response.isEmpty());
