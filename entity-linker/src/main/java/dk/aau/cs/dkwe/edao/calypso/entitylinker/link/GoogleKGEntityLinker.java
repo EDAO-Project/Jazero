@@ -43,7 +43,9 @@ public class GoogleKGEntityLinker implements EntityLink<String, String>
 
             JsonArray array = json.getAsJsonObject().get("itemListElement").getAsJsonArray();
 
-            if (array.size() == 0)
+            if (array.size() == 0 || !array.get(0).getAsJsonObject().get("result")
+                                        .getAsJsonObject().get("detailedDescription")
+                                        .getAsJsonObject().has("url"))
             {
                 return null;
             }
