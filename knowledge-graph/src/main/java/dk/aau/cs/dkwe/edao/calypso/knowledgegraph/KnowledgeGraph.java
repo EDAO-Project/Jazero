@@ -219,7 +219,14 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
             return ResponseEntity.badRequest().body("Missing \"" + entityKey + "\" entry in JSON body as input entity");
         }
 
-        List<String> kgEntities = endpoint.searchWikiLink(body.get(entityKey));
+        String entity = body.get(entityKey);
+
+        if (entity.contains("https"))
+        {
+            entity = entity.replace("https", "http");
+        }
+
+        List<String> kgEntities = endpoint.searchWikiLink(entity);
         return ResponseEntity.ok(kgEntities.isEmpty() ? "None" : kgEntities.get(0));
     }
 }
