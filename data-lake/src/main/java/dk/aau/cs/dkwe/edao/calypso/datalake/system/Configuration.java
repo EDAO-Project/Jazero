@@ -129,7 +129,7 @@ public class Configuration
             props.setProperty("EKGManagerPort", "8083");
 
         if (!props.contains("GoogleAPIKey"))
-            props.setProperty("GoogleAPIKey", "AIzaSyD1EweHD3GSJj_hSOK2BVFsyQwyyN_J7_4");
+            props.setProperty("GoogleAPIKey", "AIzaSyB9mH-706htjAcFBxfrXaJ5jpDnuBfxhm8");
 
         writeProperties(props);
     }
