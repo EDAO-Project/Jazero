@@ -22,14 +22,16 @@ public class WikipediaEntityLinker implements EntityLink<String, String>
         return new WikipediaEntityLinker();
     }
 
+    private WikipediaEntityLinker() {}
+
     /**
      * 1. Search https://en.wikipedia.org/w/api.php?action=query&origin=*&format=json&generator=search&gsrnamespace=0&gsrlimit=5&gsrsearch=<QUERY>
      *    for Wikipedia results.
      * 2. Get the first result and search https://en.wikipedia.org/w/api.php?action=query&prop=info&pageids=<PAGE ID>&inprop=url
      *    for the full Wikipedia URL for the result Wikipedia page ID.
      * 3. Get the KG entity that has a link to the found Wikipedia entity in the EKG Manager.
-     * @param entity
-     * @return
+     * @param entity Input entity to be linked to KG entity
+     * @return KG entity
      */
     @Override
     public String link(String entity)

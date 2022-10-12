@@ -128,6 +128,9 @@ public class Configuration
         if (!props.contains("EKGManagerPort"))
             props.setProperty("EKGManagerPort", "8083");
 
+        if (!props.contains("GoogleAPIKey"))
+            props.setProperty("GoogleAPIKey", "AIzaSyD1EweHD3GSJj_hSOK2BVFsyQwyyN_J7_4");
+
         writeProperties(props);
     }
 
@@ -369,5 +372,10 @@ public class Configuration
     public static int getEKGManagerPort()
     {
         return Integer.parseInt(readProperties().getProperty("EKGManagerPort"));
+    }
+
+    public static String getGoogleAPIKey()
+    {
+        return readProperties().getProperty("GoogleAPIKey");
     }
 }
