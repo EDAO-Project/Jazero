@@ -42,7 +42,7 @@ public class WikipediaEntityLinker implements EntityLink<String, String>
             Communicator comm = ServiceCommunicator.init("en.wikipedia.org", mapping, true);
             JsonElement json = JsonParser.parseString((String) comm.receive());
 
-            if (json == null || !json.getAsJsonObject().entrySet().contains("query"))
+            if (json == null || !json.getAsJsonObject().has("query"))
             {
                 return null;
             }
