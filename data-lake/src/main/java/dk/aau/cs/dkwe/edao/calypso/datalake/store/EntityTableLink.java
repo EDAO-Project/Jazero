@@ -178,7 +178,7 @@ public class EntityTableLink implements Index<Id, List<String>>, Externalizable
 
                 for (Pair<Integer, Integer> location : this.idx.get(id).get(fileName))
                 {
-                    tuples.add(new Pair<>(id, new Pair<>(fileName, new Pair<>(location.getFirst(), location.getSecond()))));
+                    tuples.add(new Pair<>(id, new Pair<>(fileName, new Pair<>(location.first(), location.second()))));
                 }
             }
         }
@@ -207,11 +207,11 @@ public class EntityTableLink implements Index<Id, List<String>>, Externalizable
 
         for (Pair<Id, Pair<String, Pair<Integer, Integer>>> tuple : tuples)
         {
-            if (tuple.getSecond().getSecond().getFirst() == -1 && tuple.getSecond().getSecond().getSecond() == -1)
-                insert(tuple.getFirst(), List.of(tuple.getSecond().getFirst()));
+            if (tuple.second().second().first() == -1 && tuple.second().second().second() == -1)
+                insert(tuple.first(), List.of(tuple.second().first()));
 
             else
-                addLocation(tuple.getFirst(), tuple.getSecond().getFirst(), List.of(tuple.getSecond().getSecond()));
+                addLocation(tuple.first(), tuple.second().first(), List.of(tuple.second().second()));
         }
 
         String dir = (String) in.readObject();

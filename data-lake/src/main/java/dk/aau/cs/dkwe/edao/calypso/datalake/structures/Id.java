@@ -4,7 +4,7 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.system.Configuration;
 
 import java.io.Serializable;
 
-public class Id implements Serializable, Comparable<Id>
+public record Id(int id) implements Serializable, Comparable<Id>
 {
     private static class IdAllocator
     {
@@ -28,8 +28,6 @@ public class Id implements Serializable, Comparable<Id>
         }
     }
 
-    private int id;
-
     public static Id copy(int id)
     {
         return new Id(id);
@@ -48,11 +46,6 @@ public class Id implements Serializable, Comparable<Id>
     {
         this.id = id;
         IdAllocator.allocatedId = id + 1;
-    }
-
-    public int getId()
-    {
-        return this.id;
     }
 
     @Override
@@ -74,9 +67,9 @@ public class Id implements Serializable, Comparable<Id>
     @Override
     public int compareTo(Id other)
     {
-        if (this.id == other.getId())
+        if (this.id == other.id())
             return 0;
 
-        return this.id < other.getId() ? -1 : 1;
+        return this.id < other.id() ? -1 : 1;
     }
 }

@@ -42,10 +42,10 @@ public class Result implements Externalizable
     public Iterator<Pair<File, Double>> getResults()
     {
         this.tableScores.sort((e1, e2) -> {
-            if (e1.getSecond().equals(e2.getSecond()))
+            if (e1.second().equals(e2.second()))
                 return 0;
 
-            return e1.getSecond() > e2.getSecond() ? -1 : 1;
+            return e1.second() > e2.second() ? -1 : 1;
         });
 
         if (this.tableScores.size() < this.k + 1)
@@ -69,10 +69,10 @@ public class Result implements Externalizable
         while (results.hasNext())
         {
             Pair<File, Double> result = results.next();
-            String tableID = result.getFirst().getName();
+            String tableID = result.first().getName();
             JsonObject tmp = new JsonObject();
             tmp.addProperty("tableID", tableID);
-            tmp.addProperty("score", result.getSecond());
+            tmp.addProperty("score", result.second());
 
             if (this.stats.containsKey(tableID))
             {

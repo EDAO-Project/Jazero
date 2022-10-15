@@ -112,8 +112,8 @@ public class JaccardSimilarity<E extends Comparable<E>> implements Similarity
     {
         for (Pair<E, Double> weight : this.weights)
         {
-            if (element.compareTo(weight.getFirst()) == 0)
-                return weight.getSecond();
+            if (element.compareTo(weight.first()) == 0)
+                return weight.second();
         }
 
         return -1;

@@ -3,70 +3,68 @@ package dk.aau.cs.dkwe.edao.calypso.datalake.structures;
 import java.io.Serializable;
 import java.util.Objects;
 
-public class Pair<F extends Comparable, S extends Comparable> implements Serializable, Comparable<Pair<F, S>> {
-
-    private final F first;
-    private final S second;
-
-    public Pair(F first, S second) {
-        if(first == null){
+public record Pair<F extends Comparable, S extends Comparable>(F first, S second) implements Serializable, Comparable<Pair<F, S>>
+{
+    public Pair
+    {
+        if (first == null)
+        {
             throw new NullPointerException("Null value for Pair.first is not allowed");
         }
-        if(second == null){
+
+        if (second == null)
+        {
             throw new NullPointerException("Null value for Pair.second is not allowed");
         }
-        this.first = first;
-        this.second = second;
-    }
-
-
-    public F getFirst() {
-        return this.first;
-    }
-
-    public S getSecond() {
-        return this.second;
     }
 
     @Override
-    public boolean equals(Object other){
-        if(other == null){
+    public boolean equals(Object other)
+    {
+        if (other == null)
+        {
             return  false;
         }
 
-        if (other == this){
+        if (other == this)
+        {
             return true;
         }
 
-
-        if (!(other instanceof Pair)){
+        if (!(other instanceof Pair))
+        {
             return false;
         }
 
         Pair<?,?> m = (Pair<?,?>) other;
 
-        try {
-            F _first = (F) m.getFirst();
-            S _second = (S) m.getSecond();
-            return Objects.equals(this.first, _first) && Objects.equals(this.second, _second);
-        } catch (ClassCastException | NullPointerException unused) {
+        try
+        {
+            F _first = (F) m.first();
+            S _second = (S) m.second();
+            return Objects.equals(this.first(), _first) && Objects.equals(this.second(), _second);
+        }
+
+        catch (ClassCastException | NullPointerException unused)
+        {
             return false;
         }
 
     }
 
-
-
-    public int hashCode(){
-        return this.first.hashCode() + 113*this.second.hashCode();
+    public int hashCode()
+    {
+        return this.first().hashCode() + 113 * this.second().hashCode();
     }
 
     @Override
     public int compareTo(Pair<F, S> other)
     {
-        if (this.first.compareTo(other.getFirst()) == 0)
-            return this.second.compareTo(other.getSecond());
+        if (this.first.compareTo(other.first()) == 0)
+        {
+            return this.second.compareTo(other.second());
+        }
 
-        return this.first.compareTo(other.getFirst());
+        return this.first.compareTo(other.first());
     }
 }

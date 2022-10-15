@@ -223,8 +223,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         {
             Pair<File, Double> score = scores.next();
             JsonObject jsonScore = new JsonObject();
-            jsonScore.add("table", new JsonPrimitive(score.getFirst().getName()));
-            jsonScore.add("score", new JsonPrimitive(score.getSecond()));
+            jsonScore.add("table", new JsonPrimitive(score.first().getName()));
+            jsonScore.add("score", new JsonPrimitive(score.second()));
             array.add(jsonScore);
         }
 

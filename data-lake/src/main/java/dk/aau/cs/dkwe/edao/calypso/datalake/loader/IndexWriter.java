@@ -223,8 +223,8 @@ public class IndexWriter implements IndexIO
             {
                 for (Pair<Integer, Integer> location : locations)
                 {
-                    numEntitiesPerRow.set(location.getFirst(), numEntitiesPerRow.get(location.getFirst()) + 1);
-                    numEntitiesPerCol.set(location.getSecond(), numEntitiesPerCol.get(location.getSecond()) + 1);
+                    numEntitiesPerRow.set(location.first(), numEntitiesPerRow.get(location.first()) + 1);
+                    numEntitiesPerCol.set(location.second(), numEntitiesPerCol.get(location.second()) + 1);
                     numCellToEntityMatches++;
                 }
             }
@@ -232,7 +232,7 @@ public class IndexWriter implements IndexIO
 
         for (Pair<Integer, Integer> position : entityMatches.keySet())
         {
-            Integer colId = position.getSecond();
+            Integer colId = position.second();
             numCellToEntityMatchesPerCol.set(colId, numCellToEntityMatchesPerCol.get(colId) + 1);
         }
 
