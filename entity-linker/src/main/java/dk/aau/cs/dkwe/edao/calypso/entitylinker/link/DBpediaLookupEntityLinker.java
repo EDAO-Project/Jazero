@@ -4,7 +4,13 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import dk.aau.cs.dkwe.edao.calypso.communication.Communicator;
 import dk.aau.cs.dkwe.edao.calypso.communication.ServiceCommunicator;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.HashMap;
@@ -35,10 +41,38 @@ public class DBpediaLookupEntityLinker implements EntityLink<String, String>
             String mapping = "/api/search/KeywordSearch?&QueryString=" + key.replace(" ", "%20");
             Communicator comm = ServiceCommunicator.init("lookup.dbpedia.org", mapping, true);
             Map<String, String> headers = new HashMap<>();
-            headers.put("Accept:", "application/json");
+            headers.put("Accept", "application/json");
 
-            JsonElement json = JsonParser.parseString((String) comm.receive(headers));
-            return "Test";
+            DocumentBuilder docBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            Document doc = docBuilder.parse((String) comm.receive(headers));
+            NodeList list = doc.getElementsByTagName("ArrayOfResults");
+
+            if (list.getLength() == 0)
+            {
+                return null;
+            }
+
+            NodeList resultNodes = list.item(0).getChildNodes();
+
+            for (int i = 0; i < resultNodes.getLength(); i++)
+            {
+                if (resultNodes.item(i).getNodeName().equals("URI"))
+                {
+                    return resultNodes.item(i).getNodeValue();
+                }
+            }
+
+            return null;
+        }
+
+        catch (ParserConfigurationException e)
+        {
+            throw new RuntimeException("Configuration error in XML parser: " + e.getMessage());
+        }
+
+        catch (SAXException e)
+        {
+            throw new RuntimeException("XML parsing error: " + e.getMessage());
         }
 
         catch (MalformedURLException e)

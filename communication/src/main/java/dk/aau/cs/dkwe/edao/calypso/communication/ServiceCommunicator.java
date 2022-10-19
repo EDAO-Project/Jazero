@@ -99,7 +99,6 @@ public class ServiceCommunicator implements Communicator
             connection.setRequestProperty(header.getKey(), header.getValue());
         }
 
-        connection.setRequestProperty("Content-Type: ", "application/json");
         Object response = read(connection.getInputStream());
         connection.disconnect();
         return response;
