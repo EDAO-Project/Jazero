@@ -1,6 +1,6 @@
 package dk.aau.cs.dkwe.edao.calypso.entitylinker;
 
-import dk.aau.cs.dkwe.edao.calypso.entitylinker.link.WikipediaEntityLinker;
+import dk.aau.cs.dkwe.edao.calypso.entitylinker.link.DBpediaLookupEntityLinker;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.server.ConfigurableWebServerFactory;
@@ -58,7 +58,7 @@ public class EntityLinker implements WebServerFactoryCustomizer<ConfigurableWebS
             input = split[split.length - 1].replace('_', ' ');
         }
 
-        String linkedEntity = WikipediaEntityLinker.make().link(input);
+        String linkedEntity = DBpediaLookupEntityLinker.make().link(input);
         return ResponseEntity.ok(linkedEntity != null ? linkedEntity : "None");
     }
 }

@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 
 public class ServiceCommunicator implements Communicator
@@ -85,7 +86,20 @@ public class ServiceCommunicator implements Communicator
     @Override
     public Object receive() throws IOException
     {
+        return receive(new HashMap<>());
+    }
+
+    @Override
+    public Object receive(Map<String, String> headers) throws IOException
+    {
         HttpURLConnection connection = (HttpURLConnection) this.url.openConnection();
+
+        for (Map.Entry<String, String> header : headers.entrySet())
+        {
+            connection.setRequestProperty(header.getKey(), header.getValue());
+        }
+
+        connection.setRequestProperty("Content-Type: ", "application/json");
         Object response = read(connection.getInputStream());
         connection.disconnect();
         return response;

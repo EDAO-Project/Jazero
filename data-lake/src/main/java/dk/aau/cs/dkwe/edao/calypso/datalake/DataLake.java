@@ -104,7 +104,6 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      *                  "use-embeddings": "<BOOLEAN VALUE>",
      *                  "single-column-per-query-entity": "<BOOLEAN VALUE>",
      *                  "use-max-similarity-per-column": "<BOOLEAN VALUE>",
-     *                  "output": "<OUTPUT FOLDER>",
      *                  ["weighted-jaccard": "<BOOLEAN VALUE>,]
      *                  ["adjusted-jaccard": "<BOOLEAN VALUE>",]
      *                  ["cosine-function": "NORM_COS|ABS_COS|ANG_COS"]
@@ -163,17 +162,11 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             return ResponseEntity.badRequest().body("Missing 'similarity-measure' in JSON body");
         }
 
-        else if (!body.containsKey("output"))
-        {
-            return ResponseEntity.badRequest().body("Missing 'output' to specify directory to write results");
-        }
-
         int topK = Integer.parseInt(body.get("top-k"));
         boolean useEmbeddings = Boolean.parseBoolean(body.get("use-embeddings"));
         boolean singleColumnPerEntity = Boolean.parseBoolean(body.get("single-column-per-query-entity"));
         boolean useMaxSimilarityPerColumn = Boolean.parseBoolean(body.get("use-max-similarity-per-column"));
         boolean weightedJaccard = false, adjustedJaccard = false;
-        String outputDir = body.get("output");
         TableSearch.SimilarityMeasure similarityMeasure = TableSearch.SimilarityMeasure.valueOf(body.get("similarity-measure"));
         TableSearch.CosineSimilarityFunction cosineFunction = TableSearch.CosineSimilarityFunction.ABS_COS;
 
@@ -253,7 +246,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      *             from entity to entity, use the empty string.
      *             Optionally, an entry 'disallowed_types' for a JSON array of entity types can be added to indicated
      *             entity types that should be removed
-     * @return
+     * @return Simple index build stats
      */
     @PostMapping(value = "/insert")
     public ResponseEntity<String> insert(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
@@ -298,7 +291,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
         File dir = new File(body.get(dirKey));
         StorageHandler.StorageType storageType = headers.get("storage-type").equals("native") ?
-                StorageHandler.StorageType.NATIVE : StorageHandler.StorageType.HDFS;
+                StorageHandler.StorageType.NATIVE : StorageHandler.StorageType.HDFS;    // TODO: It's better to use StorageType.valueOf()
         Configuration.setStorageType(storageType);
 
         if (!dir.exists() || !dir.isDirectory())
