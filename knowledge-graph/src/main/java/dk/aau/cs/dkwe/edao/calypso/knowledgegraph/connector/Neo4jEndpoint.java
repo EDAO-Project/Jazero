@@ -16,7 +16,7 @@ public class Neo4jEndpoint implements AutoCloseable {
     private final String dbUri;
     private final String dbUser;
     private final String dbPassword;
-    private final String isPrimaryTopicOfPropertyName;
+    private final String isPrimaryTopicOfPropertyName, sameAsPropertyName;
 
     public Neo4jEndpoint(final String pathToConfigurationFile) throws IOException {
         this(new File(pathToConfigurationFile));
@@ -38,6 +38,7 @@ public class Neo4jEndpoint implements AutoCloseable {
         this.dbPassword = prop.getProperty("neo4j.password", "admin");
         this.driver = GraphDatabase.driver(dbUri, AuthTokens.basic(dbUser, dbPassword));
         this.isPrimaryTopicOfPropertyName = getIsPrimaryTopicProperty();
+        this.sameAsPropertyName = getSameAsProperty();
     }
 
     public Neo4jEndpoint(String uri, String user, String password) {
@@ -46,6 +47,7 @@ public class Neo4jEndpoint implements AutoCloseable {
         this.dbPassword = password;
         this.driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
         this.isPrimaryTopicOfPropertyName = getIsPrimaryTopicProperty();
+        this.sameAsPropertyName = getSameAsProperty();
     }
 
 
@@ -86,6 +88,29 @@ public class Neo4jEndpoint implements AutoCloseable {
         }
     }
 
+    public String getSameAsProperty()
+    {
+        try (Session session = driver.session())
+        {
+            return session.readTransaction(tx ->
+            {
+                Result rel_types = tx.run("CALL db.relationshipTypes() YIELD relationshipType RETURN relationshipType");
+                String name = null;
+
+                for (Record r : rel_types.list())
+                {
+                    String relType = r.get("relationshipType").asString();
+
+                    if (relType.contains("sameAs"))
+                    {
+                        name = relType;
+                    }
+                }
+
+                return name;
+            });
+        }
+    }
 
     /**
      *
@@ -110,8 +135,6 @@ public class Neo4jEndpoint implements AutoCloseable {
                 return entityUris;
             });
         }
-
-
     }
 
     /**
@@ -140,7 +163,6 @@ public class Neo4jEndpoint implements AutoCloseable {
             });
         }
     }
-
 
     public List<Pair<String, String>> searchWikiLinks(List<String> links) {
 
@@ -184,6 +206,32 @@ public class Neo4jEndpoint implements AutoCloseable {
                 for (Record r : result.list()) {
                     entityUris.add(r.get("mention").asString());
                 }
+                return entityUris;
+            });
+        }
+    }
+
+    public List<String> searchSameAs(String link)
+    {
+        Map<String, Object> params = new HashMap<>();
+        params.put("link", link);
+
+        try (Session session = driver.session())
+        {
+            return session.readTransaction(tx ->
+            {
+                List<String> entityUris = new ArrayList<>();
+
+                // Get all entity uri given a wikipedia link
+                Result result = tx.run("MATCH (a:Resource) -[l:" + this.sameAsPropertyName + "]-> (b:Resource)" + "\n"
+                        + "WHERE b.uri in [$link]" + "\n"
+                        + "RETURN a.uri as mention", params);
+
+                for (Record r : result.list())
+                {
+                    entityUris.add(r.get("mention").asString());
+                }
+
                 return entityUris;
             });
         }
