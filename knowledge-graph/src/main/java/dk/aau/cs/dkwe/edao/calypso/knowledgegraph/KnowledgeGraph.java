@@ -260,7 +260,18 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
             uri = uri.replace("https", "http");
         }
 
-        boolean exists = endpoint.entityExists(uri) || !endpoint.searchSameAs(uri).isEmpty();
-        return ResponseEntity.ok(exists ? "true" : "false");
+        if (endpoint.entityExists(uri))
+        {
+            return ResponseEntity.ok(uri);
+        }
+
+        List<String> foundBySameAs = endpoint.searchSameAs(uri);
+
+        if (!foundBySameAs.isEmpty())
+        {
+            return ResponseEntity.ok(foundBySameAs.get(0));
+        }
+
+        return ResponseEntity.badRequest().body("Entity does not exist");
     }
 }

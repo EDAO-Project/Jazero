@@ -249,7 +249,7 @@ public class Neo4jEndpoint implements AutoCloseable {
         try (Session session = this.driver.session())
         {
             return session.readTransaction(tx -> {
-                Result result = tx.run("MATCH (a.Resource)-[l]->(b:Resource)" + "\n"
+                Result result = tx.run("MATCH (a:Resource)-[l]->(b:Resource)" + "\n"
                         + "WHERE a.uri in [$uri]" + "\n"
                         + "RETURN a.uri as mention", params);
 
