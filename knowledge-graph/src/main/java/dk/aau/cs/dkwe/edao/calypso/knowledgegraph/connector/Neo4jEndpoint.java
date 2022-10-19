@@ -216,10 +216,9 @@ public class Neo4jEndpoint implements AutoCloseable {
         Map<String, Object> params = new HashMap<>();
         params.put("link", link);
 
-        try (Session session = driver.session())
+        try (Session session = this.driver.session())
         {
-            return session.readTransaction(tx ->
-            {
+            return session.readTransaction(tx -> {
                 List<String> entityUris = new ArrayList<>();
 
                 // Get all entity uri given a wikipedia link
@@ -233,6 +232,28 @@ public class Neo4jEndpoint implements AutoCloseable {
                 }
 
                 return entityUris;
+            });
+        }
+    }
+
+    /**
+     * Check for existence of an entity URI
+     * @param uri URI of entity
+     * @return True if entity exists. False otherwise.
+     */
+    public boolean entityExists(String uri)
+    {
+        Map<String, Object> params = new HashMap<>();
+        params.put("uri", uri);
+
+        try (Session session = this.driver.session())
+        {
+            return session.readTransaction(tx -> {
+                Result result = tx.run("MATCH (a.Resource)-[l]->(b:Resource)" + "\n"
+                        + "WHERE a.uri in [$uri]" + "\n"
+                        + "RETURN a.uri as mention", params);
+
+                return result.hasNext();
             });
         }
     }

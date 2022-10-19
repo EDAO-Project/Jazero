@@ -229,4 +229,38 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
         List<String> kgEntities = endpoint.searchWikiLink(entity);
         return ResponseEntity.ok(kgEntities.isEmpty() ? "None" : kgEntities.get(0));
     }
+
+    /**
+     * Check if entity exists in KG or is found as object to a sameAs predicate
+     * Body must contain a single JSON entry:
+     *      {
+     *          "entity": "<ENTITY URI>"
+     *      }
+     * @return "true" or "false" as string depending on the result
+     */
+    @PostMapping("/exists")
+    public synchronized ResponseEntity<String> exists(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
+    {
+        final String entityKey = "entity";
+
+        if (!Neo4JHandler.isInstalled())
+        {
+            return ResponseEntity.internalServerError().body("Neo4J is not installed");
+        }
+
+        else if (!body.containsKey(entityKey))
+        {
+            return ResponseEntity.badRequest().body("Missing \"" + entityKey + "\" entry in JSON body as input entity");
+        }
+
+        String uri = body.get(entityKey);
+
+        if (uri.contains("https"))
+        {
+            uri = uri.replace("https", "http");
+        }
+
+        boolean exists = endpoint.entityExists(uri) || !endpoint.searchSameAs(uri).isEmpty();
+        return ResponseEntity.ok(exists ? "true" : "false");
+    }
 }
