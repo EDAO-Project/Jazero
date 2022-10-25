@@ -462,7 +462,8 @@ public class TableSearch extends AbstractSearch
 
     private double cosineSimilarity(String ent1, String ent2)
     {
-        if (!this.currentEntityEmbeddings.containsKey(ent1) || !this.currentEntityEmbeddings.containsKey(ent2))
+        if (!this.currentEntityEmbeddings.containsKey(ent1) || !this.currentEntityEmbeddings.containsKey(ent2)
+                || this.currentEntityEmbeddings.get(ent1) == null || this.currentEntityEmbeddings.get(ent2) == null)
         {
             return 0.0;
         }
