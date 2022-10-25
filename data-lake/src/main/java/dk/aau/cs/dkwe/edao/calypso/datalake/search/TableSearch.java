@@ -67,6 +67,7 @@ public class TableSearch extends AbstractSearch
     private Map<String, Stats> tableStats = new TreeMap<>();
     private final Object lock = new Object();
     private StorageHandler storage;
+    private Map<String, List<Double>> currentEntityEmbeddings = null;
 
     public TableSearch(StorageHandler tableStorage, EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
                        int topK, int threads, boolean useEmbeddings, CosineSimilarityFunction cosineFunction,
@@ -188,6 +189,11 @@ public class TableSearch extends AbstractSearch
         if (jTable == null || jTable.numDataRows == 0)
             return null;
 
+        if (this.useEmbeddings)
+        {
+            this.currentEntityEmbeddings = getQueryAndTableEmbeddings(query, jTable);
+        }
+
         List<List<Integer>> queryRowToColumnMappings = new ArrayList<>();  // If each query entity needs to map to only one column find the best mapping
 
         if (this.singleColumnPerQueryEntity)
@@ -281,6 +287,43 @@ public class TableSearch extends AbstractSearch
         this.tableStats.put(table.getName(), statBuilder.finish());
 
         return new Pair<>(table, score);
+    }
+
+    private Map<String, List<Double>> getQueryAndTableEmbeddings(Table<String> query, JsonTable table)
+    {
+        int queryRows = query.rowCount();
+        List<String> entities = new ArrayList<>();
+
+        for (int row = 0; row < queryRows; row++)
+        {
+            int columns = query.getRow(row).size();
+
+            for (int column = 0; column < columns; column++)
+            {
+                entities.add(query.getRow(row).get(column));
+            }
+        }
+
+        for (List<JsonTable.TableCell> row : table.rows)
+        {
+            int columns = row.size();
+
+            for (int column = 0; column < columns; column++)
+            {
+                for (String link : row.get(column).links)
+                {
+                    String uri = getLinker().mapTo(link);
+
+                    if (uri != null)
+                    {
+                        entities.add(uri);
+                        break;
+                    }
+                }
+            }
+        }
+
+        return this.embeddings.batchSelect(entities);
     }
 
     /**
@@ -419,7 +462,13 @@ public class TableSearch extends AbstractSearch
 
     private double cosineSimilarity(String ent1, String ent2)
     {
-        double cosineSim = Utils.cosineSimilarity(this.embeddings.select(ent1), this.embeddings.select(ent2)), simScore = 0.0;
+        if (!this.currentEntityEmbeddings.containsKey(ent1) || !this.currentEntityEmbeddings.containsKey(ent2))
+        {
+            return 0.0;
+        }
+
+        double cosineSim = Utils.cosineSimilarity(this.currentEntityEmbeddings.get(ent1), this.currentEntityEmbeddings.get(ent2)),
+                simScore = 0.0;
 
         if (this.embeddingSimFunction == CosineSimilarityFunction.NORM_COS)
             simScore = (cosineSim + 1.0) / 2.0;
@@ -447,7 +496,7 @@ public class TableSearch extends AbstractSearch
     {
         try
         {
-            return this.embeddings.select(entity) != null;
+            return this.currentEntityEmbeddings.containsKey(entity);
         }
 
         catch (IllegalArgumentException exc)
