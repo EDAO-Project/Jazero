@@ -109,7 +109,7 @@ public class TableSearch extends AbstractSearch
         this.queryEntityEmbeddings = this.embeddings.batchSelect(entities);
     }
 
-    private void insertTableEntityEmbeddings(JsonTable table, String tableId)
+    private synchronized void insertTableEntityEmbeddings(JsonTable table, String tableId)
     {
         List<String> entities = new ArrayList<>();
 
@@ -133,6 +133,11 @@ public class TableSearch extends AbstractSearch
         }
 
         this.tablesToEntityMappings.put(tableId, this.embeddings.batchSelect(entities));
+    }
+
+    private synchronized void removeTableEmbeddings(String tableId)
+    {
+        this.tablesToEntityMappings.remove(tableId);
     }
 
     private List<Double> getTableEntityEmbedding(String entity)
@@ -353,7 +358,7 @@ public class TableSearch extends AbstractSearch
 
         if (this.useEmbeddings)
         {
-            this.tablesToEntityMappings.remove(table.getName());
+            removeTableEmbeddings(table.getName());
         }
 
         return new Pair<>(table, score);
