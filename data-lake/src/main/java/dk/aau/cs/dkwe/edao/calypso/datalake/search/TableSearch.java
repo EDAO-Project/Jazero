@@ -21,10 +21,7 @@ import dk.aau.cs.dkwe.edao.calypso.storagelayer.StorageHandler;
 
 import java.io.File;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -68,7 +65,7 @@ public class TableSearch extends AbstractSearch
     private final Object lock = new Object();
     private StorageHandler storage;
     private Map<String, List<Double>> queryEntityEmbeddings = null;
-    private Map<String, Map<String, List<Double>>> tablesToEntityMappings = new HashMap<>();
+    private Map<String, Map<String, List<Double>>> tablesToEntityMappings = new ConcurrentHashMap<>();
 
     public TableSearch(StorageHandler tableStorage, EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
                        int topK, int threads, boolean useEmbeddings, CosineSimilarityFunction cosineFunction,
@@ -106,10 +103,10 @@ public class TableSearch extends AbstractSearch
             }
         }
 
-        this.queryEntityEmbeddings = this.embeddings.batchSelect(entities);
+        this.queryEntityEmbeddings = new ConcurrentHashMap<>(this.embeddings.batchSelect(entities));
     }
 
-    private synchronized void insertTableEntityEmbeddings(JsonTable table, String tableId)
+    private void insertTableEntityEmbeddings(JsonTable table, String tableId)
     {
         List<String> entities = new ArrayList<>();
 
@@ -135,7 +132,7 @@ public class TableSearch extends AbstractSearch
         this.tablesToEntityMappings.put(tableId, this.embeddings.batchSelect(entities));
     }
 
-    private synchronized void removeTableEmbeddings(String tableId)
+    private void removeTableEmbeddings(String tableId)
     {
         this.tablesToEntityMappings.remove(tableId);
     }
