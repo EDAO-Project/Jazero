@@ -454,7 +454,7 @@ public class TableSearch extends AbstractSearch
             return jaccardSimilarity(ent1, ent2);
 
         else if (entityExists(ent1) && entityExists(ent2))
-            return cosineSimilarity(ent2, ent2);
+            return cosineSimilarity(ent1, ent2);
 
         synchronized (this.lock)
         {
