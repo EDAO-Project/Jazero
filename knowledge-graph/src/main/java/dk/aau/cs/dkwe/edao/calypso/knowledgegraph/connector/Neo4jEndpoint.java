@@ -11,25 +11,32 @@ import java.util.*;
 /**
  * Connects and query the KG in Neo4j
  */
-public class Neo4jEndpoint implements AutoCloseable {
+public class Neo4jEndpoint implements AutoCloseable
+{
     private final Driver driver;
     private final String dbUri;
     private final String dbUser;
     private final String dbPassword;
     private final String isPrimaryTopicOfPropertyName, sameAsPropertyName;
 
-    public Neo4jEndpoint(final String pathToConfigurationFile) throws IOException {
+    public Neo4jEndpoint(final String pathToConfigurationFile) throws IOException
+    {
         this(new File(pathToConfigurationFile));
     }
 
-    public Neo4jEndpoint(final File confFile) throws IOException {
+    public Neo4jEndpoint(final File confFile) throws IOException
+    {
         Properties prop = new Properties();
         InputStream inputStream;
 
-        if (confFile.exists()) {
+        if (confFile.exists())
+        {
             inputStream = new FileInputStream(confFile);
             prop.load(inputStream);
-        } else {
+        }
+
+        else
+        {
             throw new FileNotFoundException("property file '" + confFile.getAbsolutePath() + "' not found");
         }
 
@@ -41,7 +48,8 @@ public class Neo4jEndpoint implements AutoCloseable {
         this.sameAsPropertyName = getSameAsProperty();
     }
 
-    public Neo4jEndpoint(String uri, String user, String password) {
+    public Neo4jEndpoint(String uri, String user, String password)
+    {
         this.dbUri = uri;
         this.dbUser = user;
         this.dbPassword = password;
@@ -52,17 +60,21 @@ public class Neo4jEndpoint implements AutoCloseable {
 
 
     @Override
-    public void close() {
+    public void close()
+    {
         driver.close();
     }
 
-    public void testConnection() {
-        try (Session session = driver.session()) {
+    public void testConnection()
+    {
+        try (Session session = this.driver.session())
+        {
             Long numNodes = session.readTransaction(tx -> {
                 Result result = tx.run("MATCH (a:Resource) " +
                         "RETURN COUNT(a) as count");
                 return result.single().get("count").asLong();
             });
+
             System.out.printf("Neo4j Connection established. Num Nodes: %d \n", numNodes);
         }
     }
@@ -71,18 +83,25 @@ public class Neo4jEndpoint implements AutoCloseable {
      * @return a string with the name of the link corresponding to the isPrimaryTopicOf in the knowledgebase.
      * Return a null string if it is not found
      */
-    public String getIsPrimaryTopicProperty() {
-        try (Session session = driver.session()) {
+    public String getIsPrimaryTopicProperty()
+    {
+        try (Session session = this.driver.session())
+        {
             return session.readTransaction(tx -> {
                 // Get list of all relationship types (i.e. all link names)
                 Result rel_types = tx.run("CALL db.relationshipTypes() YIELD relationshipType RETURN relationshipType");
                 String isPrimaryTopicOf_link_name = null;
-                for (Record r : rel_types.list()) {
+
+                for (Record r : rel_types.list())
+                {
                     String rel_type = r.get("relationshipType").asString();
-                    if (rel_type.contains("isPrimaryTopicOf")) {
+
+                    if (rel_type.contains("isPrimaryTopicOf"))
+                    {
                         isPrimaryTopicOf_link_name = rel_type;
                     }
                 }
+
                 return isPrimaryTopicOf_link_name;
             });
         }
@@ -90,7 +109,7 @@ public class Neo4jEndpoint implements AutoCloseable {
 
     public String getSameAsProperty()
     {
-        try (Session session = driver.session())
+        try (Session session = this.driver.session())
         {
             return session.readTransaction(tx ->
             {
@@ -117,21 +136,24 @@ public class Neo4jEndpoint implements AutoCloseable {
      * @param links a list of wikipedia links [https://en.wikipedia.org/wiki/Yellow_Yeiyah, ...]
      * @return a list of mapped dbpedia links [http://dbpedia.org/resource/Yellow_Yeiyah, ...]
      */
-    public List<String> searchWikiLinks(Iterable<String> links) {
+    public List<String> searchWikiLinks(Iterable<String> links)
+    {
         Map<String, Object> params = new HashMap<>();
-
         params.put("linkList", links);
 
-        try (Session session = driver.session()) {
+        try (Session session = this.driver.session())
+        {
             return session.readTransaction(tx -> {
                 List<String> entityUris = new ArrayList<>();
                 Result result = tx.run("MATCH (a:Resource) -[l:ns57__isPrimaryTopicOf]-> (b:Resource)" + "\n"
                         + "WHERE b.uri in $linkList" + "\n"
                         + "RETURN a.uri as mention", params);
 
-                for (Record r : result.list()) {
+                for (Record r : result.list())
+                {
                     entityUris.add(r.get("mention").asString());
                 }
+
                 return entityUris;
             });
         }
@@ -142,11 +164,13 @@ public class Neo4jEndpoint implements AutoCloseable {
      * @param entity link a specific entity (i.e. a dbpedia link)
      * @return the list of rdf__type uris corresonding to the 
      */
-    public List<String> searchTypes(String entity) {
+    public List<String> searchTypes(String entity)
+    {
         Map<String, Object> params = new HashMap<>();
         params.put("entity", entity);
 
-        try (Session session = driver.session()) {
+        try (Session session = this.driver.session())
+        {
             return session.readTransaction(tx -> {
                 List<String> entity_types = new ArrayList<>();
 
@@ -155,7 +179,8 @@ public class Neo4jEndpoint implements AutoCloseable {
                         + "WHERE a.uri in [$entity]" + "\n"
                         + "RETURN b.uri as mention", params);
 
-                for (Record r : result.list()) {
+                for (Record r : result.list())
+                {
                     entity_types.add(r.get("mention").asString());
                 }
 
@@ -164,21 +189,24 @@ public class Neo4jEndpoint implements AutoCloseable {
         }
     }
 
-    public List<Pair<String, String>> searchWikiLinks(List<String> links) {
-
+    public List<Pair<String, String>> searchWikiLinks(List<String> links)
+    {
         Map<String, Object> params = new HashMap<>();
-
         params.put("linkList", links);
 
-        try (Session session = driver.session()) {
+        try (Session session = this.driver.session())
+        {
             return session.readTransaction(tx -> {
                 List<Pair<String, String>> entityUris = new ArrayList<>();
                 Result result = tx.run("MATCH (a:Resource) -[l:ns57__isPrimaryTopicOf]-> (b:Resource)"
                         + "WHERE b.uri in $linkList"
                         + "RETURN a.uri as uri1, b.uri as uri2", params);
-                for (Record r : result.list()) {
+
+                for (Record r : result.list())
+                {
                     entityUris.add(new Pair<>(r.get("uri1").asString(), r.get("uri2").asString()));
                 }
+
                 return entityUris;
             });
         }
@@ -189,12 +217,13 @@ public class Neo4jEndpoint implements AutoCloseable {
      * @param link a specific wikipedia link
      * @return a list of possible entity matches
      */
-    public List<String> searchWikiLink(String link) {
-
+    public List<String> searchWikiLink(String link)
+    {
         Map<String, Object> params = new HashMap<>();
         params.put("link", link);
 
-        try (Session session = driver.session()) {
+        try (Session session = this.driver.session())
+        {
             return session.readTransaction(tx -> {
                 List<String> entityUris = new ArrayList<>();
 
@@ -203,9 +232,11 @@ public class Neo4jEndpoint implements AutoCloseable {
                         + "WHERE b.uri in [$link]" + "\n"
                         + "RETURN a.uri as mention", params);
 
-                for (Record r : result.list()) {
+                for (Record r : result.list())
+                {
                     entityUris.add(r.get("mention").asString());
                 }
+
                 return entityUris;
             });
         }
@@ -269,7 +300,8 @@ public class Neo4jEndpoint implements AutoCloseable {
      * 
      * @return top ranked table nodes with their respective PPR
      */
-    public Map<String, Double> runPPR(Iterable<String> queryTuple, Iterable<Double> weights, Double minThreshold, Double numParticles, Integer topK) {
+    public Map<String, Double> runPPR(Iterable<String> queryTuple, Iterable<Double> weights, Double minThreshold, Double numParticles, Integer topK)
+    {
         Map<String, Object> params = new HashMap<>();
         params.put("queryTuple", queryTuple);
         params.put("weights", weights);
@@ -278,7 +310,8 @@ public class Neo4jEndpoint implements AutoCloseable {
         params.put("topK", topK);
 
 
-        try (Session session = driver.session()) {
+        try (Session session = this.driver.session())
+        {
             return session.readTransaction(tx -> {
 
                 // Get top ranked table nodes with their respective PPR scores
@@ -287,11 +320,13 @@ public class Neo4jEndpoint implements AutoCloseable {
                     + "YIELD nodeId, score WITH nodeId, score ORDER BY score DESC LIMIT $topK" + "\n"
                     + "MATCH (r:Resource)-[:rdf__type]->(t:Resource) WHERE ID(r) = nodeId and t.uri='https://schema.org/Table'" + "\n"
                     + "RETURN r.uri as file, score as scoreVal"
-                    ,params);
+                    , params);
 
                 Map<String, Double> tableToScore = new HashMap<>();
                 // Loop over all records and populate `tableToScore` HashMap
-                for (Record r : result.list()) {
+
+                for (Record r : result.list())
+                {
                     String tablePathStr = r.get("file").asString();
                     String tableName = Paths.get(tablePathStr).getFileName().toString() + ".json";
                     Double score = r.get("scoreVal").asDouble();
@@ -306,12 +341,15 @@ public class Neo4jEndpoint implements AutoCloseable {
     /**
      * Return the number of edges in the graph
      */
-    public Long getNumEdges() {
-        try (Session session = driver.session()) {
+    public Long getNumEdges()
+    {
+        try (Session session = this.driver.session())
+        {
             Long numEdges = session.readTransaction(tx -> {
                 Result result = tx.run("MATCH (r1:Resource)-[l]->(r2:Resource) RETURN COUNT(l) as count");
                 return result.single().get("count").asLong();
             });
+
             return numEdges;
         } 
     }
@@ -319,12 +357,15 @@ public class Neo4jEndpoint implements AutoCloseable {
     /**
      * Return the number of nodes in the graph
      */
-    public Long getNumNodes() {
-        try (Session session = driver.session()) {
+    public Long getNumNodes()
+    {
+        try (Session session = this.driver.session())
+        {
             Long numNodes = session.readTransaction(tx -> {
                 Result result = tx.run("MATCH (a:Resource) RETURN COUNT(a) as count");
                 return result.single().get("count").asLong();
             });
+
             return numNodes;
         }
     }
@@ -332,16 +373,68 @@ public class Neo4jEndpoint implements AutoCloseable {
     /**
      * Return the number of neighbors for a given input node
      */
-    public Long getNumNeighbors(String node) {
+    public Long getNumNeighbors(String node)
+    {
         Map<String, Object> params = new HashMap<>();
         params.put("node", node);
 
-        try (Session session = driver.session()) {
+        try (Session session = this.driver.session())
+        {
             Long numNeighbors = session.readTransaction(tx -> {
                 Result result = tx.run("MATCH (a:Resource) WHERE a.uri in [$node] RETURN apoc.node.degree(a) as count", params);
                 return result.single().get("count").asLong();
             });
+
             return numNeighbors;
         } 
+    }
+
+    public Set<String> getEntities()
+    {
+        try (Session session = this.driver.session())
+        {
+            Set<String> entities = session.readTransaction(tx -> {
+                Set<String> nodes = new HashSet<>();
+                Result result = tx.run("MATCH (a:Resource) RETURN a.uri as entity");
+
+                for (Record record : result.list())
+                {
+                    nodes.add(record.get("entity").asString());
+                }
+
+                return nodes;
+            });
+
+            return entities;
+        }
+    }
+
+    public String getLabel(String uri)
+    {
+        Map<String, Object> params = new HashMap<>();
+        params.put("uri", uri);
+
+        try (Session session = this.driver.session())
+        {
+            String label = session.readTransaction(tx -> {
+                Result result = tx.run("MATCH (a:Resource)-[l:ns0__label]->(b:Resource) WHERE a.uri IN [$uri] RETURN a.rdfs__label AS label", params);
+                return result.hasNext() ? result.next().get("label").asString() : null;
+            });
+            return label;
+        }
+    }
+
+    public String getCaption(String uri)
+    {
+        Map<String, Object> params = new HashMap<>();
+        params.put("uri", uri);
+
+        try (Session session = this.driver.session())
+        {
+            String caption = session.readTransaction(tx -> {
+                Result result = tx.run("MATCH (a:Resource)-[l:ns0__caption]->(b:Resource) WHERE a.uri IN [$uri] RETURN a.ns0__caption AS caption", params);
+                return result.hasNext() ? result.next().get("caption").asString() : null;
+            })
+        }
     }
 }

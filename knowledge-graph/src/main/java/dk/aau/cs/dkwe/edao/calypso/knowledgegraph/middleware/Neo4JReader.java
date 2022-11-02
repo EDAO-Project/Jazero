@@ -50,6 +50,37 @@ public class Neo4JReader extends Neo4JHandler implements IndexIO
         return KG_FILE;
     }
 
+    /**
+     * Returns all entities and some of their textual literal objects
+     * @return In-memory sub-graph
+     */
+    public Map<String, Set<String>> subGraph()
+    {
+        Map<String, Set<String>> subKG = new HashMap<>();
+        Set<String> entities = this.endpoint.getEntities();
+
+        for (String entity : entities)
+        {
+            Set<String> objects = new HashSet<>();
+            String label = this.endpoint.getLabel(entity);
+            String caption = this.endpoint.getCaption(entity);
+
+            if (label != null)
+            {
+                objects.add(label);
+            }
+
+            if (caption != null)
+            {
+                objects.add(caption);
+            }
+
+            subKG.put(entity, objects);
+        }
+
+        return subKG;
+    }
+
     public List<Type> entityTypes(Entity entity)
     {
         List<String> typesStr = this.endpoint.searchTypes(entity.getUri());

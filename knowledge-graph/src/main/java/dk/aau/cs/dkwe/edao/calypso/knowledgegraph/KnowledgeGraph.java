@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @SpringBootApplication
 @RestController
@@ -91,6 +92,62 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
         {
             return ResponseEntity.internalServerError().body("Failed reading KG: " + exc.getMessage());
         }
+    }
+
+    /**
+     * Returns a sub-KG containing entities and text literals of entity objects
+     * Warning: This is a potential endpoint that can crash the service if the graph is very large!
+     *          A solution would be to only returns textual objects of given entities, but the entity linker service does
+     *          not know all entities.
+     * @param headers Request headers
+     * @return JSON array of entities and objects that are textual literals, as in the example below:
+     *          {
+     *              "entities": [
+     *                  {
+     *                      "entity": "<URI>",
+     *                      "objects": ["<OBJ_1>",
+     *                                  "<OBJ_2>",
+     *                                  ...
+     *                                  "<OBJ_N>"
+     *                                  ]
+     *                  },
+     *                  ...
+     *              ]
+     *          }
+     */
+    @GetMapping("/sub-kg")
+    public synchronized ResponseEntity<String> getSubKG(@RequestHeader Map<String, String> headers)
+    {
+        if (!Neo4JHandler.isInstalled())
+        {
+            return ResponseEntity.internalServerError().body("Neo4J is not installed");
+        }
+
+        Neo4JReader reader = new Neo4JReader(endpoint);
+        Map<String, Set<String>> subKG = reader.subGraph();
+        JsonArray array = new JsonArray();
+
+        for (Map.Entry<String, Set<String>> entry : subKG.entrySet())
+        {
+            JsonObject entity = new JsonObject();
+            JsonArray entityObjects = new JsonArray();
+            entity.addProperty("entity", entry.getKey());
+
+            for (String object : entry.getValue())
+            {
+                entityObjects.add(object);
+            }
+
+            entity.add("objects", entityObjects);
+            array.add(entity);
+        }
+
+        JsonObject json = new JsonObject();
+        json.add("entities", array);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(json.toString());
     }
 
     /**
