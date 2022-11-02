@@ -434,7 +434,8 @@ public class Neo4jEndpoint implements AutoCloseable
             String caption = session.readTransaction(tx -> {
                 Result result = tx.run("MATCH (a:Resource)-[l:ns0__caption]->(b:Resource) WHERE a.uri IN [$uri] RETURN a.ns0__caption AS caption", params);
                 return result.hasNext() ? result.next().get("caption").asString() : null;
-            })
+            });
+            return caption;
         }
     }
 }
