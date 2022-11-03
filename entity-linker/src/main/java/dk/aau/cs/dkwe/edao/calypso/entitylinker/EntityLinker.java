@@ -1,6 +1,10 @@
 package dk.aau.cs.dkwe.edao.calypso.entitylinker;
 
-import dk.aau.cs.dkwe.edao.calypso.entitylinker.link.DBpediaLookupEntityLinker;
+import dk.aau.cs.dkwe.edao.calypso.datalake.connector.service.KGService;
+import dk.aau.cs.dkwe.edao.calypso.datalake.system.Configuration;
+import dk.aau.cs.dkwe.edao.calypso.datalake.system.Logger;
+import dk.aau.cs.dkwe.edao.calypso.entitylinker.index.LuceneFactory;
+import dk.aau.cs.dkwe.edao.calypso.entitylinker.link.LuceneLinker;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.server.ConfigurableWebServerFactory;
@@ -9,7 +13,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 
 @SpringBootApplication
 @RestController
@@ -21,8 +27,20 @@ public class EntityLinker implements WebServerFactoryCustomizer<ConfigurableWebS
         factory.setPort(8082);
     }
 
-    public static void main(String[] args)
+    public static void main(String[] args) throws IOException
     {
+        if (!LuceneFactory.isBuild())
+        {
+            Logger.logNewLine(Logger.Level.INFO, "No Lucene index found");
+
+            KGService kgService = new KGService(Configuration.getEKGManagerHost(), Configuration.getEKGManagerPort());
+            while (!kgService.testConnection());
+
+            Map<String, Set<String>> subGraph = kgService.getSubGraph();
+            LuceneFactory.build(subGraph, true);
+            Logger.logNewLine(Logger.Level.INFO, "Lucene index build finished");
+        }
+
         SpringApplication.run(EntityLinker.class, args);
     }
 
@@ -58,7 +76,16 @@ public class EntityLinker implements WebServerFactoryCustomizer<ConfigurableWebS
             input = split[split.length - 1].replace('_', ' ');
         }
 
-        String linkedEntity = DBpediaLookupEntityLinker.make().link(input);
-        return ResponseEntity.ok(linkedEntity != null ? linkedEntity : "None");
+        try
+        {
+            LuceneLinker luceneLinker = new LuceneLinker(LuceneFactory.get());
+            String linkedEntity = luceneLinker.link(input);
+            return ResponseEntity.ok(linkedEntity != null ? linkedEntity : "None");
+        }
+
+        catch (IOException e)
+        {
+            throw new RuntimeException("Could not load Lucene index from disk: " + e.getMessage());
+        }
     }
 }

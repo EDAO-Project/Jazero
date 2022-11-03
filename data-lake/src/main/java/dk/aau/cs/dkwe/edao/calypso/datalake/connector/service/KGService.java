@@ -10,10 +10,7 @@ import org.springframework.http.MediaType;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Entrypoint for communicating with KG service
@@ -142,6 +139,26 @@ public class KGService extends Service
         catch (IOException e)
         {
             throw new RuntimeException("IOException when sending POST request to get entity link: " + e.getMessage());
+        }
+    }
+
+    public Map<String, Set<String>> getSubGraph()
+    {
+        try
+        {
+            Communicator comm = ServiceCommunicator.init(getHost(), getPort(), "sub-kg");
+            String response = (String) comm.receive();
+
+        }
+
+        catch (MalformedURLException e)
+        {
+            throw new RuntimeException("URL for EKG Manager to retrieve entity link is malformed: " + e.getMessage());
+        }
+
+        catch (IOException e)
+        {
+            throw new RuntimeException("IOException when sending GET request to get sub-KG: " + e.getMessage());
         }
     }
 }

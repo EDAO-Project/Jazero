@@ -111,25 +111,28 @@ public class Configuration
             props.setProperty("DBPassword", "1234");
 
         if (!props.contains("SDLHost"))
-            props.setProperty("SDLHost", "127.0.0.1");
+            props.setProperty("SDLHost", "localhost");
 
         if (!props.contains("SDLPort"))
             props.setProperty("SDLPort", "8081");
 
         if (!props.contains("EntityLinkerHost"))
-            props.setProperty("EntityLinkerHost", "127.0.0.1");
+            props.setProperty("EntityLinkerHost", "localhost");
 
         if (!props.contains("EntityLinkerPort"))
             props.setProperty("EntityLinkerPort", "8082");
 
         if (!props.contains("EKGManagerHost"))
-            props.setProperty("EKGManagerHost", "127.0.0.1");
+            props.setProperty("EKGManagerHost", "localhost");
 
         if (!props.contains("EKGManagerPort"))
             props.setProperty("EKGManagerPort", "8083");
 
         if (!props.contains("GoogleAPIKey"))
             props.setProperty("GoogleAPIKey", "AIzaSyB9mH-706htjAcFBxfrXaJ5jpDnuBfxhm8");
+
+        if (!props.contains("LuceneDir"))
+            props.setProperty("LuceneDir", "./lucene");
 
         writeProperties(props);
     }
@@ -377,5 +380,15 @@ public class Configuration
     public static String getGoogleAPIKey()
     {
         return readProperties().getProperty("GoogleAPIKey");
+    }
+
+    public static void setLuceneDir(String dir)
+    {
+        addProperty("LuceneDir", dir);
+    }
+
+    public static String getLuceneDir()
+    {
+        return readProperties().getProperty("LuceneDir");
     }
 }
