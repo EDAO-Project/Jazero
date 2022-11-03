@@ -146,9 +146,25 @@ public class KGService extends Service
     {
         try
         {
+            Map<String, Set<String>> subGraph = new HashMap<>();
             Communicator comm = ServiceCommunicator.init(getHost(), getPort(), "sub-kg");
-            String response = (String) comm.receive();
+            JsonElement parsed = JsonParser.parseString((String) comm.receive());
+            JsonArray array = parsed.getAsJsonObject().getAsJsonArray("entities").getAsJsonArray();
 
+            for (JsonElement element : array)
+            {
+                JsonObject entity = element.getAsJsonObject();
+                Set<String> objects = new HashSet<>();
+
+                for (JsonElement objectElement : entity.getAsJsonArray("objects").getAsJsonArray())
+                {
+                    objects.add(objectElement.getAsString());
+                }
+
+                subGraph.put(entity.get("entity").getAsString(), objects);
+            }
+
+            return subGraph;
         }
 
         catch (MalformedURLException e)
