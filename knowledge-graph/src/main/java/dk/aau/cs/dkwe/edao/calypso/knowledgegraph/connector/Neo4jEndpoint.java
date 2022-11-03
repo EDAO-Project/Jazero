@@ -417,7 +417,7 @@ public class Neo4jEndpoint implements AutoCloseable
         try (Session session = this.driver.session())
         {
             String label = session.readTransaction(tx -> {
-                Result result = tx.run("MATCH (a:Resource)-[l:ns0__label]->(b:Resource) WHERE a.uri IN [$uri] RETURN a.rdfs__label AS label", params);
+                Result result = tx.run("MATCH (a:Resource)-[l:rdfs__label]->(b:Resource) WHERE a.uri IN [$uri] RETURN a.rdfs__label AS label", params);
                 return result.hasNext() ? result.next().get("label").asString() : null;
             });
             return label;
