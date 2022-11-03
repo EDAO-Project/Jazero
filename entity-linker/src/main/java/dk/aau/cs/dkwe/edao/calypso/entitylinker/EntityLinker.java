@@ -33,12 +33,19 @@ public class EntityLinker implements WebServerFactoryCustomizer<ConfigurableWebS
         {
             Logger.logNewLine(Logger.Level.INFO, "No Lucene index found");
 
-            KGService kgService = new KGService(Configuration.getEKGManagerHost(), Configuration.getEKGManagerPort());
-            while (!kgService.testConnection());
+            while (true)
+            {
+                try
+                {
+                    KGService kgService = new KGService(Configuration.getEKGManagerHost(), Configuration.getEKGManagerPort());
+                    Map<String, Set<String>> subGraph = kgService.getSubGraph();
+                    LuceneFactory.build(subGraph, true);
+                    Logger.logNewLine(Logger.Level.INFO, "Lucene index build finished");
+                    break;
+                }
 
-            Map<String, Set<String>> subGraph = kgService.getSubGraph();
-            LuceneFactory.build(subGraph, true);
-            Logger.logNewLine(Logger.Level.INFO, "Lucene index build finished");
+                catch (RuntimeException e) {}
+            }
         }
 
         SpringApplication.run(EntityLinker.class, args);
