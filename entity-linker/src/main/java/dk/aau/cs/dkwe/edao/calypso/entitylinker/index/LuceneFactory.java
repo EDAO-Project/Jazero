@@ -42,7 +42,7 @@ public class LuceneFactory
     public static void build(File kgDir, boolean verbose) throws IOException
     {
         Analyzer analyzer = new StandardAnalyzer();
-        Path indexPath = Files.createTempDirectory(Configuration.getLuceneDir());
+        Path indexPath = Files.createDirectory(new File(Configuration.getLuceneDir()).toPath());
         Directory directory = FSDirectory.open(indexPath);
         IndexWriterConfig config = new IndexWriterConfig(analyzer);
         IndexWriter writer = new IndexWriter(directory, config);
