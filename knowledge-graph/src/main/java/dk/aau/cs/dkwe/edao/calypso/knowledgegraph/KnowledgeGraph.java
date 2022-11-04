@@ -114,6 +114,9 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
      *                  ...
      *              ]
      *          }
+     *
+     * WARNING:
+     *      This endpoint can memory crash the service for large KGs since this loads the sub-graph into memory
      */
     @GetMapping("/sub-kg")
     public synchronized ResponseEntity<String> getSubKG(@RequestHeader Map<String, String> headers)

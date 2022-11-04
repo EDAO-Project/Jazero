@@ -2,6 +2,12 @@ package dk.aau.cs.dkwe.edao.calypso.entitylinker.index;
 
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Logger;
+import org.apache.jena.graph.Graph;
+import org.apache.jena.graph.Node;
+import org.apache.jena.graph.Triple;
+import org.apache.jena.rdf.model.*;
+import org.apache.jena.rdf.model.impl.PropertyImpl;
+import org.apache.jena.util.iterator.ExtendedIterator;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -15,10 +21,14 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class LuceneFactory
@@ -29,46 +39,72 @@ public class LuceneFactory
         return dir.exists();
     }
 
-    public static void build(Map<String, Set<String>> entityDocuments, boolean verbose) throws IOException
+    public static void build(File kgDir, boolean verbose) throws IOException
     {
         Analyzer analyzer = new StandardAnalyzer();
         Path indexPath = Files.createTempDirectory(Configuration.getLuceneDir());
         Directory directory = FSDirectory.open(indexPath);
         IndexWriterConfig config = new IndexWriterConfig(analyzer);
         IndexWriter writer = new IndexWriter(directory, config);
-        int prog = 0;
+        int prog = 0, filesCount = kgDir.listFiles().length;
+        Set<Node> entities = new HashSet<>();
 
         if (verbose)
         {
             Logger.logNewLine(Logger.Level.INFO, "Building Lucene index...");
         }
 
-        for (Map.Entry<String, Set<String>> entry : entityDocuments.entrySet())
+        for (File kgFile : Objects.requireNonNull(kgDir.listFiles()))
         {
             if (verbose)
             {
-                Logger.log(Logger.Level.INFO,  ((prog++ / entityDocuments.size()) * 100) + "% progress");
+                Logger.log(Logger.Level.INFO, ((prog++ / filesCount) * 100) + " KG files indexed into Lucene index");
             }
 
-            Document doc = new Document();
-            StringBuilder builder = new StringBuilder();
-            builder.append(entry.getKey()).append(" ");
-
-            for (String txt : entry.getValue())
+            try
             {
-                if (txt != null)
+                Model m = ModelFactory.createDefaultModel();
+                m.read(new FileInputStream(kgFile), null, "TTL");
+                ExtendedIterator<Triple> iter = m.getGraph().find();
+
+                while (iter.hasNext())
                 {
-                    builder.append(txt).append(" ");
+                    Triple triple = iter.next();
+                    entities.add(triple.getSubject());
+
+                    if (triple.getPredicate().hasURI("http://www.w3.org/2000/01/rdf-schema#label"))
+                    {
+                        Document doc = new Document();
+                        doc.add(new Field(LuceneIndex.URI_FIELD, triple.getSubject().getURI(), TextField.TYPE_STORED));
+                        doc.add(new Field(LuceneIndex.TEXT_FIELD, triple.getSubject().getURI() + " " +
+                                triple.getPredicate().getURI(), TextField.TYPE_STORED));
+                        writer.addDocument(doc);
+                        entities.remove(triple.getSubject());
+                    }
+                }
+
+                for (Node entity : entities)
+                {
+                    Document doc = new Document();
+                    doc.add(new Field(LuceneIndex.URI_FIELD, entity.getURI(), TextField.TYPE_STORED));
+                    doc.add(new Field(LuceneIndex.TEXT_FIELD, entity.getURI(), TextField.TYPE_STORED));
+                    writer.addDocument(doc);
                 }
             }
 
-            builder.deleteCharAt(builder.length() - 1);
-            doc.add(new Field(LuceneIndex.TEXT_FIELD, builder.toString(), TextField.TYPE_STORED));
-            doc.add(new Field(LuceneIndex.URI_FIELD, entry.getKey(), TextField.TYPE_STORED));
-            writer.addDocument(doc);
-        }
+            catch (FileNotFoundException e)
+            {
+                if (verbose)
+                {
+                    Logger.logNewLine(Logger.Level.ERROR, "KG file '" + kgFile.getAbsolutePath() + "' was not found");
+                }
+            }
 
-        writer.close();
+            finally
+            {
+                writer.close();
+            }
+        }
     }
 
     public static LuceneIndex get() throws IOException

@@ -1,6 +1,5 @@
 package dk.aau.cs.dkwe.edao.calypso.entitylinker;
 
-import dk.aau.cs.dkwe.edao.calypso.datalake.connector.service.KGService;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Logger;
 import dk.aau.cs.dkwe.edao.calypso.entitylinker.index.LuceneFactory;
@@ -13,14 +12,16 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
 
 @SpringBootApplication
 @RestController
 public class EntityLinker implements WebServerFactoryCustomizer<ConfigurableWebServerFactory>
 {
+    private static LuceneLinker luceneLinker;
+
     @Override
     public void customize(ConfigurableWebServerFactory factory)
     {
@@ -33,21 +34,12 @@ public class EntityLinker implements WebServerFactoryCustomizer<ConfigurableWebS
         {
             Logger.logNewLine(Logger.Level.INFO, "No Lucene index found");
 
-            while (true)
-            {
-                try
-                {
-                    KGService kgService = new KGService(Configuration.getEKGManagerHost(), Configuration.getEKGManagerPort());
-                    Map<String, Set<String>> subGraph = kgService.getSubGraph();
-                    LuceneFactory.build(subGraph, true);
-                    Logger.logNewLine(Logger.Level.INFO, "Lucene index build finished");
-                    break;
-                }
-
-                catch (RuntimeException e) {}
-            }
+            File kgDir = new File(Configuration.getKGDir());
+            LuceneFactory.build(kgDir, true);
+            Logger.logNewLine(Logger.Level.INFO, "Lucene index build finished");
         }
 
+        luceneLinker = new LuceneLinker(LuceneFactory.get());
         SpringApplication.run(EntityLinker.class, args);
     }
 
@@ -83,16 +75,7 @@ public class EntityLinker implements WebServerFactoryCustomizer<ConfigurableWebS
             input = split[split.length - 1].replace('_', ' ');
         }
 
-        try
-        {
-            LuceneLinker luceneLinker = new LuceneLinker(LuceneFactory.get());
-            String linkedEntity = luceneLinker.link(input);
-            return ResponseEntity.ok(linkedEntity != null ? linkedEntity : "None");
-        }
-
-        catch (IOException e)
-        {
-            throw new RuntimeException("Could not load Lucene index from disk: " + e.getMessage());
-        }
+        String linkedEntity = luceneLinker.link(input);
+        return ResponseEntity.ok(linkedEntity != null ? linkedEntity : "None");
     }
 }

@@ -134,6 +134,9 @@ public class Configuration
         if (!props.contains("LuceneDir"))
             props.setProperty("LuceneDir", "./lucene");
 
+        if (!props.contains("KGDir"))
+            props.setProperty("KGDir", "/home/knowledge-graph/neo4j");
+
         writeProperties(props);
     }
 
@@ -390,5 +393,10 @@ public class Configuration
     public static String getLuceneDir()
     {
         return readProperties().getProperty("LuceneDir");
+    }
+
+    public static String getKGDir()
+    {
+        return readProperties().getProperty("KGDir");
     }
 }
