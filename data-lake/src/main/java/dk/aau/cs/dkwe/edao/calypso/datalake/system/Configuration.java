@@ -135,7 +135,7 @@ public class Configuration
             props.setProperty("LuceneDir", "/home/lucene");
 
         if (!props.contains("KGDir"))
-            props.setProperty("KGDir", "/home/knowledge-graph/neo4j");
+            props.setProperty("KGDir", "/home/knowledge-graph/neo4j/kg");
 
         writeProperties(props);
     }

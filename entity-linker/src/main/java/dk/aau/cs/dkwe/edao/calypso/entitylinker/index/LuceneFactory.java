@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -54,7 +53,7 @@ public class LuceneFactory
             Logger.logNewLine(Logger.Level.INFO, "Building Lucene index...");
         }
 
-        for (File kgFile : Objects.requireNonNull(kgDir.listFiles()))
+        for (File kgFile : Objects.requireNonNull(kgDir.listFiles(f -> f.getName().endsWith(".ttl"))))
         {
             if (verbose)
             {
