@@ -57,7 +57,8 @@ public class LuceneFactory
         {
             if (verbose)
             {
-                Logger.log(Logger.Level.INFO, ((prog++ / filesCount) * 100) + " KG files indexed into Lucene index");
+                Logger.log(Logger.Level.INFO, ((prog++ / filesCount) * 100) + " KG files indexed into Lucene index ("
+                        + kgFile.getName() + ")");
             }
 
             try
@@ -108,8 +109,7 @@ public class LuceneFactory
 
     public static LuceneIndex get() throws IOException
     {
-        Path indexPath = Files.createTempDirectory(Configuration.getLuceneDir());
-        Directory directory = FSDirectory.open(indexPath);
+        Directory directory = FSDirectory.open(new File(Configuration.getLuceneDir()).toPath());
         DirectoryReader reader = DirectoryReader.open(directory);
 
         return new LuceneIndex(new IndexSearcher(reader), new StandardAnalyzer());

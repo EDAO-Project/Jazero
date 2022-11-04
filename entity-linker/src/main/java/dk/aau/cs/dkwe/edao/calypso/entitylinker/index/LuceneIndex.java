@@ -3,8 +3,10 @@ package dk.aau.cs.dkwe.edao.calypso.entitylinker.index;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.Index;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -42,8 +44,7 @@ public class LuceneIndex implements Index<String, String>, Serializable
     {
         try
         {
-            QueryParser parser = new QueryParser(TEXT_FIELD, this.analyzer);
-            Query query = parser.parse(key);
+            Query query = new FuzzyQuery(new Term(TEXT_FIELD, key));
             ScoreDoc[] hits = this.searcher.search(query, 10).scoreDocs;
 
             if (hits.length == 0)
@@ -55,7 +56,7 @@ public class LuceneIndex implements Index<String, String>, Serializable
             return doc.get(URI_FIELD);
         }
 
-        catch (ParseException | IOException e)
+        catch (IOException e)
         {
             return null;
         }
