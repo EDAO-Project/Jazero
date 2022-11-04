@@ -132,7 +132,7 @@ public class Configuration
             props.setProperty("GoogleAPIKey", "AIzaSyB9mH-706htjAcFBxfrXaJ5jpDnuBfxhm8");
 
         if (!props.contains("LuceneDir"))
-            props.setProperty("LuceneDir", "./lucene");
+            props.setProperty("LuceneDir", "/home/lucene");
 
         if (!props.contains("KGDir"))
             props.setProperty("KGDir", "/home/knowledge-graph/neo4j");
