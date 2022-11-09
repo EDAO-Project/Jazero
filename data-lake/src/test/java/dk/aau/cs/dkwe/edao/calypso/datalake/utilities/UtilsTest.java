@@ -25,8 +25,7 @@ public class UtilsTest
     {
         Table.Row<List<Double>> row = new Table.Row<>(this.c1, this.c2);
         List<Double> maxVector = Utils.getMaxPerColumnVector(row);
-        assertEquals(5.0, maxVector.get(0), 0);
-        assertEquals(10.0, maxVector.get(1), 0);
-        assertEquals(15.0, maxVector.get(2), 0);
+        assertEquals(3.0, maxVector.get(0), 0);
+        assertEquals(15.0, maxVector.get(1), 0);
     }
 }
