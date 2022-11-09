@@ -24,7 +24,7 @@ All you need is to have Docker and Docker-compose installed. Make sure to have D
 Start Calypso with the following simple command
 
 ```bash
-docker-compose up
+./start.sh
 ```
 
 The first time Calypso is started, the entity linker service will build a Lucene index, which can take around 1.5 hours for a 10GB KG.
