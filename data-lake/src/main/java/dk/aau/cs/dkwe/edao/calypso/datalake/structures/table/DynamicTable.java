@@ -103,4 +103,31 @@ public class DynamicTable<T> implements Table<T>
     {
         return toStr();
     }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (!(o instanceof DynamicTable<?>))
+        {
+            return false;
+        }
+
+        DynamicTable<T> other = (DynamicTable<T>) o;
+        int thisRows = this.table.size(), otherRows = other.rowCount();
+
+        if (thisRows != otherRows)
+        {
+            return false;
+        }
+
+        for (int row = 0; row < thisRows; row++)
+        {
+            if (!this.table.get(row).equals(other.getRow(row)))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

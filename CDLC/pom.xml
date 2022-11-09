@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.example</groupId>
+    <groupId>dk.aau.cs.dkwe.edao.calypso</groupId>
     <artifactId>CDLC</artifactId>
     <version>1.0-SNAPSHOT</version>
 
@@ -18,6 +18,25 @@
             <groupId>dk.aau.cs.dkwe.edao.calypso</groupId>
             <artifactId>communication</artifactId>
             <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>dk.aau.cs.dkwe.edao.calypso</groupId>
+            <artifactId>data-lake</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.8.6</version>
         </dependency>
     </dependencies>
 

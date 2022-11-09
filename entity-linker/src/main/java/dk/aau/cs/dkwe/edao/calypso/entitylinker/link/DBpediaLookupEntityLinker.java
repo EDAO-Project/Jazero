@@ -1,7 +1,5 @@
 package dk.aau.cs.dkwe.edao.calypso.entitylinker.link;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 import dk.aau.cs.dkwe.edao.calypso.communication.Communicator;
 import dk.aau.cs.dkwe.edao.calypso.communication.ServiceCommunicator;
 import org.w3c.dom.Document;
@@ -13,8 +11,6 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Uses DBpedia lookup service to find DBpedia entities and check for existence according to the EKG Manager
@@ -40,11 +36,9 @@ public class DBpediaLookupEntityLinker implements EntityLink<String, String>
         {
             String mapping = "/api/search/KeywordSearch?&QueryString=" + key.replace(" ", "%20");
             Communicator comm = ServiceCommunicator.init("lookup.dbpedia.org", mapping, true);
-            Map<String, String> headers = new HashMap<>();
-            headers.put("Accept", "application/json");
 
             DocumentBuilder docBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-            Document doc = docBuilder.parse((String) comm.receive(headers));
+            Document doc = docBuilder.parse((String) comm.receive());
             NodeList list = doc.getElementsByTagName("ArrayOfResults");
 
             if (list.getLength() == 0)
@@ -77,12 +71,12 @@ public class DBpediaLookupEntityLinker implements EntityLink<String, String>
 
         catch (MalformedURLException e)
         {
-            throw new RuntimeException("Error with Wikipedia URL: " + e.getMessage());
+            throw new RuntimeException("Error with DBpedia URL: " + e.getMessage());
         }
 
         catch (IOException e)
         {
-            throw new RuntimeException("Error when reading Wikipedia response: " + e.getMessage());
+            throw new RuntimeException("Error when reading DBpedia response: " + e.getMessage());
         }
     }
 }

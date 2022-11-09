@@ -99,12 +99,9 @@ public class LuceneFactory
                     Logger.logNewLine(Logger.Level.ERROR, "KG file '" + kgFile.getAbsolutePath() + "' was not found");
                 }
             }
-
-            finally
-            {
-                writer.close();
-            }
         }
+
+        writer.close();
     }
 
     public static LuceneIndex get() throws IOException

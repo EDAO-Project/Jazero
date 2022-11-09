@@ -4,7 +4,8 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.SimpleTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.Table;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class SimpleTableTest extends TableTest
 {
@@ -41,5 +42,54 @@ public class SimpleTableTest extends TableTest
         }
 
         catch (IllegalArgumentException e) {}
+    }
+
+    @Test
+    public void testEquals()
+    {
+        Table<Integer> table1 = setup(), table2 = setup();
+        Table.Row<Integer> r1 = new Table.Row<Integer>(1, 2, 3),
+                r2 = new Table.Row<>(3, 4, 5),
+                r3 = new Table.Row<>(1, 3, 5);
+        table1.addRow(r1);
+        table1.addRow(r2);
+        table1.addRow(r3);
+        table2.addRow(r1);
+        table2.addRow(r2);
+        table2.addRow(r3);
+
+        assertTrue(table1.equals(table2));
+    }
+
+    @Test
+    public void testNotEquals1()
+    {
+        Table<Integer> table1 = setup(), table2 = setup();
+        Table.Row<Integer> r1 = new Table.Row<Integer>(1, 2, 3),
+                r2 = new Table.Row<>(3, 4, 5),
+                r3 = new Table.Row<>(1, 3, 5);
+        table1.addRow(r1);
+        table1.addRow(r2);
+        table1.addRow(r3);
+        table2.addRow(r1);
+
+        assertFalse(table1.equals(table2));
+    }
+
+    @Test
+    public void testNotEquals2()
+    {
+        Table<Integer> table1 = setup(), table2 = setup();
+        Table.Row<Integer> r1 = new Table.Row<Integer>(1, 2, 3),
+                r2 = new Table.Row<>(3, 4, 5),
+                r3 = new Table.Row<>(1, 3, 5);
+        table1.addRow(r1);
+        table1.addRow(r2);
+        table1.addRow(r3);
+        table2.addRow(r1);
+        table2.addRow(r2);
+        table2.addRow(new Table.Row<>(1, 2, 1));
+
+        assertFalse(table1.equals(table2));
     }
 }

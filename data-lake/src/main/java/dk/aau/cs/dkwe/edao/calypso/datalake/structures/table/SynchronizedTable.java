@@ -62,4 +62,10 @@ public class SynchronizedTable<T> extends SimpleTable<T> implements Table<T>
     {
         return toStr();
     }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        return super.equals(o);
+    }
 }

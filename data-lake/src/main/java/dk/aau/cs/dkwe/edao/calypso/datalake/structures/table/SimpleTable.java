@@ -92,4 +92,31 @@ public class SimpleTable<T> implements Table<T>
     {
         return toStr();
     }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (!(o instanceof SimpleTable<?>))
+        {
+            return false;
+        }
+
+        SimpleTable<T> other = (SimpleTable<T>) o;
+        int thisRows = rowCount(), otherRows = other.rowCount();
+
+        if (thisRows != otherRows)
+        {
+            return false;
+        }
+
+        for (int row = 0; row < thisRows; row++)
+        {
+            if (!getRow(row).equals(other.getRow(row)))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
