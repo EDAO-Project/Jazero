@@ -1,5 +1,6 @@
 FROM ubuntu
 
+RUN mkdir /index
 RUN apt update
 RUN apt-get update
 RUN apt install openjdk-17-jre openjdk-17-jdk maven -y

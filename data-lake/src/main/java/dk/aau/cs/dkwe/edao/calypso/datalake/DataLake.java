@@ -50,7 +50,6 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     private static EntityTableLink tableLink;
     private static final int THREADS = 4;
     private static final File DATA_DIR = new File("../knowledge-graph/neo4j/mappings/");
-    private static final File INDEX_DIR = new File(".indexes/");
 
     @Override
     public void customize(ConfigurableWebServerFactory factory)
@@ -70,7 +69,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         {
             try
             {
-                IndexReader indexReader = new IndexReader(INDEX_DIR, true, true);
+                IndexReader indexReader = new IndexReader(new File(Configuration.getIndexDir()), true, true);
                 indexReader.performIO();
 
                 linker = indexReader.getLinker();
@@ -252,13 +251,14 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     public ResponseEntity<String> insert(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
     {
         final String dirKey = "directory", tablePrefixKey = "table-prefix", kgPrefixKey = "kg-prefix";
+        File indexDir = new File(Configuration.getKGDir());
 
-        if (!INDEX_DIR.isDirectory())
+        if (!indexDir.isDirectory())
         {
-            INDEX_DIR.mkdir();
+            indexDir.mkdir();
         }
 
-        if (!DATA_DIR.mkdir())
+        if (!DATA_DIR.isDirectory())
         {
             DATA_DIR.mkdir();
         }
@@ -271,7 +271,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         else if (!headers.containsKey("storage-type") ||
                 (!headers.get("storage-type").equals("native") && !headers.get("storage-type").equals("HDFS")))
         {
-            return ResponseEntity.badRequest().body("Storage-Type header must be either 'native' or 'HDFS'");
+            return ResponseEntity.badRequest().body("Storage-Type header must be either '" + StorageHandler.StorageType.NATIVE.name() +
+                    "' or '" + StorageHandler.StorageType.HDFS.name() + "'");
         }
 
         else if (!body.containsKey(dirKey))
@@ -290,8 +291,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         }
 
         File dir = new File(body.get(dirKey));
-        StorageHandler.StorageType storageType = headers.get("storage-type").equals("native") ?
-                StorageHandler.StorageType.NATIVE : StorageHandler.StorageType.HDFS;    // TODO: It's better to use StorageType.valueOf()
+        StorageHandler.StorageType storageType = StorageHandler.StorageType.valueOf(headers.get("storage-type"));
         Configuration.setStorageType(storageType);
 
         if (!dir.exists() || !dir.isDirectory())
@@ -316,7 +316,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             Collections.sort(filePaths);
             Logger.logNewLine(Logger.Level.INFO, "There are " + filePaths.size() + " files to be processed.");
 
-            IndexWriter indexWriter = new IndexWriter(filePaths, INDEX_DIR, DATA_DIR, storageType, kgService, elService, THREADS,
+            IndexWriter indexWriter = new IndexWriter(filePaths, new File(Configuration.getIndexDir()), DATA_DIR, storageType, kgService, elService, THREADS,
                     body.get(tablePrefixKey), body.get(kgPrefixKey));
             indexWriter.performIO();
 

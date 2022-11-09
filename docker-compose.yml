@@ -8,7 +8,8 @@ services:
     ports:
       - 8081:8081
     volumes:
-      - ./knowledge-graph/neo4j/:/home/knowledge-graph/neo4j  # To copy table links to
+      - ./knowledge-graph/neo4j/:/home/knowledge-graph/neo4j
+      - ./index/:/index
   entity-linker:
     network_mode: host
     build:
@@ -17,7 +18,8 @@ services:
     ports:
       - 8082:8082
     volumes:
-      - ./knowledge-graph/neo4j/:/home/knowledge-graph/neo4j  # For entity linker to reference exported KG file
+      - ./knowledge-graph/neo4j/:/home/knowledge-graph/neo4j
+      - ./index/:/index
   ekg-manager:
     network_mode: host
     build:
@@ -27,6 +29,7 @@ services:
       - 8083:8083
     volumes:
       - ./knowledge-graph/neo4j/:/home/knowledge-graph/neo4j
+      - ./index/:/index
   embeddings:
     image: postgres
     container_name: db

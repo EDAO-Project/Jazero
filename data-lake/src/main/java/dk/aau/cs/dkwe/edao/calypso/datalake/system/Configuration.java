@@ -137,6 +137,9 @@ public class Configuration
         if (!props.contains("KGDir"))
             props.setProperty("KGDir", "/home/knowledge-graph/neo4j/kg");
 
+        if (!props.contains("IndexDir"))
+            props.setProperty("IndexDir", "/index");
+
         writeProperties(props);
     }
 
@@ -398,5 +401,10 @@ public class Configuration
     public static String getKGDir()
     {
         return readProperties().getProperty("KGDir");
+    }
+
+    public static String getIndexDir()
+    {
+        return readProperties().getProperty("IndexDir");
     }
 }
