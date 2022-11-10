@@ -27,7 +27,7 @@ Start Calypso with the following simple command
 ./start.sh
 ```
 
-The first time Calypso is started, the entity linker service will build a Lucene index, which can take around 1.5 hours for a 10GB KG.
+The first time Calypso is started, the entity linker service will build a Lucene index, which can take around an hour for a 10GB KG.
 Now, Calypso is accessible on localhost or on the machine's IP address.
 
 Alternatively, but not recommended, you can build each service manually and run the built .jar file.
@@ -57,9 +57,6 @@ Now, all executable .jar files are in the new folder respective `target`.
 These can be executed with `java -jar <JAR FILE>`.
 
 ## Working with Calypso
-[Here will be some instructions on using the CDLC driver and maybe also the API if we build that]
-[Describe how to populate with tables and how to insert embeddings]
-
 Here we describe working with Calypso, how to load Calypso with tables, load indexes, load embeddings, and searching in Calypso.
 
 ### Loading Calypso
