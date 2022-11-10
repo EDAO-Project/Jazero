@@ -269,7 +269,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         }
 
         else if (!headers.containsKey("storage-type") ||
-                (!headers.get("storage-type").equals("native") && !headers.get("storage-type").equals("HDFS")))
+                (!headers.get("storage-type").equals("NATIVE") && !headers.get("storage-type").equals("HDFS")))
         {
             return ResponseEntity.badRequest().body("Storage-Type header must be either '" + StorageHandler.StorageType.NATIVE.name() +
                     "' or '" + StorageHandler.StorageType.HDFS.name() + "'");
