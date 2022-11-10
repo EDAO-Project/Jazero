@@ -44,7 +44,7 @@ public class LuceneIndex implements Index<String, String>, Serializable
     {
         try
         {
-            Query query = new FuzzyQuery(new Term(TEXT_FIELD, key));
+            Query query = new FuzzyQuery(new Term(TEXT_FIELD, key), 2, 0, 150, false);
             ScoreDoc[] hits = this.searcher.search(query, 10).scoreDocs;
 
             if (hits.length == 0)
