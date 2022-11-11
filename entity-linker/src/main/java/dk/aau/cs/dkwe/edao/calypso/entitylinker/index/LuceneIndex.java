@@ -4,8 +4,6 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.store.Index;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -44,7 +42,7 @@ public class LuceneIndex implements Index<String, String>, Serializable
     {
         try
         {
-            Query query = new FuzzyQuery(new Term(TEXT_FIELD, key), 2, 0, 150, false);
+            Query query = new FuzzyQuery(new Term(URI_FIELD, key));
             ScoreDoc[] hits = this.searcher.search(query, 10).scoreDocs;
 
             if (hits.length == 0)

@@ -77,7 +77,7 @@ public class LuceneFactory
                     if (triple.getPredicate().hasURI("http://www.w3.org/2000/01/rdf-schema#label"))
                     {
                         Document doc = new Document();
-                        doc.add(new Field(LuceneIndex.URI_FIELD, triple.getSubject().getURI(), TextField.TYPE_STORED));
+                        doc.add(new Field(LuceneIndex.URI_FIELD, entityStr, TextField.TYPE_STORED));
                         doc.add(new Field(LuceneIndex.TEXT_FIELD, entityStr + " " +
                                 triple.getPredicate().getURI(), TextField.TYPE_STORED));
                         writer.addDocument(doc);
