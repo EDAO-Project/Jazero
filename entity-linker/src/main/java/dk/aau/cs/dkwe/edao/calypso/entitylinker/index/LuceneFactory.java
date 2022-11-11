@@ -70,15 +70,13 @@ public class LuceneFactory
                 while (iter.hasNext())
                 {
                     Triple triple = iter.next();
-                    String[] entityStrSplit = triple.getSubject().getURI().split("/");
-                    String entityStr = entityStrSplit[entityStrSplit.length - 1].replace('_', ' ');
                     entities.add(triple.getSubject());
 
                     if (triple.getPredicate().hasURI("http://www.w3.org/2000/01/rdf-schema#label"))
                     {
                         Document doc = new Document();
-                        doc.add(new Field(LuceneIndex.URI_FIELD, entityStr, TextField.TYPE_STORED));
-                        doc.add(new Field(LuceneIndex.TEXT_FIELD, entityStr + " " +
+                        doc.add(new Field(LuceneIndex.URI_FIELD, triple.getSubject().getURI(), TextField.TYPE_STORED));
+                        doc.add(new Field(LuceneIndex.TEXT_FIELD, uriPostfix(triple.getSubject().getURI()) + " " +
                                 triple.getPredicate().getURI(), TextField.TYPE_STORED));
                         writer.addDocument(doc);
                         entities.remove(triple.getSubject());
@@ -89,7 +87,7 @@ public class LuceneFactory
                 {
                     Document doc = new Document();
                     doc.add(new Field(LuceneIndex.URI_FIELD, entity.getURI(), TextField.TYPE_STORED));
-                    doc.add(new Field(LuceneIndex.TEXT_FIELD, entity.getURI(), TextField.TYPE_STORED));
+                    doc.add(new Field(LuceneIndex.TEXT_FIELD, uriPostfix(entity.getURI()), TextField.TYPE_STORED));
                     writer.addDocument(doc);
                 }
             }
@@ -104,6 +102,13 @@ public class LuceneFactory
         }
 
         writer.close();
+    }
+
+    private static String uriPostfix(String uri)
+    {
+        String[] uriSplit = uri.split("/");
+        String postfix = uriSplit[uriSplit.length - 1].replace('_', ' ');
+        return postfix;
     }
 
     public static LuceneIndex get() throws IOException
