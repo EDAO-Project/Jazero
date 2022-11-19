@@ -95,15 +95,15 @@ public class IndexWriter implements IndexIO
         Logger.log(Logger.Level.INFO, "Collecting IDF weights...");
         loadIDFs();
 
-        Logger.logNewLine(Logger.Level.INFO, "Writing indexes and stats on disk...");
+        Logger.log(Logger.Level.INFO, "Writing indexes and stats on disk...");
         flushToDisk();
         writeStats();
 
         this.elapsed = System.nanoTime() - startTime;
         Logger.log(Logger.Level.INFO, "Done");
-        Logger.logNewLine(Logger.Level.INFO, "A total of " + this.loadedTables.get() + " tables were loaded");
-        Logger.logNewLine(Logger.Level.INFO, "Elapsed time: " + this.elapsed / (1e9) + " seconds");
-        Logger.logNewLine(Logger.Level.INFO, "Computing IDF weights...");
+        Logger.log(Logger.Level.INFO, "A total of " + this.loadedTables.get() + " tables were loaded");
+        Logger.log(Logger.Level.INFO, "Elapsed time: " + this.elapsed / (1e9) + " seconds");
+        Logger.log(Logger.Level.INFO, "Computing IDF weights...");
     }
 
     private boolean load(Path tablePath)

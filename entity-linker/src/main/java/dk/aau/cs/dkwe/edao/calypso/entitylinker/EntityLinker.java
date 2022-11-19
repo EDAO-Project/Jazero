@@ -4,7 +4,6 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Logger;
 import dk.aau.cs.dkwe.edao.calypso.entitylinker.index.LuceneFactory;
 import dk.aau.cs.dkwe.edao.calypso.entitylinker.link.LuceneLinker;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.server.ConfigurableWebServerFactory;
@@ -22,7 +21,6 @@ import java.util.Map;
 public class EntityLinker implements WebServerFactoryCustomizer<ConfigurableWebServerFactory>
 {
     private static LuceneLinker luceneLinker;
-    private static org.slf4j.Logger logger = LoggerFactory.getLogger(EntityLinker.class);
 
     @Override
     public void customize(ConfigurableWebServerFactory factory)
@@ -34,12 +32,11 @@ public class EntityLinker implements WebServerFactoryCustomizer<ConfigurableWebS
     {
         if (!LuceneFactory.isBuild())
         {
-            Logger.logNewLine(Logger.Level.INFO, "No Lucene index found");
-            logger.warn("No Lucene index found");
+            Logger.log(Logger.Level.INFO, "No Lucene index found");
 
             File kgDir = new File(Configuration.getKGDir());
             LuceneFactory.build(kgDir, true);
-            Logger.logNewLine(Logger.Level.INFO, "Lucene index build finished");
+            Logger.log(Logger.Level.INFO, "Lucene index build finished");
         }
 
         luceneLinker = new LuceneLinker(LuceneFactory.get());
@@ -49,7 +46,7 @@ public class EntityLinker implements WebServerFactoryCustomizer<ConfigurableWebS
     @GetMapping("/ping")
     public ResponseEntity<String> ping()
     {
-        logger.info("PING");
+        Logger.log(Logger.Level.INFO, "PING");
         return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body("pong");
     }
 

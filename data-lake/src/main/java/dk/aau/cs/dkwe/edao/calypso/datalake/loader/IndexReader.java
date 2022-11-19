@@ -71,8 +71,8 @@ public class IndexReader implements IndexIO
 
         catch (InterruptedException | ExecutionException e)
         {
-            Logger.logNewLine(Logger.Level.ERROR, "Failed loading an index:");
-            Logger.logNewLine(Logger.Level.ERROR, e.getMessage());
+            Logger.log(Logger.Level.ERROR, "Failed loading an index:");
+            Logger.log(Logger.Level.ERROR, e.getMessage());
             throw new RuntimeException(e.getMessage());
         }
     }
@@ -102,17 +102,17 @@ public class IndexReader implements IndexIO
         catch (OptionalDataException e)
         {
             if (e.eof)
-                Logger.logNewLine(Logger.Level.ERROR, "EOF reached earlier than expected when reading index file: " + file);
+                Logger.log(Logger.Level.ERROR, "EOF reached earlier than expected when reading index file: " + file);
 
             else
-                Logger.logNewLine(Logger.Level.ERROR, "Index file stream contains primitive data: " + file);
+                Logger.log(Logger.Level.ERROR, "Index file stream contains primitive data: " + file);
 
             throw new RuntimeException(e.getMessage());
         }
 
         catch (IOException | ClassNotFoundException e)
         {
-            Logger.logNewLine(Logger.Level.ERROR, "IO error when reading index");
+            Logger.log(Logger.Level.ERROR, "IO error when reading index");
             throw new RuntimeException(e.getMessage());
         }
     }

@@ -174,7 +174,7 @@ public class TableSearch extends AbstractSearch
 
         try
         {
-            Logger.logNewLine(Logger.Level.INFO, "There are " + this.storage.count() + " files to be processed.");
+            Logger.log(Logger.Level.INFO, "There are " + this.storage.count() + " files to be processed.");
             ExecutorService threadPool = Executors.newFixedThreadPool(this.threads);
             List<Future<Pair<File, Double>>> parsed = new ArrayList<>(this.storage.count());
             Set<File> tableFiles = this.storage.elements();
@@ -221,21 +221,21 @@ public class TableSearch extends AbstractSearch
 
             this.elapsed = System.nanoTime() - start;
             this.parsedTables = parsedTables;
-            Logger.logNewLine(Logger.Level.INFO, "A total of " + parsedTables + " tables were parsed.");
-            Logger.logNewLine(Logger.Level.INFO, "Elapsed time: " + this.elapsed / 1e9 + " seconds\n");
+            Logger.log(Logger.Level.INFO, "A total of " + parsedTables + " tables were parsed.");
+            Logger.log(Logger.Level.INFO, "Elapsed time: " + this.elapsed / 1e9 + " seconds\n");
 
             if (this.useEmbeddings)
             {
-                Logger.logNewLine(Logger.Level.INFO, "A total of " + this.embeddingComparisons + " entity comparisons were made using embeddings.");
-                Logger.logNewLine(Logger.Level.INFO, "A total of " + this.nonEmbeddingComparisons + " entity comparisons cannot be made due to lack of embeddings.");
+                Logger.log(Logger.Level.INFO, "A total of " + this.embeddingComparisons + " entity comparisons were made using embeddings.");
+                Logger.log(Logger.Level.INFO, "A total of " + this.nonEmbeddingComparisons + " entity comparisons cannot be made due to lack of embeddings.");
 
                 double percentage = (this.embeddingComparisons / ((double) this.nonEmbeddingComparisons + this.embeddingComparisons)) * 100;
-                Logger.logNewLine(Logger.Level.INFO, percentage + "% of required entity comparisons were made using embeddings.\n");
-                Logger.logNewLine(Logger.Level.INFO, "Embedding Coverage successes: " + this.embeddingCoverageSuccesses);
-                Logger.logNewLine(Logger.Level.INFO, "Embedding Coverage failures: " + this.embeddingCoverageFails);
-                Logger.logNewLine(Logger.Level.INFO, "Embedding Coverage Success Rate: " + (double) this.embeddingCoverageSuccesses /
+                Logger.log(Logger.Level.INFO, percentage + "% of required entity comparisons were made using embeddings.\n");
+                Logger.log(Logger.Level.INFO, "Embedding Coverage successes: " + this.embeddingCoverageSuccesses);
+                Logger.log(Logger.Level.INFO, "Embedding Coverage failures: " + this.embeddingCoverageFails);
+                Logger.log(Logger.Level.INFO, "Embedding Coverage Success Rate: " + (double) this.embeddingCoverageSuccesses /
                         (this.embeddingCoverageSuccesses + this.embeddingCoverageFails));
-                Logger.logNewLine(Logger.Level.INFO, "Query Entities with missing embedding coverage: " + this.queryEntitiesMissingCoverage + "\n");
+                Logger.log(Logger.Level.INFO, "Query Entities with missing embedding coverage: " + this.queryEntitiesMissingCoverage + "\n");
             }
 
             return new Result(this.topK, scores, this.tableStats);

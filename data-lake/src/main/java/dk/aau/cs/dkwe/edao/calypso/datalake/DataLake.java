@@ -307,14 +307,14 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
             if (kgService.size() < 1)
             {
-                Logger.logNewLine(Logger.Level.ERROR, "KG is empty. Make sure to load the KG according to README. Continuing...");
+                Logger.log(Logger.Level.ERROR, "KG is empty. Make sure to load the KG according to README. Continuing...");
             }
 
             Stream<Path> fileStream = Files.find(dir.toPath(), Integer.MAX_VALUE,
                     (filePath, fileAttr) -> fileAttr.isRegularFile() && filePath.getFileName().toString().endsWith(".json"));
             List<Path> filePaths = fileStream.collect(Collectors.toList());
             Collections.sort(filePaths);
-            Logger.logNewLine(Logger.Level.INFO, "There are " + filePaths.size() + " files to be processed.");
+            Logger.log(Logger.Level.INFO, "There are " + filePaths.size() + " files to be processed.");
 
             IndexWriter indexWriter = new IndexWriter(filePaths, new File(Configuration.getIndexDir()), DATA_DIR, storageType, kgService, elService, THREADS,
                     body.get(tablePrefixKey), body.get(kgPrefixKey));
@@ -322,7 +322,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
             if (!kgService.insertLinks(DATA_DIR))
             {
-                Logger.logNewLine(Logger.Level.ERROR, "Failed inserting generated TTL mapping files into KG service");
+                Logger.log(Logger.Level.ERROR, "Failed inserting generated TTL mapping files into KG service");
             }
 
             Set<Type> entityTypes = new HashSet<>();
@@ -337,9 +337,9 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             }
 
             totalTime = System.nanoTime() - totalTime;
-            Logger.logNewLine(Logger.Level.INFO, "Found an approximate total of " + indexWriter.getApproximateEntityMentions() + " unique entity mentions across " + indexWriter.cellsWithLinks() + " cells \n");
-            Logger.logNewLine(Logger.Level.INFO, "There are in total " + entityTypes.size() + " unique entity types across all discovered entities.");
-            Logger.logNewLine(Logger.Level.INFO, "Indexing took " +
+            Logger.log(Logger.Level.INFO, "Found an approximate total of " + indexWriter.getApproximateEntityMentions() + " unique entity mentions across " + indexWriter.cellsWithLinks() + " cells \n");
+            Logger.log(Logger.Level.INFO, "There are in total " + entityTypes.size() + " unique entity types across all discovered entities.");
+            Logger.log(Logger.Level.INFO, "Indexing took " +
                     TimeUnit.SECONDS.convert(indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s");
             Configuration.setIndexesLoaded(true);
             loadIndexes();
@@ -410,7 +410,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 loaded += (double) bytes / Math.pow(1024, 2);
 
                 if (bytes == 0)
-                    Logger.logNewLine(Logger.Level.ERROR, "INSERTION ERROR: " + ((ExplainableCause) db).getError());
+                    Logger.log(Logger.Level.ERROR, "INSERTION ERROR: " + ((ExplainableCause) db).getError());
 
                 else
                     Logger.log(Logger.Level.INFO, "LOAD BATCH [" + batchSizeCount + "] - " + loaded + " mb");

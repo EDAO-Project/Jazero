@@ -50,7 +50,7 @@ public class LuceneFactory
 
         if (verbose)
         {
-            Logger.logNewLine(Logger.Level.INFO, "Building Lucene index...");
+            Logger.log(Logger.Level.INFO, "Building Lucene index...");
         }
 
         for (File kgFile : Objects.requireNonNull(kgDir.listFiles(f -> f.getName().endsWith(".ttl"))))
@@ -96,7 +96,7 @@ public class LuceneFactory
             {
                 if (verbose)
                 {
-                    Logger.logNewLine(Logger.Level.ERROR, "KG file '" + kgFile.getAbsolutePath() + "' was not found");
+                    Logger.log(Logger.Level.ERROR, "KG file '" + kgFile.getAbsolutePath() + "' was not found");
                 }
             }
         }

@@ -1,5 +1,7 @@
 package dk.aau.cs.dkwe.edao.calypso.datalake.system;
 
+import org.slf4j.LoggerFactory;
+
 import java.util.Date;
 
 public class Logger
@@ -68,37 +70,8 @@ public class Logger
 
         if (configuredLevel != null && level.getLevel() >= configuredLevel.getLevel())
         {
-            if (prevWasNewLine)
-                System.out.println();
-
-            else
-                clearChannel();
-
-            String msg = "(" + new Date() + ") - " + level + ": " + message + "\r";
-            System.out.print(msg);
-            prevLength = msg.length();
-            prevWasNewLine = false;
-        }
-    }
-
-    public static void logNewLine(Level level, String message)
-    {
-        Level configuredLevel = Level.parse(Configuration.getLogLevel());
-
-        if (configuredLevel != null && level.getLevel() >= configuredLevel.getLevel())
-        {
             System.out.print("\n(" + new Date() + ") - " + level + ": " + message);
             prevWasNewLine = true;
         }
-    }
-
-    private static void clearChannel()
-    {
-        for (int i = 0; i < prevLength; i++)
-        {
-            System.out.print(" ");
-        }
-
-        System.out.print("\r");
     }
 }
