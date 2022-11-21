@@ -46,7 +46,6 @@ public class LuceneFactory
         IndexWriterConfig config = new IndexWriterConfig(analyzer);
         IndexWriter writer = new IndexWriter(directory, config);
         int prog = 0, filesCount = kgDir.listFiles().length;
-        Set<Node> entities = new HashSet<>();
 
         if (verbose)
         {
@@ -70,24 +69,9 @@ public class LuceneFactory
                 while (iter.hasNext())
                 {
                     Triple triple = iter.next();
-                    entities.add(triple.getSubject());
-
-                    if (triple.getPredicate().hasURI("http://www.w3.org/2000/01/rdf-schema#label"))
-                    {
-                        Document doc = new Document();
-                        doc.add(new Field(LuceneIndex.URI_FIELD, triple.getSubject().getURI(), TextField.TYPE_STORED));
-                        doc.add(new Field(LuceneIndex.TEXT_FIELD, uriPostfix(triple.getSubject().getURI()) + " " +
-                                triple.getPredicate().getURI(), TextField.TYPE_STORED));
-                        writer.addDocument(doc);
-                        entities.remove(triple.getSubject());
-                    }
-                }
-
-                for (Node entity : entities)
-                {
                     Document doc = new Document();
-                    doc.add(new Field(LuceneIndex.URI_FIELD, entity.getURI(), TextField.TYPE_STORED));
-                    doc.add(new Field(LuceneIndex.TEXT_FIELD, uriPostfix(entity.getURI()), TextField.TYPE_STORED));
+                    doc.add(new Field(LuceneIndex.URI_FIELD, triple.getSubject().getURI(), TextField.TYPE_STORED));
+                    doc.add(new Field(LuceneIndex.TEXT_FIELD, uriPostfix(triple.getSubject().getURI()).replace('_', ' '), TextField.TYPE_STORED));
                     writer.addDocument(doc);
                 }
             }
