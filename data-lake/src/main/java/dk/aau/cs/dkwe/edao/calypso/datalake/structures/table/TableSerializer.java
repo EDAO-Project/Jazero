@@ -40,7 +40,7 @@ public class TableSerializer<E> extends Serializer
             }
         }
 
-        if (rows > 0)
+        if (builder.length() > 0)
         {
             builder.deleteCharAt(builder.length() - 1);
         }
