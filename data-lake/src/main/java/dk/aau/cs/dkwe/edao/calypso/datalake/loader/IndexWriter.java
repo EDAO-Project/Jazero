@@ -12,6 +12,8 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Pair;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Type;
+import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.DynamicTable;
+import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.Table;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Logger;
 import dk.aau.cs.dkwe.edao.calypso.datalake.tables.JsonTable;
@@ -115,12 +117,14 @@ public class IndexWriter implements IndexIO
 
         String tableName = tablePath.getFileName().toString();
         Map<Pair<Integer, Integer>, List<String>> entityMatches = new HashMap<>();  // Maps a cell specified by RowNumber, ColumnNumber to the list of entities it matches to
+        Table<String> inputEntities = new DynamicTable<>();
         Set<String> entities = new HashSet<>(); // The set of entities corresponding to this filename/table
         int row = 0;
 
         for (List<JsonTable.TableCell> tableRow : table.rows)
         {
             int column = 0;
+            List<String> inputRow = new ArrayList<>(tableRow.size());
 
             for (JsonTable.TableCell cell : tableRow)
             {
@@ -132,12 +136,12 @@ public class IndexWriter implements IndexIO
 
                     for (String link : cell.links)
                     {
-                        if (this.linker.mapTo(link) != null)   // Check if we had already searched for it
-                            matchesUris.add(this.linker.mapTo(link));
+                        String uri = this.linker.mapTo(link);
+                        inputRow.add(link);
 
-                        else
+                        if (uri == null)
                         {
-                            String uri = this.el.link(link.replace("http://www.", "http://en."));
+                            uri = this.el.link(link.replace("http://www.", "http://en."));
 
                             if (uri != null)
                             {
@@ -156,10 +160,9 @@ public class IndexWriter implements IndexIO
                             }
                         }
 
-                        if (this.linker.mapTo(link) != null)
+                        if (uri != null)
                         {
-                            String entity = this.linker.mapTo(link);
-                            Id entityId = ((EntityLinking) this.linker.getLinker()).uriLookup(entity);
+                            Id entityId = ((EntityLinking) this.linker.getLinker()).uriLookup(uri);
                             Pair<Integer, Integer> location = new Pair<>(row, column);
                             ((EntityTableLink) this.entityTableLink.getIndex()).
                                     addLocation(entityId, tableName, List.of(location));
@@ -181,7 +184,20 @@ public class IndexWriter implements IndexIO
                 column++;
             }
 
+            inputEntities.addRow(new Table.Row<>(inputRow));
             row++;
+        }
+
+        int rows = inputEntities.rowCount();
+
+        for (row = 0; row < rows; row++)
+        {
+            int columns = inputEntities.getRow(row).size();
+
+            for (int column = 0; column < columns; column++)
+            {
+
+            }
         }
 
         saveStats(table, FilenameUtils.removeExtension(tableName), entities.iterator(), entityMatches);
