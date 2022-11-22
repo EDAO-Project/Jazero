@@ -131,7 +131,7 @@ public class IndexWriter implements IndexIO
                     this.cellsWithLinks.incrementAndGet();
                     this.cellToNumLinksFrequency.merge(cell.links.size(), 1, Integer::sum);
                     String link = cell.links.get(0);    // Only get the first one
-                    inputRow.add(link.replace("http://www.", "http://en."));
+                    inputRow.add(link);
                 }
             }
 

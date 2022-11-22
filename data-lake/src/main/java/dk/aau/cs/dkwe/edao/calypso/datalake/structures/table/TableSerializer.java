@@ -34,10 +34,17 @@ public class TableSerializer<E> extends Serializer
                 builder.append(this.table.getRow(row).get(column)).append("<>");
             }
 
-            builder.deleteCharAt(builder.length() - 1).deleteCharAt(builder.length() -1).append("#");
+            if (columns > 0)
+            {
+                builder.deleteCharAt(builder.length() - 1).deleteCharAt(builder.length() - 1).append("#");
+            }
         }
 
-        builder.deleteCharAt(builder.length() - 1);
+        if (rows > 0)
+        {
+            builder.deleteCharAt(builder.length() - 1);
+        }
+
         return builder.toString();
     }
 }

@@ -74,32 +74,6 @@ public class EntityLinker implements WebServerFactoryCustomizer<ConfigurableWebS
         return split[split.length - 1].replace('_', ' ');
     }
 
-    // '&'-separated string of entities in given list of entities
-    private static String serialize(List<String> entities)
-    {
-        StringBuilder builder = new StringBuilder();
-
-        for (String entity : entities)
-        {
-            builder.append(entity).append("&");
-        }
-
-        return builder.deleteCharAt(builder.length() - 1).toString();
-    }
-
-    private static List<String> deserialize(String serialized)
-    {
-        String[] split = serialized.split("&");
-        List<String> entities = new ArrayList<>(split.length);
-
-        for (String entity : split)
-        {
-            entities.add(entity);
-        }
-
-        return entities;
-    }
-
     /**
      * Entry for linking input entity to KG entity
      * @param headers Requires:
