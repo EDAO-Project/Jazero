@@ -221,6 +221,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         }
 
         object.add("scores", array);
+        object.addProperty("runtime", search.elapsedNanoSeconds());
+        object.addProperty("reduction", search.getReduction() * 100);
         return ResponseEntity
                 .ok()
                 .contentType(MediaType.APPLICATION_JSON)

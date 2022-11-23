@@ -56,6 +56,7 @@ public class TableSearch extends AbstractSearch
             embeddingCoverageSuccesses, embeddingCoverageFails;
     Set<String> queryEntitiesMissingCoverage = new HashSet<>();
     private long elapsed = -1, parsedTables;
+    private double reduction = 0.0;
     private boolean useEmbeddings, singleColumnPerQueryEntity, weightedJaccard, adjustedJaccard,
             useMaxSimilarityPerColumn, hungarianAlgorithmSameAlignmentAcrossTuples;
     private CosineSimilarityFunction embeddingSimFunction;
@@ -166,6 +167,8 @@ public class TableSearch extends AbstractSearch
     protected Result abstractSearch(Table<String> query)
     {
         long start = System.nanoTime();
+
+        // TODO: Perform pre-filtering here
 
         if (this.useEmbeddings)
         {
@@ -781,5 +784,10 @@ public class TableSearch extends AbstractSearch
     public long getParsedTables()
     {
         return this.parsedTables;
+    }
+
+    public double getReduction()
+    {
+        return this.reduction;
     }
 }
