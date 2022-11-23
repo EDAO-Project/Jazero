@@ -42,4 +42,46 @@ public class TableDeserializerTest
         Table<String> expected = new DynamicTable<>(List.of(List.of("element1"), List.of("element2")));
         assertEquals(expected, deserialized);
     }
+
+    @Test
+    public void bigTableTest()
+    {
+        Table<String> deserialized = TableDeserializer.create("element1<>element2#element1<>element2#element1<>element2#" +
+                "element1<>element2#element1<>element2#element1<>element2#element1<>element2#element1<>element2#" +
+                "element1<>element2#element1<>element2#element1<>element2#element1<>element2#element1<>element2#" +
+                "element1<>element2#element1<>element2#element1<>element2#element1<>element2#element1<>element2#" +
+                "element1<>element2#element1<>element2#element1<>element2#element1<>element2#element1<>element2#" +
+                "element1<>element2#element1<>element2#element1<>element2#element1<>element2#element1<>element2#" +
+                "element1<>element2#element1<>element2#element1<>element2#element1<>element2#element1<>element2#" +
+                "element1<>element2#element1<>element2#element1<>element2#element1<>element2#element1<>element2#" +
+                "element1<>element2#element1<>element2#element1<>element2#element1<>element2#element1<>element2#" +
+                "element1<>element2#element1<>element2#element1<>element2#element1<>element2#element1<>element2#" +
+                "element1<>element2#element1<>element2").deserialize();
+        Table<String> expected = new DynamicTable<>(List.of(List.of("element1", "element2"), List.of("element1", "element2"),
+                List.of("element1", "element2"), List.of("element1", "element2"), List.of("element1", "element2"),
+                List.of("element1", "element2"), List.of("element1", "element2"), List.of("element1", "element2"),
+                List.of("element1", "element2"), List.of("element1", "element2"), List.of("element1", "element2"),
+                List.of("element1", "element2"), List.of("element1", "element2"), List.of("element1", "element2"),
+                List.of("element1", "element2"), List.of("element1", "element2"), List.of("element1", "element2"),
+                List.of("element1", "element2"), List.of("element1", "element2"), List.of("element1", "element2"),
+                List.of("element1", "element2"), List.of("element1", "element2"), List.of("element1", "element2"),
+                List.of("element1", "element2"), List.of("element1", "element2"), List.of("element1", "element2"),
+                List.of("element1", "element2"), List.of("element1", "element2"), List.of("element1", "element2"),
+                List.of("element1", "element2"), List.of("element1", "element2"), List.of("element1", "element2"),
+                List.of("element1", "element2"), List.of("element1", "element2"), List.of("element1", "element2"),
+                List.of("element1", "element2"), List.of("element1", "element2"), List.of("element1", "element2"),
+                List.of("element1", "element2"), List.of("element1", "element2"), List.of("element1", "element2"),
+                List.of("element1", "element2"), List.of("element1", "element2"), List.of("element1", "element2"),
+                List.of("element1", "element2"), List.of("element1", "element2"), List.of("element1", "element2"),
+                List.of("element1", "element2"), List.of("element1", "element2"), List.of("element1", "element2")));
+        assertEquals(expected, deserialized);
+    }
+
+    @Test
+    public void emptyRow()
+    {
+        Table<String> deserialized = TableDeserializer.create("element1<>element2##element3<>element4").deserialize();
+        Table<String> expected = new DynamicTable<>(List.of(List.of("element1", "element2"), List.of(), List.of("element3", "element4")));
+        assertEquals(expected, deserialized);
+    }
 }

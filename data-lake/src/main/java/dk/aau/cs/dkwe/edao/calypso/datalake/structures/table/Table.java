@@ -64,9 +64,14 @@ public interface Table<T>
         @Override
         public String toString()
         {
+            if (this.row.isEmpty())
+            {
+                return "[]";
+            }
+
             StringBuilder builder = new StringBuilder("[");
 
-            for (E e : row)
+            for (E e : this.row)
             {
                 builder.append(e.toString()).append(", ");
             }

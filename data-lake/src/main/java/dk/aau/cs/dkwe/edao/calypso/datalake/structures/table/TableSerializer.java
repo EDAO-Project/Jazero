@@ -36,8 +36,10 @@ public class TableSerializer<E> extends Serializer
 
             if (columns > 0)
             {
-                builder.deleteCharAt(builder.length() - 1).deleteCharAt(builder.length() - 1).append("#");
+                builder.deleteCharAt(builder.length() - 1).deleteCharAt(builder.length() - 1);
             }
+
+            builder.append("#");
         }
 
         if (builder.length() > 0)

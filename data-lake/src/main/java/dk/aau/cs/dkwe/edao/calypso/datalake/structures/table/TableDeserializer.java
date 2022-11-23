@@ -30,6 +30,12 @@ public class TableDeserializer extends Deserializer<Table<String>>
 
         for (String rowStr : rowSplit)
         {
+            if (rowStr.isEmpty())
+            {
+                table.addRow(new Table.Row<>());
+                continue;
+            }
+
             String[] elementSplit = rowStr.split("<>");
             List<String> row = new ArrayList<>(elementSplit.length);
 
