@@ -119,9 +119,11 @@ public class IndexWriter implements IndexIO
         Map<Pair<Integer, Integer>, List<String>> entityMatches = new HashMap<>();  // Maps a cell specified by RowNumber, ColumnNumber to the list of entities it matches to
         Table<String> inputEntities = new DynamicTable<>();
         Set<String> entities = new HashSet<>(); // The set of entities corresponding to this filename/table
+        int row = 0;
 
         for (List<JsonTable.TableCell> tableRow : table.rows)
         {
+            int column = 0;
             List<String> inputRow = new ArrayList<>(tableRow.size());
 
             for (JsonTable.TableCell cell : tableRow)
@@ -130,48 +132,71 @@ public class IndexWriter implements IndexIO
                 {
                     this.cellsWithLinks.incrementAndGet();
                     this.cellToNumLinksFrequency.merge(cell.links.size(), 1, Integer::sum);
-                    String link = cell.links.get(0);    // Only get the first one
-                    inputRow.add(link);
+                    List<String> matchesUris = new ArrayList<>();
+
+                    for (String link : cell.links)
+                    {
+                        String uri = this.linker.mapTo(link);
+                        inputRow.add(link);
+
+                        if (uri == null)
+                        {
+                            uri = this.el.link(link.replace("http://www.", "http://en."));
+
+                            if (uri != null)
+                            {
+                                List<String> entityTypes = this.kg.searchTypes(uri);
+                                matchesUris.add(uri);
+                                this.linker.addMapping(link, uri);
+
+                                for (String type : DISALLOWED_ENTITY_TYPES)
+                                {
+                                    entityTypes.remove(type);
+                                }
+
+                                Id entityId = ((EntityLinking) this.linker.getLinker()).uriLookup(uri);
+                                this.entityTable.insert(entityId,
+                                        new Entity(uri, entityTypes.stream().map(Type::new).collect(Collectors.toList())));
+                            }
+                        }
+
+                        if (uri != null)
+                        {
+                            Id entityId = ((EntityLinking) this.linker.getLinker()).uriLookup(uri);
+                            Pair<Integer, Integer> location = new Pair<>(row, column);
+                            ((EntityTableLink) this.entityTableLink.getIndex()).
+                                    addLocation(entityId, tableName, List.of(location));
+                        }
+                    }
+
+                    if (!matchesUris.isEmpty())
+                    {
+                        for (String entity : matchesUris)
+                        {
+                            this.filter.put(entity);
+                            entities.add(entity);
+                        }
+
+                        entityMatches.put(new Pair<>(row, column), matchesUris);
+                    }
                 }
+
+                column++;
             }
 
             inputEntities.addRow(new Table.Row<>(inputRow));
+            row++;
         }
 
-        Table<String> linkedTable = this.el.linkTable(inputEntities);
-        int rows = linkedTable.rowCount();
+        int rows = inputEntities.rowCount();
 
-        for (int row = 0; row < rows; row++)
+        for (row = 0; row < rows; row++)
         {
-            int columns = linkedTable.getRow(row).size();
+            int columns = inputEntities.getRow(row).size();
 
             for (int column = 0; column < columns; column++)
             {
-                String uri = linkedTable.getRow(row).get(column);
-                String input = inputEntities.getRow(row).get(column);
-                uri = uri.equals("None") ? null : uri;
 
-                if (uri != null)
-                {
-                    List<String> entityTypes = this.kg.searchTypes(uri);
-                    entities.add(uri);
-                    this.linker.addMapping(input, uri);
-
-                    for (String type : DISALLOWED_ENTITY_TYPES)
-                    {
-                        entityTypes.remove(type);
-                    }
-
-                    Id entityId = ((EntityLinking) this.linker.getLinker()).uriLookup(uri);
-                    Pair<Integer, Integer> location = new Pair<>(row, column);
-                    this.entityTable.insert(entityId,
-                            new Entity(uri, entityTypes.stream().map(Type::new).collect(Collectors.toList())));
-                    ((EntityTableLink) this.entityTableLink.getIndex()).
-                            addLocation(entityId, tableName, List.of(location));
-                    this.filter.put(uri);
-                    entities.add(uri);
-                    entityMatches.put(new Pair<>(row, column), List.of(uri));
-                }
             }
         }
 
