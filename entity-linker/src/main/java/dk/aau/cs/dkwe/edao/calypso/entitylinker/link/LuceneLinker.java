@@ -26,7 +26,12 @@ public class LuceneLinker implements EntityLink<String, String>
         }
 
         link = this.luceneIndex.find(key);
-        this.cache.put(key, link);
+
+        if (link != null)
+        {
+            this.cache.put(key, link);
+        }
+
         return link;
     }
 }
