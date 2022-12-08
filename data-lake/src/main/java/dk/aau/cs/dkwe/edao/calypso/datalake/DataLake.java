@@ -207,6 +207,11 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         Result result = search.search(query);
         embeddingsDB.close();
 
+        if (result == null)
+        {
+            return ResponseEntity.internalServerError().body("Internal error when searching");
+        }
+
         JsonObject object = new JsonObject();
         JsonArray array = new JsonArray(result.getK());
         Iterator<Pair<File, Double>> scores = result.getResults();

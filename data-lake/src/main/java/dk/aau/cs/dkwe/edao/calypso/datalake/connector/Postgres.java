@@ -21,7 +21,7 @@ public class Postgres implements DBDriver<ResultSet, String>, ExplainableCause
             this.connection = DriverManager.getConnection("jdbc:postgresql://" + host + ":" + port + "/" + dbName,
                     user,
                     password);
-            this.connection.setAutoCommit(false);
+            this.connection.setAutoCommit(true);
         }
 
         catch (SQLException | ClassNotFoundException exception)
