@@ -100,7 +100,7 @@ public class TableSearch extends AbstractSearch
 
             for (int column = 0; column < columns; column++)
             {
-                entities.add(query.getRow(row).get(column));
+                entities.add(query.getRow(row).get(column).replace("'", "''"));
             }
         }
 
@@ -123,7 +123,7 @@ public class TableSearch extends AbstractSearch
 
                     if (uri != null)
                     {
-                        entities.add(uri);
+                        entities.add(uri.replace("'", "''"));
                         break;
                     }
                 }
