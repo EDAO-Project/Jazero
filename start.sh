@@ -1,4 +1,4 @@
 #!/bin/bash
 
-mkdir index
+mkdir -p index
 docker-compose up
