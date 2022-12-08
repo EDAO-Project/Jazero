@@ -173,6 +173,12 @@ public class TableSearch extends AbstractSearch
         if (this.useEmbeddings)
         {
             setQueryEntityEmbeddings(query);
+
+            if (!isQueryFullyEmbeddingsCovered(query))
+            {
+                Logger.log(Logger.Level.ERROR, "Query is not fully covered by embeddings");
+                return null;
+            }
         }
 
         try
@@ -581,6 +587,24 @@ public class TableSearch extends AbstractSearch
         }
 
         return tupleToColumnMappings;
+    }
+
+    private boolean isQueryFullyEmbeddingsCovered(Table<String> query)
+    {
+        for (int rowIdx = 0; rowIdx < query.rowCount(); rowIdx++)
+        {
+            Table.Row<String> row = query.getRow(rowIdx);
+
+            for (int columnIdx = 0; columnIdx < row.size(); columnIdx++)
+            {
+                if (!this.queryEntityEmbeddings.containsKey(row.get(columnIdx)))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     /**
