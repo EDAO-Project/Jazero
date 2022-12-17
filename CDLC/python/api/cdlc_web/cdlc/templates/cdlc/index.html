@@ -1,95 +1,83 @@
 <!DOCTYPE html>
-<html lang="en-US">
+
+<html>
   <head>
-    <meta charset="utf-8" />
-    <title>Calypso Web CDLC</title>
+    <title>Thetis</title>
     <style>
-        .switch {
-          position: relative;
-          display: inline-block;
-          width: 60px;
-          height: 34px;
-        }
-        
-        .switch input { 
-          opacity: 0;
-          width: 0;
-          height: 0;
-        }
-        
-        .slider {
-          position: absolute;
-          cursor: pointer;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: #ccc;
-          -webkit-transition: .4s;
-          transition: .4s;
-        }
-        
-        .slider:before {
-          position: absolute;
-          content: "";
-          height: 26px;
-          width: 26px;
-          left: 4px;
-          bottom: 4px;
-          background-color: white;
-          -webkit-transition: .4s;
-          transition: .4s;
-        }
-        
-        input:checked + .slider {
-          background-color: #2196F3;
-        }
-        
-        input:focus + .slider {
-          box-shadow: 0 0 1px #2196F3;
-        }
-        
-        input:checked + .slider:before {
-          -webkit-transform: translateX(26px);
-          -ms-transform: translateX(26px);
-          transform: translateX(26px);
-        }
-        
-        /* Rounded sliders */
-        .slider.round {
-          border-radius: 34px;
-        }
-        
-        .slider.round:before {
-          border-radius: 50%;
-        }
-        </style>
+      header {
+        background-color: #333;
+        color: white;
+        padding: 20px;
+      }
+      
+      header img {
+        height: 50px
+      }
+
+      form {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      input[type="text"] {
+        width: 60%;
+        padding: 12px 20px;
+        margin: 8px 0;
+        box-sizing: border-box;
+        border: 2px solid #ccc;
+        border-radius: 4px;
+      }
+
+      button[type="submit"] {
+        width: 20%;
+        background-color: #4caf50;
+        color: white;
+        padding: 14px 20px;
+        margin: 8px 0;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      button[type="submit"]:hover {
+        background-color: #45a049;
+      }
+    </style>
   </head>
   <body>
-    <center>
-        <h1>Calypso</h1>
-        <img src="https://bigdataldn.com/wp-content/uploads/2018/05/datalake.png">
-        <p>Use embeddings</p>
-        <label class="switch">
-            <input type="checkbox">
-            <span class="slider round"></span>
-        </label>        
-        <p>Weighted Jaccard scoring</p>
-        <label class="switch">
-            <input type="checkbox">
-            <span class="slider round"></span>
-        </label>
-        <p>Cosine function</p>
-        <select>
-            <option value="NORM_COS">Norm cosine</option>
-            <option value="ABS_COS">Absolute cosine</option>
-            <option value="ANG_COS">Angular cosine</option>
+    <header>
+      <img src="https://bigdataldn.com/wp-content/uploads/2018/05/datalake.png" alt="Thetis logo">
+    </header>
+    <form action="/cdlc/result/" method="POST"> {% csrf_token %}
+      <input type="text" placeholder="Query (seperate rows by '#' and row elements by '<>'" id="query" name="query">
+      <p>Use embeddings</p>
+      <label class="switch">
+         <input type="checkbox" value="Embeddings" id="embeddings" name="settings">
+        <span class="slider round"></span>
+      </label>        
+      <p>Weighted Jaccard scoring</p>
+      <label class="switch">
+        <input type="checkbox" value="Weighted_jaccard" id="weighted_jaccard" name="settings">
+        <span class="slider round"></span>
+      </label>
+      <p>Cosine function</p>
+        <select id="cosine_function", name="settings">
+          <option value="NORM_COS">Norm cosine</option>
+          <option value="ABS_COS">Absolute cosine</option>
+          <option value="ANG_COS">Angular cosine</option>
         </select>
-        <p>Query (seperate rows by '#' and row elements by '<>')</p>
-        <form action="/search" method="POST">
-            <input type="text">
-            <button type="submit">Search</button>
-        </form>
+      <button type="submit">Search</button>
+    </form>
+    {% if result %}
+    <center>
+      <h2>Results for K={{ k }}</h2>
+      <ol>
+        {% for table in result %}
+          <li>{{ table }}</li>
+        {% endfor %}
+      </ol>
     </center>
+    {% endif %}
   </body>
 </html>
