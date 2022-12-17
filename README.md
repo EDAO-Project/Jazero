@@ -115,11 +115,11 @@ The .jar file can be found in the `target` folder and can now be included in you
 This also needs to be done in the folders `data-lake`, `storage`, and `communication`.
 
 The Python connector can be found in the `cdlc.py` file <a href="https://github.com/EDAO-Project/Calypso/tree/main/CDLC/python">here</a>.
-Import the `Connector` class and initialize it with a host name as constructor argument, such as `localhost`, `127.0.0.1`, or something else if you want to connect to Calypso from another machine
+Import the `Connector` class and initialize it with a host name as constructor argument, such as `localhost`, `127.0.0.1`, or something else if you want to connect to Calypso from another machine.
 You can use the Python connector directly from the terminal. Just run `python cdlc.py -h` to see commands.
 Remember to run the methods to insert tables and embeddings on the machine running Calypso. Only searching can be performed remotely.
 
-Be aware that loading a table corpus of 200,000 tables will take approximately one week to load.
+Loading a table corpus of 200,000 tables will take approximately 34 hours.
 
 #### Loading in Java
 Once the Java CDLC .jar library file has been included in your project, use the class `CDLC` to communicate with Calypso.
