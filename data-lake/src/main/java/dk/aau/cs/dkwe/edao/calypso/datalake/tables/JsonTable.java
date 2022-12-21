@@ -2,9 +2,10 @@ package dk.aau.cs.dkwe.edao.calypso.datalake.tables;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
-public class JsonTable {
-
+public class JsonTable
+{
     public String _id;
     public int pgId;
 
@@ -18,11 +19,11 @@ public class JsonTable {
     public List<TableCell> headers;
     public List<List<TableCell>> rows;
 
-    public JsonTable(){
+    public JsonTable()
+    {}
 
-    }
-
-    public JsonTable(String _id, int numCols, int numDataRows, int numNumericCols, String pgTitle, int pgId, String tableCaption, List<TableCell> header, List<List<TableCell>> rows) {
+    public JsonTable(String _id, int numCols, int numDataRows, int numNumericCols, String pgTitle, int pgId, String tableCaption, List<TableCell> header, List<List<TableCell>> rows)
+    {
         this._id = _id;
         this.pgId = pgId;
 
@@ -37,51 +38,71 @@ public class JsonTable {
         this.rows = rows;
     }
 
-    public void set_id(String _id) {
+    public void set_id(String _id)
+    {
         this._id = _id;
     }
 
-    public void setPgId(int pgId) {
+    public void setPgId(int pgId)
+    {
         this.pgId = pgId;
     }
 
-    public void setNumCols(int numCols) {
+    public void setNumCols(int numCols)
+    {
         this.numCols = numCols;
     }
 
-    public void setNumDataRows(int numDataRows) {
+    public void setNumDataRows(int numDataRows)
+    {
         this.numDataRows = numDataRows;
     }
 
-    public void setNumNumericCols(int numNumericCols) {
+    public void setNumNumericCols(int numNumericCols)
+    {
         this.numNumericCols = numNumericCols;
     }
 
-    public void setPgTitle(String pgTitle) {
+    public void setPgTitle(String pgTitle)
+    {
         this.pgTitle = pgTitle;
     }
 
-    public void setTableCaption(String tableCaption) {
+    public void setTableCaption(String tableCaption)
+    {
         this.tableCaption = tableCaption;
     }
 
 
-    public void setHeader(List<TableCell> header) {
+    public void setHeader(List<TableCell> header)
+    {
         this.headers = header;
     }
 
-    public void setBody(List<List<TableCell>> body) {
+    public void setBody(List<List<TableCell>> body)
+    {
         this.rows = rows;
     }
 
+    public void forEach(Consumer<TableCell> consumer)
+    {
+        for (List<JsonTable.TableCell> tableRow : this.rows)
+        {
+            int columnSize = tableRow.size();
 
+            for (int tableColumn = 0; tableColumn < columnSize; tableColumn++)
+            {
+                consumer.accept(tableRow.get(tableColumn));
+            }
+        }
+    }
 
+    public static class TableCell
+    {
+        public TableCell() {}
 
-    public static class TableCell {
-
-        public TableCell(){}
-
-        public TableCell(String text, boolean isNumeric, List<String> links) {
+        public TableCell(String text, boolean isNumeric, List<String> links)
+        {
             this.text = text;
             this.isNumeric = isNumeric;
             this.links = links;
@@ -92,9 +113,11 @@ public class JsonTable {
         public List<String> links;
 
         @Override
-        public boolean equals(Object o) {
+        public boolean equals(Object o)
+        {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
+
             TableCell tableCell = (TableCell) o;
             return isNumeric == tableCell.isNumeric &&
                     Objects.equals(text, tableCell.text) &&
@@ -102,10 +125,9 @@ public class JsonTable {
         }
 
         @Override
-        public int hashCode() {
+        public int hashCode()
+        {
             return Objects.hash(text, isNumeric, links);
         }
     }
-
-
 }

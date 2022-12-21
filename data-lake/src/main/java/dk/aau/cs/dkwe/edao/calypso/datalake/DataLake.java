@@ -11,6 +11,7 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.connector.service.KGService;
 import dk.aau.cs.dkwe.edao.calypso.datalake.loader.IndexReader;
 import dk.aau.cs.dkwe.edao.calypso.datalake.loader.IndexWriter;
 import dk.aau.cs.dkwe.edao.calypso.datalake.parser.EmbeddingsParser;
+import dk.aau.cs.dkwe.edao.calypso.datalake.parser.TableParser;
 import dk.aau.cs.dkwe.edao.calypso.datalake.search.Result;
 import dk.aau.cs.dkwe.edao.calypso.datalake.search.TableSearch;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityLinking;
@@ -24,6 +25,7 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.DynamicTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.Table;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Logger;
+import dk.aau.cs.dkwe.edao.calypso.datalake.tables.JsonTable;
 import dk.aau.cs.dkwe.edao.calypso.storagelayer.StorageHandler;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -212,26 +214,53 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             return ResponseEntity.internalServerError().body("Internal error when searching");
         }
 
+        JsonObject jsonResult = resultToJson(result, search.elapsedNanoSeconds(), search.getReduction());
+        return ResponseEntity
+                .ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(jsonResult.toString());
+    }
+
+    private static JsonObject resultToJson(Result res, long runtime, double reduction)
+    {
         JsonObject object = new JsonObject();
-        JsonArray array = new JsonArray(result.getK());
-        Iterator<Pair<File, Double>> scores = result.getResults();
+        JsonArray array = new JsonArray(res.getK());
+        Iterator<Pair<File, Double>> scores = res.getResults();
 
         while (scores.hasNext())
         {
             Pair<File, Double> score = scores.next();
             JsonObject jsonScore = new JsonObject();
-            jsonScore.add("table", new JsonPrimitive(score.first().getName()));
+            jsonScore.add("table ID", new JsonPrimitive(score.first().getName()));
+
+            JsonTable table = TableParser.parse(score.first());
+            JsonArray rows = new JsonArray(table.rows.size());
+
+            for (List<JsonTable.TableCell> row : table.rows)
+            {
+                JsonArray column = new JsonArray(row.size());
+                row.forEach(cell -> {
+                    JsonObject cellObject = new JsonObject();
+                    JsonArray links = new JsonArray(cell.links.size());
+                    cell.links.forEach(link -> links.add(link));
+                    cellObject.addProperty("text", cell.text);
+                    cellObject.add("links", links);
+                    column.add(cellObject);
+                });
+
+                rows.add(column);
+            }
+
+            jsonScore.add("table", rows);
             jsonScore.add("score", new JsonPrimitive(score.second()));
             array.add(jsonScore);
         }
 
         object.add("scores", array);
-        object.addProperty("runtime", search.elapsedNanoSeconds());
-        object.addProperty("reduction", search.getReduction() * 100);
-        return ResponseEntity
-                .ok()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(object.toString());
+        object.addProperty("runtime", runtime);
+        object.addProperty("reduction", reduction * 100);
+
+        return object;
     }
 
     /**
