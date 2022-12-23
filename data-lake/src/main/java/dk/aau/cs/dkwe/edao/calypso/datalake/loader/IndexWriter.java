@@ -4,6 +4,7 @@ import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import dk.aau.cs.dkwe.edao.calypso.datalake.connector.DBDriverBatch;
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.service.ELService;
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.service.KGService;
 import dk.aau.cs.dkwe.edao.calypso.datalake.parser.TableParser;
@@ -44,6 +45,8 @@ public class IndexWriter implements IndexIO
     private SynchronizedLinker<String, String> linker;
     private SynchronizedIndex<Id, Entity> entityTable;
     private SynchronizedIndex<Id, List<String>> entityTableLink;
+    private SynchronizedIndex<Id, List<Double>> embeddingsIdx;
+    private DBDriverBatch<List<Double>, String> embeddingsDB;
     private BloomFilter<String> filter = BloomFilter.create(
             Funnels.stringFunnel(Charset.defaultCharset()),
             5_000_000,
@@ -55,7 +58,7 @@ public class IndexWriter implements IndexIO
     private static final String STATS_DIR = "statistics/";
 
     public IndexWriter(List<Path> files, File indexPath, File dataOutputPath, StorageHandler.StorageType storageType, KGService kgService,
-                       ELService elService, int threads, String wikiPrefix, String uriPrefix)
+                       ELService elService, DBDriverBatch<List<Double>, String> embeddingStore, int threads, String wikiPrefix, String uriPrefix)
     {
         if (files.isEmpty())
             throw new IllegalArgumentException("Missing files to load");
@@ -64,10 +67,12 @@ public class IndexWriter implements IndexIO
         this.indexDir = indexPath;
         this.dataDir = dataOutputPath;
         this.storage = new StorageHandler(storageType);
+        this.embeddingsDB = embeddingStore;
         this.kg = kgService;
         this.el = elService;
         this.threads = threads;
         this.linker = SynchronizedLinker.wrap(new EntityLinking(wikiPrefix, uriPrefix));
+        this.embeddingsIdx = SynchronizedIndex.wrap(new EmbeddingsIndex<>());
         this.entityTable = SynchronizedIndex.wrap(new EntityTable());
         this.entityTableLink = SynchronizedIndex.wrap(new EntityTableLink());
         ((EntityTableLink) this.entityTableLink.getIndex()).setDirectory(files.get(0).toFile().getParent() + "/");
@@ -155,6 +160,8 @@ public class IndexWriter implements IndexIO
                                 }
 
                                 Id entityId = ((EntityLinking) this.linker.getLinker()).uriLookup(uri);
+                                List<Double> embeddings = this.embeddingsDB.select(uri);
+                                this.embeddingsIdx.insert(entityId, embeddings);
                                 this.entityTable.insert(entityId,
                                         new Entity(uri, entityTypes.stream().map(Type::new).collect(Collectors.toList())));
                             }
@@ -385,6 +392,12 @@ public class IndexWriter implements IndexIO
         outputStream.flush();
         outputStream.close();
 
+        // Embeddings index
+        outputStream = new ObjectOutputStream(new FileOutputStream(this.indexDir + "/" + Configuration.getEmbeddingsIndexFile()));
+        outputStream.writeObject(this.embeddingsIdx.getIndex());
+        outputStream.flush();
+        outputStream.close();
+
         genNeo4jTableMappings();
     }
 
@@ -481,6 +494,15 @@ public class IndexWriter implements IndexIO
     public EntityTableLink getEntityTableLinker()
     {
         return (EntityTableLink) this.entityTableLink.getIndex();
+    }
+
+    /**
+     * Getter to embeddings index
+     * @return Loaded embeddings index
+     */
+    public EmbeddingsIndex<String> getEmbeddingsIndex()
+    {
+        return (EmbeddingsIndex<String>) this.embeddingsIdx.getIndex();
     }
 
     public long getApproximateEntityMentions()

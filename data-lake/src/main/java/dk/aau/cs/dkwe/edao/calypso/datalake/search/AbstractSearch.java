@@ -1,6 +1,7 @@
 package dk.aau.cs.dkwe.edao.calypso.datalake.search;
 
 import dk.aau.cs.dkwe.edao.calypso.datalake.search.*;
+import dk.aau.cs.dkwe.edao.calypso.datalake.store.EmbeddingsIndex;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTableLink;
@@ -11,12 +12,15 @@ public abstract class AbstractSearch implements Search
     private EntityLinking linker;
     private EntityTable entityTable;
     private EntityTableLink entityTableLink;
+    private EmbeddingsIndex<String> embeddingIdx;
 
-    protected AbstractSearch(EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink)
+    protected AbstractSearch(EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
+                             EmbeddingsIndex<String> embeddingIndex)
     {
         this.linker = linker;
         this.entityTable = entityTable;
         this.entityTableLink = entityTableLink;
+        this.embeddingIdx = embeddingIndex;
     }
 
     @Override
@@ -44,6 +48,11 @@ public abstract class AbstractSearch implements Search
     public EntityTableLink getEntityTableLink()
     {
         return this.entityTableLink;
+    }
+
+    public EmbeddingsIndex<String> getEmbeddingIndex()
+    {
+        return this.embeddingIdx;
     }
 
     protected abstract Result abstractSearch(Table<String> query);

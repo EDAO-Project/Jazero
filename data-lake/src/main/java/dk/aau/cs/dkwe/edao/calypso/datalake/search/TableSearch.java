@@ -1,9 +1,9 @@
 package dk.aau.cs.dkwe.edao.calypso.datalake.search;
 
-import dk.aau.cs.dkwe.edao.calypso.datalake.connector.DBDriverBatch;
 import dk.aau.cs.dkwe.edao.calypso.datalake.loader.Stats;
 import dk.aau.cs.dkwe.edao.calypso.datalake.parser.TableParser;
 import dk.aau.cs.dkwe.edao.calypso.datalake.similarity.JaccardSimilarity;
+import dk.aau.cs.dkwe.edao.calypso.datalake.store.EmbeddingsIndex;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTableLink;
@@ -61,20 +61,17 @@ public class TableSearch extends AbstractSearch
             useMaxSimilarityPerColumn, hungarianAlgorithmSameAlignmentAcrossTuples;
     private CosineSimilarityFunction embeddingSimFunction;
     private SimilarityMeasure measure;
-    private DBDriverBatch<List<Double>, String> embeddings;
     private Map<String, Stats> tableStats = new TreeMap<>();
     private final Object lock = new Object();
     private StorageHandler storage;
-    private Map<String, List<Double>> queryEntityEmbeddings = null;
-    private Map<String, Map<String, List<Double>>> tablesToEntityMappings = new ConcurrentHashMap<>();
 
     public TableSearch(StorageHandler tableStorage, EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
-                       int topK, int threads, boolean useEmbeddings, CosineSimilarityFunction cosineFunction,
-                       boolean singleColumnPerQueryEntity, boolean weightedJaccard, boolean adjustedJaccard,
-                       boolean useMaxSimilarityPerColumn, boolean hungarianAlgorithmSameAlignmentAcrossTuples,
-                       SimilarityMeasure similarityMeasure, DBDriverBatch<List<Double>, String> embeddingStore)
+                       EmbeddingsIndex<String> embeddingIdx, int topK, int threads, boolean useEmbeddings,
+                       CosineSimilarityFunction cosineFunction, boolean singleColumnPerQueryEntity, boolean weightedJaccard,
+                       boolean adjustedJaccard, boolean useMaxSimilarityPerColumn, boolean hungarianAlgorithmSameAlignmentAcrossTuples,
+                       SimilarityMeasure similarityMeasure)
     {
-        super(linker, entityTable, entityTableLink);
+        super(linker, entityTable, entityTableLink, embeddingIdx);
         this.topK = topK;
         this.threads = threads;
         this.useEmbeddings = useEmbeddings;
@@ -85,72 +82,7 @@ public class TableSearch extends AbstractSearch
         this.hungarianAlgorithmSameAlignmentAcrossTuples = hungarianAlgorithmSameAlignmentAcrossTuples;
         this.useMaxSimilarityPerColumn = useMaxSimilarityPerColumn;
         this.measure = similarityMeasure;
-        this.embeddings = embeddingStore;
         this.storage = tableStorage;
-    }
-
-    private void setQueryEntityEmbeddings(Table<String> query)
-    {
-        List<String> entities = new ArrayList<>();
-        int queryRows = query.rowCount();
-
-        for (int row = 0; row < queryRows; row++)
-        {
-            int columns = query.getRow(row).size();
-
-            for (int column = 0; column < columns; column++)
-            {
-                entities.add(query.getRow(row).get(column).replace("'", "''"));
-            }
-        }
-
-        this.queryEntityEmbeddings = new ConcurrentHashMap<>(this.embeddings.batchSelect(entities));
-    }
-
-    private void insertTableEntityEmbeddings(JsonTable table, String tableId)
-    {
-        List<String> entities = new ArrayList<>();
-
-        for (List<JsonTable.TableCell> row : table.rows)
-        {
-            int columns = row.size();
-
-            for (int column = 0; column < columns; column++)
-            {
-                for (String link : row.get(column).links)
-                {
-                    String uri = getLinker().mapTo(link);
-
-                    if (uri != null)
-                    {
-                        entities.add(uri.replace("'", "''"));
-                        break;
-                    }
-                }
-            }
-        }
-
-        this.tablesToEntityMappings.put(tableId, this.embeddings.batchSelect(entities));
-    }
-
-    private void removeTableEmbeddings(String tableId)
-    {
-        this.tablesToEntityMappings.remove(tableId);
-    }
-
-    private List<Double> getTableEntityEmbedding(String entity)
-    {
-        for (Map.Entry<String, Map<String, List<Double>>> embedding : this.tablesToEntityMappings.entrySet())
-        {
-            List<Double> e = embedding.getValue().get(entity);
-
-            if (e != null)
-            {
-                return e;
-            }
-        }
-
-        return null;
     }
 
     public void setCorpus(StorageHandler handler)
@@ -169,17 +101,6 @@ public class TableSearch extends AbstractSearch
         long start = System.nanoTime();
 
         // TODO: Perform pre-filtering here
-
-        if (this.useEmbeddings)
-        {
-            setQueryEntityEmbeddings(query);
-
-            if (!isQueryFullyEmbeddingsCovered(query))
-            {
-                Logger.log(Logger.Level.ERROR, "Query is not fully covered by embeddings");
-                return null;
-            }
-        }
 
         try
         {
@@ -264,11 +185,6 @@ public class TableSearch extends AbstractSearch
 
         if (jTable == null || jTable.numDataRows == 0)
             return null;
-
-        if (this.useEmbeddings)
-        {
-            insertTableEntityEmbeddings(jTable, table.getName());
-        }
 
         List<List<Integer>> queryRowToColumnMappings = new ArrayList<>();  // If each query entity needs to map to only one column find the best mapping
 
@@ -361,11 +277,6 @@ public class TableSearch extends AbstractSearch
         statBuilder.fractionOfEntityMappedRows((double) numEntityMappedRows / jTable.numDataRows);
         Double score = aggregateTableSimilarities(query, scores, statBuilder);
         this.tableStats.put(table.getName(), statBuilder.finish());
-
-        if (this.useEmbeddings)
-        {
-            removeTableEmbeddings(table.getName());
-        }
 
         return new Pair<>(table, score);
     }
@@ -506,21 +417,20 @@ public class TableSearch extends AbstractSearch
 
     private double cosineSimilarity(String ent1, String ent2)
     {
-        List<Double> ent1Embeddings = this.queryEntityEmbeddings.get(ent1),
-                ent2Embeddings = this.queryEntityEmbeddings.get(ent2);
+        Id id1 = getLinker().uriLookup(ent1), id2 = getLinker().uriLookup(ent2);
 
-        if (ent1Embeddings == null)
+        if (id1 == null || id2 == null)
         {
-            ent1Embeddings = getTableEntityEmbedding(ent1);
+            return 0.0;
         }
 
-        if (ent2Embeddings == null)
-        {
-            ent2Embeddings = getTableEntityEmbedding(ent2);
-        }
+        List<Double> ent1Embeddings = getEmbeddingIndex().find(id1),
+                ent2Embeddings = getEmbeddingIndex().find(id2);
 
         if (ent1Embeddings == null || ent2Embeddings == null)
+        {
             return 0.0;
+        }
 
         double cosineSim = Utils.cosineSimilarity(ent1Embeddings, ent2Embeddings),
                 simScore = 0.0;
@@ -551,7 +461,8 @@ public class TableSearch extends AbstractSearch
     {
         try
         {
-            return this.queryEntityEmbeddings.containsKey(entity) || getTableEntityEmbedding(entity) != null;
+            Id id = getLinker().uriLookup(entity);
+            return id != null && getEmbeddingIndex().find(id) != null;
         }
 
         catch (IllegalArgumentException exc)
@@ -567,12 +478,10 @@ public class TableSearch extends AbstractSearch
      * @param entityToColumnScore Column score per entity
      * @return Best match from given scores
      */
-    private List<List<Integer>> getBestMatchFromScores(Table<String> query, List<List<List<Double>>> entityToColumnScore)
-    {
+    private List<List<Integer>> getBestMatchFromScores(Table<String> query, List<List<List<Double>>> entityToColumnScore) {
         List<List<Integer>> tupleToColumnMappings = new ArrayList<>();
 
-        for (int row = 0; row < query.rowCount(); row++)
-        {
+        for (int row = 0; row < query.rowCount(); row++) {
             // 2-D array where each row is composed of the negative column relevance scores for a given entity in the query tuple
             // Taken from: https://stackoverflow.com/questions/10043209/convert-arraylist-into-2d-array-containing-varying-lengths-of-arrays
             double[][] scoresMatrix = entityToColumnScore.get(row).stream().map(u -> u.stream().mapToDouble(i -> -1 * i).toArray()).toArray(double[][]::new);
@@ -587,24 +496,6 @@ public class TableSearch extends AbstractSearch
         }
 
         return tupleToColumnMappings;
-    }
-
-    private boolean isQueryFullyEmbeddingsCovered(Table<String> query)
-    {
-        for (int rowIdx = 0; rowIdx < query.rowCount(); rowIdx++)
-        {
-            Table.Row<String> row = query.getRow(rowIdx);
-
-            for (int columnIdx = 0; columnIdx < row.size(); columnIdx++)
-            {
-                if (!this.queryEntityEmbeddings.containsKey(row.get(columnIdx)))
-                {
-                    return false;
-                }
-            }
-        }
-
-        return true;
     }
 
     /**

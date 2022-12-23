@@ -14,6 +14,7 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.parser.EmbeddingsParser;
 import dk.aau.cs.dkwe.edao.calypso.datalake.parser.TableParser;
 import dk.aau.cs.dkwe.edao.calypso.datalake.search.Result;
 import dk.aau.cs.dkwe.edao.calypso.datalake.search.TableSearch;
+import dk.aau.cs.dkwe.edao.calypso.datalake.store.EmbeddingsIndex;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTableLink;
@@ -50,6 +51,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     private static EntityLinking linker;
     private static EntityTable entityTable;
     private static EntityTableLink tableLink;
+    private static EmbeddingsIndex<String> embeddingsIndex;
     private static final int THREADS = 4;
     private static final File DATA_DIR = new File("../knowledge-graph/neo4j/mappings/");
 
@@ -77,6 +79,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 linker = indexReader.getLinker();
                 entityTable = indexReader.getEntityTable();
                 tableLink = indexReader.getEntityTableLink();
+                embeddingsIndex = indexReader.getEmbeddingsIndex();
             }
 
             catch (IOException e)
@@ -195,10 +198,9 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         Table<String> query = new DynamicTable<>();
         String[] queryStrTuples = body.get("query").split("#");
         StorageHandler storageHandler = new StorageHandler(Configuration.getStorageType());
-        DBDriverBatch<List<Double>, String> embeddingsDB = EmbeddingsFactory.fromConfig(false);
-        TableSearch search = new TableSearch(storageHandler, linker, entityTable, tableLink, topK, THREADS, useEmbeddings,
+        TableSearch search = new TableSearch(storageHandler, linker, entityTable, tableLink, embeddingsIndex, topK, THREADS, useEmbeddings,
                 cosineFunction, singleColumnPerEntity, weightedJaccard, adjustedJaccard, useMaxSimilarityPerColumn,
-                false, similarityMeasure, embeddingsDB);
+                false, similarityMeasure);
 
         for (String tuple : queryStrTuples)
         {
@@ -207,7 +209,6 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         }
 
         Result result = search.search(query);
-        embeddingsDB.close();
 
         if (result == null)
         {
@@ -299,7 +300,12 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             DATA_DIR.mkdir();
         }
 
-        if (!headers.containsKey("content-type") || !headers.get("content-type").equals(MediaType.APPLICATION_JSON_VALUE))
+        if (!Configuration.areEmbeddingsLoaded())
+        {
+            return ResponseEntity.badRequest().body("You need to load embeddings first using the '/embeddings' endpoint");
+        }
+
+        else if (!headers.containsKey("content-type") || !headers.get("content-type").equals(MediaType.APPLICATION_JSON_VALUE))
         {
             return ResponseEntity.badRequest().body("Content-Type header must be " + MediaType.APPLICATION_JSON);
         }
@@ -340,6 +346,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             long totalTime = System.nanoTime();
             KGService kgService = new KGService(Configuration.getEKGManagerHost(), Configuration.getEKGManagerPort());
             ELService elService = new ELService(Configuration.getEntityLinkerHost(), Configuration.getEntityLinkerPort());
+            DBDriverBatch<List<Double>, String> embeddingStore = EmbeddingsFactory.fromConfig(false);
 
             if (kgService.size() < 1)
             {
@@ -352,9 +359,10 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             Collections.sort(filePaths);
             Logger.log(Logger.Level.INFO, "There are " + filePaths.size() + " files to be processed.");
 
-            IndexWriter indexWriter = new IndexWriter(filePaths, new File(Configuration.getIndexDir()), DATA_DIR, storageType, kgService, elService, THREADS,
-                    body.get(tablePrefixKey), body.get(kgPrefixKey));
+            IndexWriter indexWriter = new IndexWriter(filePaths, new File(Configuration.getIndexDir()), DATA_DIR, storageType,
+                    kgService, elService, embeddingStore, THREADS, body.get(tablePrefixKey), body.get(kgPrefixKey));
             indexWriter.performIO();
+            embeddingStore.close();
 
             if (!kgService.insertLinks(DATA_DIR))
             {
