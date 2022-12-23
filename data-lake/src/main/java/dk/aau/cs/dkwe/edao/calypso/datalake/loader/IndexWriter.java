@@ -160,7 +160,7 @@ public class IndexWriter implements IndexIO
                                 }
 
                                 Id entityId = ((EntityLinking) this.linker.getLinker()).uriLookup(uri);
-                                List<Double> embeddings = this.embeddingsDB.select(uri);
+                                List<Double> embeddings = this.embeddingsDB.select(uri.replace("'", "''"));
                                 this.entityTable.insert(entityId,
                                         new Entity(uri, entityTypes.stream().map(Type::new).collect(Collectors.toList())));
 
