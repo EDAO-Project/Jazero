@@ -161,9 +161,13 @@ public class IndexWriter implements IndexIO
 
                                 Id entityId = ((EntityLinking) this.linker.getLinker()).uriLookup(uri);
                                 List<Double> embeddings = this.embeddingsDB.select(uri);
-                                this.embeddingsIdx.insert(entityId, embeddings);
                                 this.entityTable.insert(entityId,
                                         new Entity(uri, entityTypes.stream().map(Type::new).collect(Collectors.toList())));
+
+                                if (embeddings != null)
+                                {
+                                    this.embeddingsIdx.insert(entityId, embeddings);
+                                }
                             }
                         }
 
