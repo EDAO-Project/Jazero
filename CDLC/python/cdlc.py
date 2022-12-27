@@ -17,9 +17,13 @@ class Connector:
         return self.__host
 
     def isConnected(self):
-        sdl = requests.get(self.__host + ':' + str(self.__sdlPort) + '/ping')
-        entityLinker = requests.get(self.__host + ':' + str(self.__entityLinkerPort) + '/ping')
-        ekg = requests.get(self.__host + ':' + str(self.__ekgPort) + '/ping')
+        try:
+            sdl = requests.get(self.__host + ':' + str(self.__sdlPort) + '/ping')
+            entityLinker = requests.get(self.__host + ':' + str(self.__entityLinkerPort) + '/ping')
+            ekg = requests.get(self.__host + ':' + str(self.__ekgPort) + '/ping')
+        
+        except:
+            return False
 
         return sdl.status_code == 200 and entityLinker.status_code == 200 and ekg.status_code == 200
 

@@ -79,5 +79,11 @@
       </ol>
     </center>
     {% endif %}
+    {% if error %}
+    <center>
+      <h2>An error occurred!</h2>
+      <h5>{{ error }}</h5>
+    </center>
+    {% endif %}
   </body>
 </html>

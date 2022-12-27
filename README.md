@@ -181,6 +181,30 @@ Import the `Connector` class from the `cdlc.py` Python file. Searching requires 
 - Type of similarity measurement between pairs of vectors of entity scores
 - Tabular query
 
+### Calypso Web
+This repository has a Django web interface to interact with an instance of Calypso.
+Navigate to `CDLC/python/api/` and build the Docker image.
+
+```bash
+docker build -t calypso_web -f Dockerfile ..
+```
+
+Then, run a container of Calypso web.
+
+```bash
+docker run --rm -p 8084:8084 -d --name calypso_web -e CALYPSO_HOST=<HOST> web
+```
+
+You can now access the Calypso web interface <a href="http://127.0.0.1:8084/cdlc/">here</a>.
+Just substitute `<HOST>` with the host name of the running Calypso instance.
+For demonstration purposes, we already have an instance of Calypso running, and it can be accessed using its web interface <a href="">here</a>.
+
+You can stop the Calypso web interface with the following command.
+
+```bash
+docker stop calypso_web
+```
+
 ## Setting Up Calypso in an IDE
 Most of the components in Calypso are dependent on the `communication` module.
 Therefore, change directory to this module and run the following to install it as a dependency

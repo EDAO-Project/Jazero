@@ -3,6 +3,9 @@ from django.http import HttpResponse
 from django.template import loader
 from django.core.exceptions import BadRequest
 
+import os
+from cdlc.cdlc import Connector
+
 def index(request):
     template = loader.get_template('cdlc/index.html')
     context = {}
@@ -13,6 +16,7 @@ def result(request):
     if request.method != 'POST':
         raise BadRequest("Request must be POST")
 
+    host = os.environ['CALYPSO_HOST']
     use_embeddings = 'Embeddings' in request.POST.getlist('settings')
     weighted_jaccard = 'Weighted_jaccard' in request.POST.getlist('settings')
     cosine_function = request.POST.getlist('settings')[-1]
@@ -21,12 +25,20 @@ def result(request):
     if len(query) == 0:
         raise BadRequest("Missing query")
 
-    # Use connector to get result here
-
+    # TODO: Finish getting results using connector
     template = loader.get_template('cdlc/index.html')
-    context = {
-        'k': '100',
-        'result': ['T1']
-    }
+    context = {}
+    conn = Connector(host)
+
+    if not conn.isConnected():
+        context = {
+            'error': 'Could not connect to Calypso instance. Make sure all Calypso services are running.'
+        }
+
+    else:
+        context = {
+            'k': '100',
+            'result': ['T1']
+        }
 
     return HttpResponse(template.render(context, request))
