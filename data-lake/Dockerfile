@@ -2,6 +2,7 @@ FROM ubuntu
 
 RUN mkdir /index
 RUN mkdir /logs
+RUN mkdir -p /srv/storage
 RUN apt-get update
 RUN apt-get install openjdk-17-jre openjdk-17-jdk maven -y
 

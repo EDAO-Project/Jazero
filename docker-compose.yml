@@ -11,6 +11,7 @@ services:
       - ./knowledge-graph/neo4j/:/home/knowledge-graph/neo4j
       - ./index/:/index
       - ./logs/:/logs
+      - ./.tables/:/srv/storage
   entity-linker:
     network_mode: host
     build:
