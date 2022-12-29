@@ -58,7 +58,7 @@ public class Configuration
         }
     }
 
-    private static final File CONF_FILE = new File(".config.conf");
+    private static final File CONF_FILE = new File(getIndexDir() + "/.config.conf");
 
     static
     {
