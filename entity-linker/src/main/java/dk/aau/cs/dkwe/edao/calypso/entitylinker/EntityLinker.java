@@ -32,7 +32,7 @@ public class EntityLinker implements WebServerFactoryCustomizer<ConfigurableWebS
     @Override
     public void customize(ConfigurableWebServerFactory factory)
     {
-        factory.setPort(8082);
+        factory.setPort(Configuration.getEntityLinkerPort());
     }
 
     public static void main(String[] args) throws IOException

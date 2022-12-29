@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Type;
+import dk.aau.cs.dkwe.edao.calypso.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.calypso.knowledgegraph.connector.Neo4jEndpoint;
 import dk.aau.cs.dkwe.edao.calypso.knowledgegraph.middleware.Neo4JHandler;
 import dk.aau.cs.dkwe.edao.calypso.knowledgegraph.middleware.Neo4JReader;
@@ -30,7 +31,7 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
     @Override
     public void customize(ConfigurableWebServerFactory factory)
     {
-        factory.setPort(8083);
+        factory.setPort(Configuration.getEKGManagerPort());
     }
 
     public static void main(String[] args)

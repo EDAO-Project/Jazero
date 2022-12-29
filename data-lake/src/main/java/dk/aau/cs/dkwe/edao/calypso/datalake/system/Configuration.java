@@ -143,6 +143,9 @@ public class Configuration
         if (!props.contains("IndexDir"))
             props.setProperty("IndexDir", "/index");
 
+        if (!props.contains("logDir"))
+            props.setProperty("logDir", "/logs");
+
         writeProperties(props);
     }
 
@@ -301,6 +304,11 @@ public class Configuration
         return readProperties().getProperty("LogLevel");
     }
 
+    public static String getLogDir()
+    {
+        return readProperties().getProperty("logDir");
+    }
+
     public static void setIndexesLoaded(boolean value)
     {
         addProperty("IndexesLoaded", String.valueOf(value));
@@ -341,19 +349,9 @@ public class Configuration
         return readProperties().getProperty("SDLHost");
     }
 
-    public static void setSDLManagerPort(int port)
-    {
-        addProperty("SDLPort", String.valueOf(port));
-    }
-
     public static int getSDLManagerPort()
     {
         return Integer.parseInt(readProperties().getProperty("SDLPort"));
-    }
-
-    public static void setEntityLinkerHost(String host)
-    {
-        addProperty("EntityLinkerHost", host);
     }
 
     public static String getEntityLinkerHost()
@@ -361,29 +359,14 @@ public class Configuration
         return readProperties().getProperty("EntityLinkerHost");
     }
 
-    public static void setEntityLinkerPort(int port)
-    {
-        addProperty("EntityLinkerPort", String.valueOf(port));
-    }
-
     public static int getEntityLinkerPort()
     {
         return Integer.parseInt(readProperties().getProperty("EntityLinkerPort"));
     }
 
-    public static void setEKGManagerHost(String host)
-    {
-        addProperty("EKGManagerHost", host);
-    }
-
     public static String getEKGManagerHost()
     {
         return readProperties().getProperty("EKGManagerHost");
-    }
-
-    public static void setEKGManagerPort(int port)
-    {
-        addProperty("EKGManagerPort", String.valueOf(port));
     }
 
     public static int getEKGManagerPort()

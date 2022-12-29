@@ -10,6 +10,7 @@ services:
     volumes:
       - ./knowledge-graph/neo4j/:/home/knowledge-graph/neo4j
       - ./index/:/index
+      - ./logs/:/logs
   entity-linker:
     network_mode: host
     build:

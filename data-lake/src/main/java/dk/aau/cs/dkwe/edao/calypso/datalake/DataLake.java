@@ -25,6 +25,7 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Type;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.DynamicTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.Table;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Configuration;
+import dk.aau.cs.dkwe.edao.calypso.datalake.system.FileLogger;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Logger;
 import dk.aau.cs.dkwe.edao.calypso.datalake.tables.JsonTable;
 import dk.aau.cs.dkwe.edao.calypso.storagelayer.StorageHandler;
@@ -58,12 +59,16 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     @Override
     public void customize(ConfigurableWebServerFactory factory)
     {
-        factory.setPort(8081);
+        factory.setPort(Configuration.getSDLManagerPort());
     }
 
     public static void main(String[] args)
     {
+        FileLogger.log(FileLogger.Service.SDL_Manager, "Starting...");
         loadIndexes();
+
+        FileLogger.log(FileLogger.Service.SDL_Manager, "Started");
+        FileLogger.log(FileLogger.Service.SDL_Manager, "SDL Manager available at 0.0.0.0:" + Configuration.getSDLManagerPort());
         SpringApplication.run(DataLake.class, args);
     }
 
@@ -84,6 +89,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
             catch (IOException e)
             {
+                FileLogger.log(FileLogger.Service.SDL_Manager, "Failed loading indexes: " + e.getMessage());
                 throw new RuntimeException("IOException when reading indexes: " + e.getMessage());
             }
         }
@@ -387,6 +393,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                     TimeUnit.SECONDS.convert(indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s");
             Configuration.setIndexesLoaded(true);
             loadIndexes();
+            FileLogger.log(FileLogger.Service.SDL_Manager, "Loaded " + indexWriter.loadedTables() + " tables");
 
             return ResponseEntity.ok("Loaded tables: " + indexWriter.loadedTables() + "\nIndex time: " +
                     TimeUnit.SECONDS.convert(indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s\nTotal elapsed time: " +
@@ -463,6 +470,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             }
 
             Configuration.setEmbeddingsLoaded(true);
+            FileLogger.log(FileLogger.Service.SDL_Manager, "Loaded " + batchSizeCount +
+                    " entity embeddings corresponding to " + loaded + " mb");
             db.close();
 
             return ResponseEntity.ok("Loaded " + batchSizeCount + " entity embeddings (" + loaded + " mb)");
