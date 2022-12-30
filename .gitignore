@@ -8,6 +8,11 @@ knowledge-graph/neo4j/neo4j-server
 knowledge-graph/neo4j/*.ttl
 knowledge-graph/neo4j/*.nt
 
+### Mounts ###
+index/
+logs/
+.tables/
+
 ### STS ###
 .apt_generated
 .classpath
