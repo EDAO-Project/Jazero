@@ -28,7 +28,7 @@ Start Calypso with the following simple command
 ```
 
 The first time Calypso is started, the entity linker service will build a Lucene index, which can take around an hour for a 10GB KG.
-Now, Calypso is accessible on localhost or on the machine's IP address.
+Then, Calypso is accessible on localhost or on the machine's IP address.
 
 Alternatively, but not recommended, you can build each service manually and run the built .jar file.
 This requires having Java 17 and Maven installed.
@@ -57,12 +57,31 @@ Now, all executable .jar files are in the new folder respective `target`.
 These can be executed with `java -jar <JAR FILE>`.
 
 ## Working with Calypso
-Here we describe working with Calypso, how to load Calypso with tables, load indexes, load embeddings, and searching in Calypso.
+Here we describe working with Calypso, how to load Calypso with tables, load indexes, load embeddings, and search Calypso.
 
 ### Loading Calypso
 Tables in Calypso are loaded and stored either natively on disk or in HDFS (HDFS is not yet supported).
+Loading of embeddings must be performed first as the embeddings are used to construct indexes during loading of tables.
+
+##### Loading Embeddings
+
+Calypso also uses embeddings to represent entities.
+Consider using <a href="https://github.com/EDAO-Project/DBpediaEmbedding">this</a> repository to generate RDF embeddings.
+
+Every entity embedding must be contained in one line in the embeddings file, and each value must be separated by the same delimiter.
+This includes the entity itself. Below is an example of what an embeddings file of three entities could look like where the space character is the delimiter:
+
+```
+https://dbpedia.org/page/Barack_Obama -3.21 13.2122 53.32 -2.23 0.4353 8.231
+https://dbpedia.org/page/Lionel_Messi 2.432 9.3213 -32.231 21.432 -21.022 53.1133
+https://dbpedia.org/page/Eiffel_Tower -34.422 -7.231 5.312 -1.435 0.543 12.440
+```
+
+##### Loading Tables and Indexes
 
 The tables must be in JSON format with the fields __id_, _numDataRows_, _numCols_, and _rows_, where _rows_ is an array of table rows.
+Each cell must contain a `text` property and a `links` property. The `links` property is an array of the URI of the entity in the cell. If the cell does not contain an entity with a URI, the array is left empty.
+
 An example of a table is given below:
 
 ```json
@@ -95,17 +114,9 @@ An example of a table is given below:
 }
 ```
 
-Calypso also uses embeddings to represent embeddings.
-Consider using <a href="https://github.com/EDAO-Project/DBpediaEmbedding">this</a> repository to generate RDF embeddings.
+Loading a table corpus of 200,000 tables will take approximately 34 hours.
 
-Every entity embedding must be contained in one line in the embeddings file, and each value must be separated by the same delimiter.
-This includes the entity itself. Below is an example of what an embeddings file of three entities could look like where the space character is the delimiter:
-
-```
-https://dbpedia.org/page/Barack_Obama -3.21 13.2122 53.32 -2.23 0.4353 8.231
-https://dbpedia.org/page/Lionel_Messi 2.432 9.3213 -32.231 21.432 -21.022 53.1133
-https://dbpedia.org/page/Eiffel_Tower -34.422 -7.231 5.312 -1.435 0.543 12.440
-```
+### Connector
 
 The repository for the connector to communicate with Calypso can be found <a href="https://github.com/EDAO-Project/Calypso/tree/main/CDLC">here</a>.
 There is both a Java connector and Python connector.
@@ -119,13 +130,11 @@ Import the `Connector` class and initialize it with a host name as constructor a
 You can use the Python connector directly from the terminal. Just run `python cdlc.py -h` to see commands.
 Remember to run the methods to insert tables and embeddings on the machine running Calypso. Only searching can be performed remotely.
 
-Loading a table corpus of 200,000 tables will take approximately 34 hours.
-
-#### Loading in Java
+##### Loading in Java
 Once the Java CDLC .jar library file has been included in your project, use the class `CDLC` to communicate with Calypso.
 
 Use the methods `insert` and `insertEmbeddings` to insert JSON tables and RDF embedding, respectively. 
-It is very important these methods are executed on the machine running Calypso!
+These methods only work on the machine running Calypso.
 The parameters are listed below:
 
 `insert`
@@ -138,9 +147,9 @@ The parameters are listed below:
 - File containing embeddings
 - Delimiter separating embedding values
 
-#### Loading in Python
+##### Loading in Python
 Initialize the `Connector` class and call the `insert` and `insertEmbeddings` methods to insert JSON tables and RDF embeddings, respectively.
-It is very important these methods are executed on the machine running Calypso!
+These methods only work on the machine running Calypso.
 The parameters are listed below:
 
 `insert`
@@ -156,13 +165,15 @@ The parameters are listed below:
 - Delimiter in embeddings file
 
 ### Searching Calypso
-Searching follows the query-by-example paradigm. Since Calypso stores tables, the input queries are also tables.
-These tabular queries contain examples of data of interest.
+Searching follows the _query-by-example_ paradigm. Since Calypso stores tables, the input queries are exemplar tables.
+These tabular, exemplar queries contain examples of data of interest.
 
 Searching can be performed remotely from the terminal using Python and the `cdlc.py` Python file found <a href="https://github.com/EDAO-Project/Calypso/tree/main/CDLC/python">here</a>.
 Run `python cdlc.py -h` to see how search Calypso.
 
-#### Searching in Java
+The search output is pure JSON containing all the relevant top-_K_ tables along some search statistics.
+
+##### Searching in Java
 Include the Java CDLC .jar file in your project and use `search` method with the following parameters to search Calypso:
 
 `search`
@@ -172,11 +183,11 @@ Include the Java CDLC .jar file in your project and use `search` method with the
 
 Construct a query instance of exemplar entities using the `QueryFactory` class.
 
-#### Searching in Python
+##### Searching in Python
 Import the `Connector` class from the `cdlc.py` Python file. Searching requires the following parameters:
 
 `search`
-- Top-K highest ranking search results
+- Top-_K_ highest ranking search results
 - Type of scoring pairs of entities
 - Type of similarity measurement between pairs of vectors of entity scores
 - Tabular query
