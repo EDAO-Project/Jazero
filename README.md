@@ -203,7 +203,7 @@ docker build -t calypso_web -f Dockerfile ..
 Then, run a container of Calypso web.
 
 ```bash
-docker run --rm -p 8084:8084 -d --name calypso_web -e CALYPSO_HOST=<HOST> web
+docker run --rm --network="host" -d --name calypso_web -e CALYPSO_HOST=<HOST> web
 ```
 
 You can now access the Calypso web interface <a href="http://127.0.0.1:8084/cdlc/">here</a>.

@@ -34,7 +34,7 @@ services:
       - ./index/:/index
   embeddings:
     image: postgres
-    container_name: db
+    container_name: calypso_pg
     network_mode: host
     environment:
       - POSTGRES_USER=calypso
