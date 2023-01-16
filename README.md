@@ -79,16 +79,18 @@ https://dbpedia.org/page/Eiffel_Tower -34.422 -7.231 5.312 -1.435 0.543 12.440
 
 ##### Loading Tables and Indexes
 
-The tables must be in JSON format with the fields __id_, _numDataRows_, _numCols_, and _rows_, where _rows_ is an array of table rows.
+The tables must be in JSON format with the fields __id_, pgTitle, _numDataRows_, _numCols_, numNumericCols, and _rows_, where _rows_ is an array of table rows.
 Each cell must contain a `text` property and a `links` property. The `links` property is an array of the URI of the entity in the cell. If the cell does not contain an entity with a URI, the array is left empty.
 
 An example of a table is given below:
 
 ```json
 {
-  "_id": "1514-27", 
-  "numCols": 4, 
-  "numDataRows": 26, 
+  "_id": "1514-27",
+  "pgTitle": "Olympics",
+  "numCols": 2, 
+  "numDataRows": 2,
+  "numNumericCols": 0,
   "rows": [
     [
       {
