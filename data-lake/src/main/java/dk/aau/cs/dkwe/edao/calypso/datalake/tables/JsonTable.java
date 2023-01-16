@@ -14,7 +14,6 @@ public class JsonTable
     public int numNumericCols;
 
     public String pgTitle;
-    public String tableCaption;
 
     public List<TableCell> headers;
     public List<List<TableCell>> rows;
