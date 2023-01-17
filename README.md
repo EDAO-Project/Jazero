@@ -89,25 +89,33 @@ An example of a table is given below:
   "_id": "1514-27", 
   "numCols": 4, 
   "numDataRows": 26, 
+  "headers": [
+    {
+      "text": "Olympic event",
+      "isNumeric": false,
+      "links": []
+    },
+    {
+      "text": "Athlete",
+      "isNumeric": false,
+      "links": []
+    }
+  ],
   "rows": [
     [
       {
-        "text": "1900 Paris", 
-        "links": ["http://www.wikipedia.org/wiki/Athletics_at_the_1900_Summer_Olympics"]
+        "text": "1900 Paris"
       }, 
       {
-        "text": "Walter Tewksbury", 
-        "links": ["http://www.wikipedia.org/wiki/Walter_Tewksbury"]
+        "text": "Walter Tewksbury"
       }
     ],
     [
       {
-        "text": "1904 St. Louis", 
-        "links": ["http://www.wikipedia.org/wiki/Athletics_at_the_1904_Summer_Olympics"]
+        "text": "1904 St. Louis"
       }, 
       {
-        "text": "Harry Hillman", 
-        "links": ["http://www.wikipedia.org/wiki/Harry_Hillman"]
+        "text": "Harry Hillman"
       }
     ]
   ]

@@ -7,31 +7,31 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- * Mapping from Wikipedia link to KG entity URI
+ * Mapping from table cell to KG entity URI
  * A trie is maybe better, where leafs contain IDs and no duplicate bidirectional mapping.
  */
 public class EntityLinking implements Linker<String, String>, Serializable
 {
-    private IdDictionary<String> uriDict, wikiDict;
-    private Map<Id, Id> wikiLinkToUri;    // Wikipedia link to entity URI
-    private Map<Id, Id> uriToWikiLink;    // entity URI to Wikipedia link
+    private IdDictionary<String> uriDict, tableCellDict;
+    private Map<Id, Id> tableCellToUri;    // Table cell text to entity URI
+    private Map<Id, Id> uriToTableCell;    // entity URI to table cell text
     String tableEntityPrefix, kgEntityPrefix;
 
-    public EntityLinking(String wikiPrefix, String uriPrefix)
+    public EntityLinking(String cellPrefix, String uriPrefix)
     {
         this.uriDict = new IdDictionary<>(false);
-        this.wikiDict = new IdDictionary<>(false);
-        this.wikiLinkToUri = new HashMap<>();
-        this.uriToWikiLink = new HashMap<>();
-        this.tableEntityPrefix = wikiPrefix;
+        this.tableCellDict = new IdDictionary<>(false);
+        this.tableCellToUri = new HashMap<>();
+        this.uriToTableCell = new HashMap<>();
+        this.tableEntityPrefix = cellPrefix;
         this.kgEntityPrefix = uriPrefix;
     }
 
-    public EntityLinking(IdDictionary<String> uriDict, IdDictionary wikiDict, String wikiPrefix, String uriPrefix)
+    public EntityLinking(IdDictionary<String> uriDict, IdDictionary cellDict, String cellPrefix, String uriPrefix)
     {
-        this(wikiPrefix, uriPrefix);
+        this(cellPrefix, uriPrefix);
         this.uriDict = uriDict;
-        this.wikiDict = wikiDict;
+        this.tableCellDict = cellDict;
     }
 
     public Id uriLookup(String uri)
@@ -44,14 +44,14 @@ public class EntityLinking implements Linker<String, String>, Serializable
         return this.kgEntityPrefix + this.uriDict.get(id);
     }
 
-    public Id wikiLookup(String wikiLink)
+    public Id cellLookup(String cellText)
     {
-        return this.wikiDict.get(wikiLink.substring(this.tableEntityPrefix.length()));
+        return this.tableCellDict.get(cellText.substring(this.tableEntityPrefix.length()));
     }
 
-    public String wikiLookup(Id id)
+    public String cellLookup(Id id)
     {
-        return this.tableEntityPrefix + this.wikiDict.get(id);
+        return this.tableEntityPrefix + this.tableCellDict.get(id);
     }
 
     public Iterator<Id> uriIds()
@@ -59,28 +59,28 @@ public class EntityLinking implements Linker<String, String>, Serializable
         return this.uriDict.elements().asIterator();
     }
 
-    public Iterator<Id> wikiIds()
+    public Iterator<Id> cellIds()
     {
-        return this.wikiDict.elements().asIterator();
+        return this.tableCellDict.elements().asIterator();
     }
 
     /**
-     * Mapping from Wikipedia link to KG entity URI
-     * @param wikipedia link
+     * Mapping from table cell text to KG entity URI
+     * @param  cellText Table cell text
      * @return Entity URI or null if absent
      */
     @Override
-    public String mapTo(String wikipedia)
+    public String mapTo(String cellText)
     {
-        if (!wikipedia.startsWith(this.tableEntityPrefix))
-            throw new IllegalArgumentException("Wikipedia link does not start with specified prefix");
+        if (!cellText.startsWith(this.tableEntityPrefix))
+            throw new IllegalArgumentException("Table cell text does not start with specified table cell prefix");
 
-        Id wikiId = this.wikiDict.get(wikipedia.substring(this.tableEntityPrefix.length()));
+        Id cellId = this.tableCellDict.get(cellText.substring(this.tableEntityPrefix.length()));
 
-        if (wikiId == null)
+        if (cellId == null)
             return null;
 
-        Id uriId = this.wikiLinkToUri.get(wikiId);
+        Id uriId = this.tableCellToUri.get(cellId);
 
         if (uriId == null)
             return null;
@@ -89,9 +89,9 @@ public class EntityLinking implements Linker<String, String>, Serializable
     }
 
     /**
-     * Mapping from KG entity URI to Wikipedia link
+     * Mapping from KG entity URI to table cell text
      * @param uri of KG entity
-     * @return Wikipedia link or null if absent
+     * @return Cell text or null if absent
      */
     @Override
     public String mapFrom(String uri)
@@ -104,37 +104,37 @@ public class EntityLinking implements Linker<String, String>, Serializable
         if (uriId == null)
             return null;
 
-        Id wikiId = this.uriToWikiLink.get(uriId);
+        Id cellId = this.uriToTableCell.get(uriId);
 
-        if (wikiId == null)
+        if (cellId == null)
             return null;
 
-        return this.tableEntityPrefix + this.wikiDict.get(wikiId);
+        return this.tableEntityPrefix + this.tableCellDict.get(cellId);
     }
 
     /**
      * Adds mapping
-     * @param wikipedia link
+     * @param tableCell Table cell text
      * @param uri of KG entity
      */
     @Override
-    public void addMapping(String wikipedia, String uri)
+    public void addMapping(String tableCell, String uri)
     {
-        if (!wikipedia.startsWith(this.tableEntityPrefix) || !uri.startsWith(this.kgEntityPrefix))
-            throw new IllegalArgumentException("Wikipedia link and/or entity URI do not start with given prefix");
+        if (!tableCell.startsWith(this.tableEntityPrefix) || !uri.startsWith(this.kgEntityPrefix))
+            throw new IllegalArgumentException("Table cell text and/or entity URI do not start with given prefix");
 
-        String wikiNoPrefix = wikipedia.substring(this.tableEntityPrefix.length()),
+        String cellNoPrefix = tableCell.substring(this.tableEntityPrefix.length()),
                 uriNoPrefix = uri.substring(this.kgEntityPrefix.length());
-        Id wikiId = this.wikiDict.get(wikiNoPrefix), uriId = this.uriDict.get(uriNoPrefix);
+        Id cellId = this.tableCellDict.get(cellNoPrefix), uriId = this.uriDict.get(uriNoPrefix);
 
-        if (wikiId == null)
-            this.wikiDict.put(wikiNoPrefix, (wikiId = Id.alloc()));
+        if (cellId == null)
+            this.tableCellDict.put(cellNoPrefix, (cellId = Id.alloc()));
 
         if (uriId == null)
             this.uriDict.put(uriNoPrefix, (uriId = Id.alloc()));
 
-        this.wikiLinkToUri.putIfAbsent(wikiId, uriId);
-        this.uriToWikiLink.putIfAbsent(uriId, wikiId);
+        this.tableCellToUri.putIfAbsent(cellId, uriId);
+        this.uriToTableCell.putIfAbsent(uriId, cellId);
     }
 
     /**
@@ -143,9 +143,9 @@ public class EntityLinking implements Linker<String, String>, Serializable
     @Override
     public void clear()
     {
-        this.wikiLinkToUri.clear();
-        this.uriToWikiLink.clear();
+        this.tableCellToUri.clear();
+        this.uriToTableCell.clear();
         this.uriDict.clear();
-        this.wikiDict.clear();
+        this.tableCellDict.clear();
     }
 }

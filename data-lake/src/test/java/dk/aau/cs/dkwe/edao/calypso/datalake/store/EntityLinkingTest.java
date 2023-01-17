@@ -26,9 +26,9 @@ public class EntityLinkingTest
     public void testGetDictionary()
     {
         Set<Integer> ids = new HashSet<>();
-        ids.add(this.linker.wikiLookup("wiki:wiki1").id());
-        ids.add(this.linker.wikiLookup("wiki:wiki2").id());
-        ids.add(this.linker.wikiLookup("wiki:wiki3").id());
+        ids.add(this.linker.cellLookup("wiki:wiki1").id());
+        ids.add(this.linker.cellLookup("wiki:wiki2").id());
+        ids.add(this.linker.cellLookup("wiki:wiki3").id());
         ids.add(this.linker.uriLookup("uri:uri1").id());
         ids.add(this.linker.uriLookup("uri:uri2").id());
         ids.add(this.linker.uriLookup("uri:uri3").id());
@@ -40,7 +40,7 @@ public class EntityLinkingTest
     @Test
     public void testDictionaryNotExists()
     {
-        assertNull("Wiki lookup was not null", this.linker.wikiLookup("wiki:wiki0"));
+        assertNull("Wiki lookup was not null", this.linker.cellLookup("wiki:wiki0"));
         assertNull("KG URI lookup was not null", this.linker.uriLookup("uri:uri0"));
     }
 

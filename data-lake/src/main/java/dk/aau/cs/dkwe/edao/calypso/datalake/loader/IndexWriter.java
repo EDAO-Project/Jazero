@@ -141,12 +141,13 @@ public class IndexWriter implements IndexIO
 
                     for (String link : cell.links)
                     {
+                        link = cell.text;
                         String uri = this.linker.mapTo(link);
                         inputRow.add(link);
 
                         if (uri == null)
                         {
-                            uri = this.el.link(link.replace("http://www.", "http://en."));
+                            uri = this.el.link(link);
 
                             if (uri != null)
                             {
