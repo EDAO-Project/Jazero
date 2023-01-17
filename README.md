@@ -93,13 +93,11 @@ An example of a table is given below:
   "headers": [
     {
       "text": "Olympic event",
-      "isNumeric": false,
-      "links": []
+      "isNumeric": false
     },
     {
       "text": "Athlete",
-      "isNumeric": false,
-      "links": []
+      "isNumeric": false
     }
   ],
   "rows": [
