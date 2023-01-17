@@ -21,18 +21,14 @@ public class JsonTable
     public JsonTable()
     {}
 
-    public JsonTable(String _id, int numCols, int numDataRows, int numNumericCols, String pgTitle, int pgId, String tableCaption, List<TableCell> header, List<List<TableCell>> rows)
+    public JsonTable(String _id, int numCols, int numDataRows, int numNumericCols, String pgTitle, int pgId, List<TableCell> header, List<List<TableCell>> rows)
     {
         this._id = _id;
         this.pgId = pgId;
-
         this.numCols = numCols;
         this.numDataRows = numDataRows;
         this.numNumericCols = numNumericCols;
-
         this.pgTitle = pgTitle;
-        this.tableCaption = tableCaption;
-
         this.headers = header;
         this.rows = rows;
     }
@@ -65,11 +61,6 @@ public class JsonTable
     public void setPgTitle(String pgTitle)
     {
         this.pgTitle = pgTitle;
-    }
-
-    public void setTableCaption(String tableCaption)
-    {
-        this.tableCaption = tableCaption;
     }
 
 
