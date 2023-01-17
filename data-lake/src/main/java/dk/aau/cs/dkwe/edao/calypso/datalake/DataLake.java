@@ -248,10 +248,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 JsonArray column = new JsonArray(row.size());
                 row.forEach(cell -> {
                     JsonObject cellObject = new JsonObject();
-                    JsonArray links = new JsonArray(cell.links.size());
-                    cell.links.forEach(link -> links.add(link));
                     cellObject.addProperty("text", cell.text);
-                    cellObject.add("links", links);
                     column.add(cellObject);
                 });
 

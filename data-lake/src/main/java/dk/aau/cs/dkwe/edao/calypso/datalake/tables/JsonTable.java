@@ -7,28 +7,22 @@ import java.util.function.Consumer;
 public class JsonTable
 {
     public String _id;
-    public int pgId;
 
     public int numCols;
     public int numDataRows;
     public int numNumericCols;
-
-    public String pgTitle;
-
     public List<TableCell> headers;
     public List<List<TableCell>> rows;
 
     public JsonTable()
     {}
 
-    public JsonTable(String _id, int numCols, int numDataRows, int numNumericCols, String pgTitle, int pgId, List<TableCell> header, List<List<TableCell>> rows)
+    public JsonTable(String _id, int numCols, int numDataRows, int numNumericCols, List<TableCell> header, List<List<TableCell>> rows)
     {
         this._id = _id;
-        this.pgId = pgId;
         this.numCols = numCols;
         this.numDataRows = numDataRows;
         this.numNumericCols = numNumericCols;
-        this.pgTitle = pgTitle;
         this.headers = header;
         this.rows = rows;
     }
@@ -36,11 +30,6 @@ public class JsonTable
     public void set_id(String _id)
     {
         this._id = _id;
-    }
-
-    public void setPgId(int pgId)
-    {
-        this.pgId = pgId;
     }
 
     public void setNumCols(int numCols)
@@ -57,12 +46,6 @@ public class JsonTable
     {
         this.numNumericCols = numNumericCols;
     }
-
-    public void setPgTitle(String pgTitle)
-    {
-        this.pgTitle = pgTitle;
-    }
-
 
     public void setHeader(List<TableCell> header)
     {
@@ -91,16 +74,14 @@ public class JsonTable
     {
         public TableCell() {}
 
-        public TableCell(String text, boolean isNumeric, List<String> links)
+        public TableCell(String text, boolean isNumeric)
         {
             this.text = text;
             this.isNumeric = isNumeric;
-            this.links = links;
         }
 
         public String text;
         public boolean isNumeric;
-        public List<String> links;
 
         @Override
         public boolean equals(Object o)
@@ -110,14 +91,13 @@ public class JsonTable
 
             TableCell tableCell = (TableCell) o;
             return isNumeric == tableCell.isNumeric &&
-                    Objects.equals(text, tableCell.text) &&
-                    Objects.equals(links, tableCell.links);
+                    Objects.equals(text, tableCell.text);
         }
 
         @Override
         public int hashCode()
         {
-            return Objects.hash(text, isNumeric, links);
+            return Objects.hash(text, isNumeric);
         }
     }
 }

@@ -133,64 +133,56 @@ public class IndexWriter implements IndexIO
 
             for (JsonTable.TableCell cell : tableRow)
             {
-                if (!cell.links.isEmpty())
+                this.cellsWithLinks.incrementAndGet();
+                List<String> matchesUris = new ArrayList<>();
+                String cellText = cell.text;
+                String uri = this.linker.mapTo(cellText);
+                inputRow.add(cellText);
+
+                if (uri == null)
                 {
-                    this.cellsWithLinks.incrementAndGet();
-                    this.cellToNumLinksFrequency.merge(cell.links.size(), 1, Integer::sum);
-                    List<String> matchesUris = new ArrayList<>();
+                    uri = this.el.link(cellText);
 
-                    for (String link : cell.links)
+                    if (uri != null)
                     {
-                        link = cell.text;
-                        String uri = this.linker.mapTo(link);
-                        inputRow.add(link);
+                        List<String> entityTypes = this.kg.searchTypes(uri);
+                        matchesUris.add(uri);
+                        this.linker.addMapping(cellText, uri);
 
-                        if (uri == null)
+                        for (String type : DISALLOWED_ENTITY_TYPES)
                         {
-                            uri = this.el.link(link);
-
-                            if (uri != null)
-                            {
-                                List<String> entityTypes = this.kg.searchTypes(uri);
-                                matchesUris.add(uri);
-                                this.linker.addMapping(link, uri);
-
-                                for (String type : DISALLOWED_ENTITY_TYPES)
-                                {
-                                    entityTypes.remove(type);
-                                }
-
-                                Id entityId = ((EntityLinking) this.linker.getLinker()).uriLookup(uri);
-                                List<Double> embeddings = this.embeddingsDB.select(uri.replace("'", "''"));
-                                this.entityTable.insert(entityId,
-                                        new Entity(uri, entityTypes.stream().map(Type::new).collect(Collectors.toList())));
-
-                                if (embeddings != null)
-                                {
-                                    this.embeddingsIdx.insert(entityId, embeddings);
-                                }
-                            }
+                            entityTypes.remove(type);
                         }
 
-                        if (uri != null)
+                        Id entityId = ((EntityLinking) this.linker.getLinker()).uriLookup(uri);
+                        List<Double> embeddings = this.embeddingsDB.select(uri.replace("'", "''"));
+                        this.entityTable.insert(entityId,
+                                new Entity(uri, entityTypes.stream().map(Type::new).collect(Collectors.toList())));
+
+                        if (embeddings != null)
                         {
-                            Id entityId = ((EntityLinking) this.linker.getLinker()).uriLookup(uri);
-                            Pair<Integer, Integer> location = new Pair<>(row, column);
-                            ((EntityTableLink) this.entityTableLink.getIndex()).
-                                    addLocation(entityId, tableName, List.of(location));
+                            this.embeddingsIdx.insert(entityId, embeddings);
                         }
                     }
+                }
 
-                    if (!matchesUris.isEmpty())
+                if (uri != null)
+                {
+                    Id entityId = ((EntityLinking) this.linker.getLinker()).uriLookup(uri);
+                    Pair<Integer, Integer> location = new Pair<>(row, column);
+                    ((EntityTableLink) this.entityTableLink.getIndex()).
+                            addLocation(entityId, tableName, List.of(location));
+                }
+
+                if (!matchesUris.isEmpty())
+                {
+                    for (String entity : matchesUris)
                     {
-                        for (String entity : matchesUris)
-                        {
-                            this.filter.put(entity);
-                            entities.add(entity);
-                        }
-
-                        entityMatches.put(new Pair<>(row, column), matchesUris);
+                        this.filter.put(entity);
+                        entities.add(entity);
                     }
+
+                    entityMatches.put(new Pair<>(row, column), matchesUris);
                 }
 
                 column++;
@@ -304,13 +296,8 @@ public class IndexWriter implements IndexIO
 
         try
         {
-            FileWriter writer = new FileWriter(statDir + "/" + Configuration.getCellToNumLinksFrequencyFile());
+            FileWriter writer = new FileWriter(statDir + "/" + Configuration.getTableStatsFile());
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            gson.toJson(this.cellToNumLinksFrequency, writer);
-            writer.flush();
-            writer.close();
-
-            writer = new FileWriter(statDir + "/" + Configuration.getTableStatsFile());
             gson.toJson(this.tableStats, writer);
             writer.flush();
             writer.close();

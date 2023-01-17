@@ -224,14 +224,12 @@ public class TableSearch extends AbstractSearch
 
                 for (int tableColumn = 0; tableColumn < tableRow.size(); tableColumn++)
                 {
-                    for (String link : tableRow.get(tableColumn).links)
-                    {
-                        String uri = getLinker().mapTo(link);
+                    String cellText = tableRow.get(tableColumn).text;
+                    String uri = getLinker().mapTo(cellText);
 
-                        if (uri != null)
-                        {
-                            columnToEntity.put(tableColumn, uri);
-                        }
+                    if (uri != null)
+                    {
+                        columnToEntity.put(tableColumn, uri);
                     }
                 }
 
@@ -307,29 +305,22 @@ public class TableSearch extends AbstractSearch
 
             for (JsonTable.TableCell cell : row)
             {
-                if(!cell.links.isEmpty())   // A cell value may map to multiple entities. Currently use the first one. TODO: Consider all of them?
+                String curEntity = null;
+
+                if (getLinker().mapTo(cell.text) != null)    // Only consider links for which we have a known entity mapping
                 {
-                    String curEntity = null;
+                    curEntity = getLinker().mapTo(cell.text);
+                }
 
-                    for (String link : cell.links)
+                if (curEntity != null)
+                {
+                    for (int queryRow = 0; queryRow < query.rowCount(); queryRow++)    // Loop over each query tuple and each entity in a tuple and compute a score between the query entity and 'curEntity'
                     {
-                        if (getLinker().mapTo(link) != null)    // Only consider links for which we have a known entity mapping
+                        for (int queryEntityCounter = 0; queryEntityCounter < query.getRow(queryRow).size(); queryEntityCounter++)
                         {
-                            curEntity = getLinker().mapTo(link);
-                            break;
-                        }
-                    }
-
-                    if (curEntity != null)
-                    {
-                        for (int queryRow = 0; queryRow < query.rowCount(); queryRow++)    // Loop over each query tuple and each entity in a tuple and compute a score between the query entity and 'curEntity'
-                        {
-                            for (int queryEntityCounter = 0; queryEntityCounter < query.getRow(queryRow).size(); queryEntityCounter++)
-                            {
-                                String queryEntity = query.getRow(queryRow).get(queryEntityCounter);
-                                Double score = entitySimilarityScore(queryEntity, curEntity);
-                                entityToColumnScore.get(queryRow).get(queryEntityCounter).set(colCounter, entityToColumnScore.get(queryRow).get(queryEntityCounter).get(colCounter) + score);
-                            }
+                            String queryEntity = query.getRow(queryRow).get(queryEntityCounter);
+                            Double score = entitySimilarityScore(queryEntity, curEntity);
+                            entityToColumnScore.get(queryRow).get(queryEntityCounter).set(colCounter, entityToColumnScore.get(queryRow).get(queryEntityCounter).get(colCounter) + score);
                         }
                     }
                 }
