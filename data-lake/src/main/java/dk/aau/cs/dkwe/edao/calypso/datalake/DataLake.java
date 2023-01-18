@@ -405,6 +405,11 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
         catch (RuntimeException e)
         {
+            if (e.getMessage().contains("Postgres"))
+            {
+                Configuration.setEmbeddingsLoaded(false);
+            }
+
             Configuration.setIndexesLoaded(false);
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
@@ -478,6 +483,12 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         {
             Configuration.setEmbeddingsLoaded(false);
             return ResponseEntity.badRequest().body("Embeddings file does not exist");
+        }
+
+        catch (IllegalArgumentException e)
+        {
+            Configuration.setEmbeddingsLoaded(false);
+            return ResponseEntity.badRequest().body("Could not initialize embeddings database: " + e.getMessage());
         }
     }
 
