@@ -34,7 +34,7 @@ public class ServiceCommunicator implements Communicator
     }
 
     /**
-     * Test connection to Calypso service
+     * Test connection to Jazero service
      * @return True if connection has been established and can get a response from a GET request to service
      */
     @Override

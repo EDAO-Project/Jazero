@@ -27,8 +27,8 @@ class Connector:
 
         return sdl.status_code == 200 and entityLinker.status_code == 200 and ekg.status_code == 200
 
-    def insertEmbeddings(self, calypsoDir, embeddingsFile, embeddingsDelimiter):
-        mountedPath = calypsoDir + self.__RELATIVE_MOUNT
+    def insertEmbeddings(self, jazeroDir, embeddingsFile, embeddingsDelimiter):
+        mountedPath = jazeroDir + self.__RELATIVE_MOUNT
         shutil.copyfile(embeddingsFile, mountedPath + '/' + embeddingsFile.split('/')[-1])
 
         content = '{"file": "/home/' + self.__RELATIVE_MOUNT + '/' + embeddingsFile.split('/')[-1] + '", "delimiter": "' + embeddingsDelimiter + '"}'
@@ -40,14 +40,14 @@ class Connector:
 
         return req.text
 
-    # tablesDir: Absolute path to directory of tables to be loaded into Calypso
-    # calypsoDir: Directory of the Calypso repository
-    # storageType: Type of storage of tables in Calypso (must be one of 'native' and 'hdfs')
+    # tablesDir: Absolute path to directory of tables to be loaded into Jazero
+    # jazeroDir: Directory of the Jazero repository
+    # storageType: Type of storage of tables in Jazero (must be one of 'native' and 'hdfs')
     # tableEntityPrefix: Prefix string of entities in the tables (if not all table entities share the same prefix, don't specify this parameter)
     # kgEntityPrefix: Prefix string of entities in the knowledge graph (if not all KG entities share the same prefix, don't specify this parameter)
-    def insert(self, tablesDir, calypsoDir, storageType, tableEntityPrefix = '', kgEntityPrefix = ''):
+    def insert(self, tablesDir, jazeroDir, storageType, tableEntityPrefix = '', kgEntityPrefix = ''):
         relativeTablesDir = self.__RELATIVE_MOUNT + "/tables"
-        sharedDir = calypsoDir + "/" + relativeTablesDir
+        sharedDir = jazeroDir + "/" + relativeTablesDir
         shutil.copytree(tablesDir, sharedDir)
 
         headers = {'Content-Type': 'application/json', 'Storage-Type': storageType}
@@ -122,22 +122,22 @@ class Connector:
 #               ]
 #           }
 #
-#   insert: -loc <TABLE CORPUS DIRECTORY (absolute path on machine running Calypso)> -cd <CALYPSO DIRECTORY (absolute path on machine running Calypso)> -st <STORAGE TYPE ('native' and 'hdfs')> -tp <TABLE ENTITY PREFIX> -kgp <KG ENTITY PREFIX>
-#   loadembeddings: -cd <CALYPSO DIRECTORY (absolute path on machine running Calypso)> -e <EMBEDDINGS FILE (absolute path on machine running Calypso)> -d <DELIMITER>
+#   insert: -loc <TABLE CORPUS DIRECTORY (absolute path on machine running Jazero)> -cd <JAZERO DIRECTORY (absolute path on machine running Jazero)> -st <STORAGE TYPE ('native' and 'hdfs')> -tp <TABLE ENTITY PREFIX> -kgp <KG ENTITY PREFIX>
+#   loadembeddings: -cd <JAZERO DIRECTORY (absolute path on machine running Jazero)> -e <EMBEDDINGS FILE (absolute path on machine running Jazero)> -d <DELIMITER>
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('CDLC Connector')
-    parser.add_argument('--host', metavar = 'Host', type = str, help = 'Host of machine on which Calypso is deployed', required = True)
-    parser.add_argument('-o', '--operation', metavar = 'Op', type = str, help = 'Calypso operation to perform (search, insert, loadembeddings)', choices = ['search', 'insert', 'loadembeddings'], required = True)
+    parser.add_argument('--host', metavar = 'Host', type = str, help = 'Host of machine on which Jazero is deployed', required = True)
+    parser.add_argument('-o', '--operation', metavar = 'Op', type = str, help = 'Jazero operation to perform (search, insert, loadembeddings)', choices = ['search', 'insert', 'loadembeddings'], required = True)
     parser.add_argument('-q', '--query', metavar = 'Query', type = str, help = 'Query file path', required = False)
     parser.add_argument('-sq', '--scoringtype', metavar = 'ScoringType', type = str, help = 'Type of entity scoring (\'TYPE\', \'COSINE_NORM\', \'COSINE_ABS\', \'COSINE_ANG\')', choices = ['TYPE', 'COSINE_NORM', 'COSINE_ABS', 'COSINE_ANG'], required = False, default = 'TYPE')
     parser.add_argument('-k', '--topk', metavar = 'Top-K', type = str, help = 'Top-K value', required = False, default = '100')
     parser.add_argument('-sm', '--similaritymeasure', metavar = 'SimilarityMeasure', type = str, help = 'Similarity measure between vectors of entity scores (\'EUCLIDEAN\', \'COSINE\')', choices = ['EUCLIDEAN', 'COSINE'], required = False, default = 'EUCLIDEAN')
-    parser.add_argument('-loc', '--location', metavar = 'Location', type = str, help = 'Absolute path to table corpus directory on machine running Calypso', required = False)
-    parser.add_argument('-cd', '--calypsodir', metavar = 'CalypsoDirectory', type = str, help = 'Absolute path to Calypso directory on the machine running Calypso', required = False)
+    parser.add_argument('-loc', '--location', metavar = 'Location', type = str, help = 'Absolute path to table corpus directory on machine running Jazero', required = False)
+    parser.add_argument('-cd', '--jazerodir', metavar = 'JazeroDirectory', type = str, help = 'Absolute path to Jazero directory on the machine running Jazero', required = False)
     parser.add_argument('-st', '--storagetype', metavar = 'StorageType', type = str, help = 'Type of storage for inserted table corpus', choices = ['native', 'hdfs'], required = False, default = 'native')
     parser.add_argument('-tp', '--tableentityprefix', metavar = 'TableEntityPrefix', type = str, help = 'Prefix of table entity URIs', required = False, default = '')
     parser.add_argument('-kgp', '--kgentityprefix', metavar = 'KGEntityPrefix', type = str, help = 'Prefix of KG entity IRIs', required = False, default = '')
-    parser.add_argument('-e', '--embeddings', metavar = 'Embeddings', type = str, help = 'Absolute path to embeddings file on the machine running Calypso', required = False)
+    parser.add_argument('-e', '--embeddings', metavar = 'Embeddings', type = str, help = 'Absolute path to embeddings file on the machine running Jazero', required = False)
     parser.add_argument('-d', '--delimiter', metavar = 'Delimiter', type = str, help = 'Delimiter in embeddings file (see README)', required = False, default = ' ')
 
     args = parser.parse_args()
@@ -147,8 +147,8 @@ if __name__ == '__main__':
     output = None
 
     if (not conn.isConnected()):
-        print('Calypso is not online')
-        print('Make sure all 3 Calypso services are running (check with \'docker ps\')')
+        print('Jazero is not online')
+        print('Make sure all 3 Jazero services are running (check with \'docker ps\')')
         exit(1)
 
     if (op == 'search'):
@@ -181,7 +181,7 @@ if __name__ == '__main__':
 
     elif (op == 'insert'):
         location = args.location
-        calypso = args.calypsodir
+        jazero = args.jazerodir
         storageType = args.storagetype
         tableEntityPrefix = args.tableentityprefix
         kgEntityPrefix = args.kgentityprefix
@@ -190,25 +190,25 @@ if __name__ == '__main__':
             print('Missing table corpus location')
             exit(1)
 
-        elif (calypso == None):
-            print('Missing directory of Calypso repository')
+        elif (jazero == None):
+            print('Missing directory of Jazero repository')
             exit(1)
 
-        output = conn.insert(location, calypso, storageType, tableEntityPrefix, kgEntityPrefix)
+        output = conn.insert(location, jazero, storageType, tableEntityPrefix, kgEntityPrefix)
 
     elif (op == 'loadembeddings'):
-        calypso = args.calypsodir
+        jazero = args.jazerodir
         embeddings = args.embeddings
         delimiter = args.delimiter
 
-        if (calypso == None):
-            print('Missing directory of Calypso repository')
+        if (jazero == None):
+            print('Missing directory of Jazero repository')
             exit(1)
 
         elif (embeddings == None):
             print('Missing embeddings file')
             exit(1)
 
-        output = conn.insertEmbeddings(calypso, embeddings, delimiter)
+        output = conn.insertEmbeddings(jazero, embeddings, delimiter)
 
     print(output)

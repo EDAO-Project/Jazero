@@ -1,5 +1,5 @@
-# Calypso
-Welcome to Calypso: A semantic data lake microservice architecture for semantically augmented table search.
+# Jazero
+Welcome to Jazero: A semantic data lake microservice architecture for semantically augmented table search.
 
 ## Setup
 ### Loading Knowledge Graph
@@ -17,18 +17,18 @@ docker build -f kg.dockerfile -t neo4j .
 docker run --rm -v ${PWD}/knowledge-graph/neo4j:/srv neo4j bash -c "./install.sh /srv; ./import.sh neo4j-server; ./stop.sh neo4j-server"
 ```
 
-## Starting Calypso
-Setting up and running Calypso is very simple.
+## Starting Jazero
+Setting up and running Jazero is very simple.
 All you need is to have Docker and Docker-compose installed. Make sure to have Docker-compose version 2+ installed.
 
-Start Calypso with the following simple command
+Start Jazero with the following simple command
 
 ```bash
 ./start.sh
 ```
 
-The first time Calypso is started, the entity linker service will build a Lucene index, which can take around an hour for a 10GB KG.
-Then, Calypso is accessible on localhost or on the machine's IP address.
+The first time Jazero is started, the entity linker service will build a Lucene index, which can take around an hour for a 10GB KG.
+Then, Jazero is accessible on localhost or on the machine's IP address.
 
 Alternatively, but not recommended, you can build each service manually and run the built .jar file.
 This requires having Java 17 and Maven installed.
@@ -56,16 +56,16 @@ cd ..
 Now, all executable .jar files are in the new folder respective `target`.
 These can be executed with `java -jar <JAR FILE>`.
 
-## Working with Calypso
-Here we describe working with Calypso, how to load Calypso with tables, load indexes, load embeddings, and search Calypso.
+## Working with Jazero
+Here we describe working with Jazero, how to load Jazero with tables, load indexes, load embeddings, and search Jazero.
 
-### Loading Calypso
-Tables in Calypso are loaded and stored either natively on disk or in HDFS (HDFS is not yet supported).
+### Loading Jazero
+Tables in Jazero are loaded and stored either natively on disk or in HDFS (HDFS is not yet supported).
 Loading of embeddings must be performed first as the embeddings are used to construct indexes during loading of tables.
 
 ##### Loading Embeddings
 
-Calypso also uses embeddings to represent entities.
+Jazero also uses embeddings to represent entities.
 Consider using <a href="https://github.com/EDAO-Project/DBpediaEmbedding">this</a> repository to generate RDF embeddings.
 
 Every entity embedding must be contained in one line in the embeddings file, and each value must be separated by the same delimiter.
@@ -125,28 +125,28 @@ Loading a table corpus of 200,000 tables will take approximately 34 hours.
 
 ### Connector
 
-The repository for the connector to communicate with Calypso can be found <a href="https://github.com/EDAO-Project/Calypso/tree/main/CDLC">here</a>.
+The repository for the connector to communicate with Jazero can be found <a href="https://github.com/EDAO-Project/Jazero/tree/main/CDLC">here</a>.
 There is both a Java connector and Python connector.
 
 To use the Java connector, build the CDLC library .jar file with Maven and Java 17 running `mvn clean install` in the `CDLC` folder.
 The .jar file can be found in the `target` folder and can now be included in your project.
 This also needs to be done in the folders `data-lake`, `storage`, and `communication`.
 
-The Python connector can be found in the `cdlc.py` file <a href="https://github.com/EDAO-Project/Calypso/tree/main/CDLC/python">here</a>.
-Import the `Connector` class and initialize it with a host name as constructor argument, such as `localhost`, `127.0.0.1`, or something else if you want to connect to Calypso from another machine.
+The Python connector can be found in the `cdlc.py` file <a href="https://github.com/EDAO-Project/Jazero/tree/main/CDLC/python">here</a>.
+Import the `Connector` class and initialize it with a host name as constructor argument, such as `localhost`, `127.0.0.1`, or something else if you want to connect to Jazero from another machine.
 You can use the Python connector directly from the terminal. Just run `python cdlc.py -h` to see commands.
-Remember to run the methods to insert tables and embeddings on the machine running Calypso. Only searching can be performed remotely.
+Remember to run the methods to insert tables and embeddings on the machine running Jazero. Only searching can be performed remotely.
 
 ##### Loading in Java
-Once the Java CDLC .jar library file has been included in your project, use the class `CDLC` to communicate with Calypso.
+Once the Java CDLC .jar library file has been included in your project, use the class `CDLC` to communicate with Jazero.
 
 Use the methods `insert` and `insertEmbeddings` to insert JSON tables and RDF embedding, respectively. 
-These methods only work on the machine running Calypso.
+These methods only work on the machine running Jazero.
 The parameters are listed below:
 
 `insert`
-- Directory containing JSON tables on machine running Calypso
-- Type of storage in which to store the JSON tables in Calypso ('native' or 'hdfs')
+- Directory containing JSON tables on machine running Jazero
+- Type of storage in which to store the JSON tables in Jazero ('native' or 'hdfs')
 - Prefix string of entities in the JSON tables (e.g. 'https://en.wikipedia.org/')
 - Prefix string of entities in the loaded knowledge graph (e.g. 'https://dbpedia.org/')
 
@@ -156,32 +156,32 @@ The parameters are listed below:
 
 ##### Loading in Python
 Initialize the `Connector` class and call the `insert` and `insertEmbeddings` methods to insert JSON tables and RDF embeddings, respectively.
-These methods only work on the machine running Calypso.
+These methods only work on the machine running Jazero.
 The parameters are listed below:
 
 `insert`
-- Directory containing JSON tables on machine running Calypso
-- Directory of the Calypso directory on the machine running Calypso
-- Type of storage in which to store the JSON tables in Calypso ('native' or 'hdfs')
+- Directory containing JSON tables on machine running Jazero
+- Directory of the Jazero directory on the machine running Jazero
+- Type of storage in which to store the JSON tables in Jazero ('native' or 'hdfs')
 - Prefix string of entities in the JSON tables (e.g. 'https://en.wikipedia.org/')
 - Prefix string of entities in the loaded knowledge graph (e.g. 'https://dbpedia.org/')
 
 `insertEmbeddings`
-- Directory of the Calypso directory on the machine running Calypso
-- Embeddings file path on the machine running Calypso
+- Directory of the Jazero directory on the machine running Jazero
+- Embeddings file path on the machine running Jazero
 - Delimiter in embeddings file
 
-### Searching Calypso
-Searching follows the _query-by-example_ paradigm. Since Calypso stores tables, the input queries are exemplar tables.
+### Searching Jazero
+Searching follows the _query-by-example_ paradigm. Since Jazero stores tables, the input queries are exemplar tables.
 These tabular, exemplar queries contain examples of data of interest.
 
-Searching can be performed remotely from the terminal using Python and the `cdlc.py` Python file found <a href="https://github.com/EDAO-Project/Calypso/tree/main/CDLC/python">here</a>.
-Run `python cdlc.py -h` to see how search Calypso.
+Searching can be performed remotely from the terminal using Python and the `cdlc.py` Python file found <a href="https://github.com/EDAO-Project/Jazero/tree/main/CDLC/python">here</a>.
+Run `python cdlc.py -h` to see how search Jazero.
 
 The search output is pure JSON containing all the relevant top-_K_ tables along some search statistics.
 
 ##### Searching in Java
-Include the Java CDLC .jar file in your project and use `search` method with the following parameters to search Calypso:
+Include the Java CDLC .jar file in your project and use `search` method with the following parameters to search Jazero:
 
 `search`
 - Top-_K_ most similar tables
@@ -199,32 +199,32 @@ Import the `Connector` class from the `cdlc.py` Python file. Searching requires 
 - Type of similarity measurement between pairs of vectors of entity scores
 - Tabular query
 
-### Calypso Web
-This repository has a Django web interface to interact with an instance of Calypso.
+### Jazero Web
+This repository has a Django web interface to interact with an instance of Jazero.
 Navigate to `CDLC/python/api/` and build the Docker image.
 
 ```bash
-docker build -t calypso_web -f Dockerfile ..
+docker build -t jazero_web -f Dockerfile ..
 ```
 
-Then, run a container of Calypso web.
+Then, run a container of Jazero web.
 
 ```bash
-docker run --rm --network="host" -d --name calypso_web -e CALYPSO_HOST=<HOST> web
+docker run --rm --network="host" -d --name jazero -e JAZERO_HOST=<HOST> web
 ```
 
-You can now access the Calypso web interface <a href="http://127.0.0.1:8084/cdlc/">here</a>.
-Just substitute `<HOST>` with the host name of the running Calypso instance.
-For demonstration purposes, we already have an instance of Calypso running, and it can be accessed using its web interface <a href="">here</a>.
+You can now access the Jazero web interface <a href="http://127.0.0.1:8084/cdlc/">here</a>.
+Just substitute `<HOST>` with the host name of the running Jazero instance.
+For demonstration purposes, we already have an instance of Jazero running, and it can be accessed using its web interface <a href="">here</a>.
 
-You can stop the Calypso web interface with the following command.
+You can stop the Jazero web interface with the following command.
 
 ```bash
-docker stop calypso_web
+docker stop jazero_web
 ```
 
-## Setting Up Calypso in an IDE
-Most of the components in Calypso are dependent on the `communication` module.
+## Setting Up Jazero in an IDE
+Most of the components in Jazero are dependent on the `communication` module.
 Therefore, change directory to this module and run the following to install it as a dependency
 
 ```bash

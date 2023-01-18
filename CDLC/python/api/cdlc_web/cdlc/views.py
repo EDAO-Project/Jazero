@@ -16,7 +16,7 @@ def result(request):
     if request.method != 'POST':
         raise BadRequest("Request must be POST")
 
-    host = os.environ['CALYPSO_HOST']
+    host = os.environ['JAZERO_HOST']
     use_embeddings = 'Embeddings' in request.POST.getlist('settings')
     weighted_jaccard = 'Weighted_jaccard' in request.POST.getlist('settings')
     cosine_function = request.POST.getlist('settings')[-1]
@@ -32,7 +32,7 @@ def result(request):
 
     if not conn.isConnected():
         context = {
-            'error': 'Could not connect to Calypso instance. Make sure all Calypso services are running.'
+            'error': 'Could not connect to Jazero instance. Make sure all Jazero services are running.'
         }
 
     else:
