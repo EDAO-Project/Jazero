@@ -108,7 +108,7 @@ public class Configuration
             props.setProperty("DBName", "embeddings");
 
         if (!props.contains("DBUsername"))
-            props.setProperty("DBUsername", "calypso");
+            props.setProperty("DBUsername", "jazero");
 
         if (!props.contains("DBPassword"))
             props.setProperty("DBPassword", "1234");
