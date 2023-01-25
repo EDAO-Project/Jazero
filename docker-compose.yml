@@ -6,8 +6,6 @@ services:
     build:
       context: .
       dockerfile: data-lake/Dockerfile
-    ports:
-      - 8081:8081
     volumes:
       - ./knowledge-graph/neo4j/:/home/knowledge-graph/neo4j
       - ./index/:/index
@@ -18,8 +16,6 @@ services:
     build:
       context: .
       dockerfile: entity-linker/Dockerfile
-    ports:
-      - 8082:8082
     volumes:
       - ./knowledge-graph/neo4j/:/home/knowledge-graph/neo4j
       - ./index/:/index
@@ -28,8 +24,6 @@ services:
     build:
       context: .
       dockerfile: knowledge-graph/Dockerfile
-    ports:
-      - 8083:8083
     volumes:
       - ./knowledge-graph/neo4j/:/home/knowledge-graph/neo4j
       - ./index/:/index
