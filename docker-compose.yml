@@ -19,6 +19,7 @@ services:
     volumes:
       - ./knowledge-graph/neo4j/:/home/knowledge-graph/neo4j
       - ./index/:/index
+      - ./kg:/home/kg
   ekg-manager:
     network_mode: host
     build:
@@ -27,6 +28,7 @@ services:
     volumes:
       - ./knowledge-graph/neo4j/:/home/knowledge-graph/neo4j
       - ./index/:/index
+      - ./kg:/home/kg
   embeddings:
     image: postgres
     container_name: jazero_pg
