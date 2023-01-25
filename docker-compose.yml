@@ -1,4 +1,5 @@
 version: "3"
+
 services:
   data-lake:
     network_mode: host
@@ -40,3 +41,17 @@ services:
       - POSTGRES_USER=jazero
       - POSTGRES_PASSWORD=1234
       - POSTGRES_DB=embeddings
+  neo4j:
+    image: neo4j:4.1.4
+    container_name: jazero_neo4j
+    network_mode: host
+    volumes:
+      - ./index/neo4j/data:/data
+      - ./index/neo4j/plugins:/plugins
+      - ./index/neo4j/import:/import
+    environment:
+      - NEO4J_AUTH=neo4j/jazero_admin
+      - NEO4JLABS_PLUGINS='["apoc", "n10s"]'
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_use_neo4j_config=false
