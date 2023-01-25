@@ -3,18 +3,11 @@ Welcome to Jazero: A semantic data lake microservice architecture for semantical
 
 ## Setup
 ### Loading Knowledge Graph
-From the root directory of this repository, create a folder `input` in in `knowledge-graph/neo4j/`
+First thing to do is to install Neo4J in Docker ind import the knowledge graph (KG) data.
+Simply run the following command and pass the path to the folder with the KG files:
 
 ```bash
-mkdir knowledge-graph/neo4j/input
-```
-
-Place all your knowledge graph turtle files in this new folder `input`.
-Run the following commands in the project root directory to install Neo4J in Docker and insert the knowledge graph into a dockerized Neo4J instance
-
-```bash
-docker build -f kg.dockerfile -t neo4j .
-docker run --rm -v ${PWD}/knowledge-graph/neo4j:/srv neo4j bash -c "./install.sh /srv; ./import.sh neo4j-server; ./stop.sh neo4j-server"
+./import <PATH TO KG DIRECTORY>
 ```
 
 ## Starting Jazero
