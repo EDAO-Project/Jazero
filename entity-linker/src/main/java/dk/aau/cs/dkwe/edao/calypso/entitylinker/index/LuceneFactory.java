@@ -35,7 +35,7 @@ public class LuceneFactory
     public static boolean isBuild()
     {
         File dir = new File(Configuration.getLuceneDir());
-        return dir.listFiles().length > 0;
+        return dir.listFiles() != null && dir.listFiles().length > 1;
     }
 
     public static void build(File kgDir, boolean verbose) throws IOException

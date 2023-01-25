@@ -36,18 +36,6 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
 
     public static void main(String[] args)
     {
-        if (!Neo4JHandler.isInstalled())
-        {
-            throw new RuntimeException("Neo4J has not been installed. Follow README instruction how to do so");
-        }
-
-        boolean ret = Neo4JHandler.start();
-
-        if (!ret)
-        {
-            throw new RuntimeException("Failed to start Neo4J graph database");
-        }
-
         try
         {
             endpoint = Neo4JHandler.getConnector();
@@ -74,11 +62,6 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
     @GetMapping("/get-kg")
     public synchronized ResponseEntity<String> getKG(@RequestHeader Map<String, String> headers)
     {
-        if (!Neo4JHandler.isInstalled())
-        {
-            return ResponseEntity.internalServerError().body("Neo4J is not installed");
-        }
-
         try
         {
             Neo4JReader reader = new Neo4JReader(endpoint);
@@ -122,11 +105,6 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
     @GetMapping("/sub-kg")
     public synchronized ResponseEntity<String> getSubKG(@RequestHeader Map<String, String> headers)
     {
-        if (!Neo4JHandler.isInstalled())
-        {
-            return ResponseEntity.internalServerError().body("Neo4J is not installed");
-        }
-
         Neo4JReader reader = new Neo4JReader(endpoint);
         Map<String, Set<String>> subKG = reader.subGraph();
         JsonArray array = new JsonArray();
@@ -169,12 +147,7 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
     @PostMapping("/insert-links")
     public synchronized ResponseEntity<String> insertLinks(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
     {
-        if (!Neo4JHandler.isInstalled())
-        {
-            return ResponseEntity.internalServerError().body("Neo4J is not installed");
-        }
-
-        else if (!headers.containsKey("content-type") || !headers.get("content-type").equals(MediaType.APPLICATION_JSON_VALUE))
+        if (!headers.containsKey("content-type") || !headers.get("content-type").equals(MediaType.APPLICATION_JSON_VALUE))
         {
             return ResponseEntity.badRequest().body("Content-Type must be " + MediaType.APPLICATION_JSON);
         }
@@ -209,12 +182,7 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
     {
         final String entry = "entity";
 
-        if (!Neo4JHandler.isInstalled())
-        {
-            return ResponseEntity.internalServerError().body("Neo4J is not installed");
-        }
-
-        else if (!body.containsKey(entry))
+        if (!body.containsKey(entry))
         {
             return ResponseEntity.badRequest().body("Missing entry \"" + entry + "\" to specify entity to find types of");
         }
@@ -248,11 +216,6 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
     @GetMapping("/size")
     public synchronized ResponseEntity<String> size(@RequestHeader Map<String, String> headers)
     {
-        if (!Neo4JHandler.isInstalled())
-        {
-            return ResponseEntity.internalServerError().body("Neo4J is not installed");
-        }
-
         Neo4JReader reader = new Neo4JReader(endpoint);
         return ResponseEntity.ok(String.valueOf(reader.size()));
     }
@@ -270,12 +233,7 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
     {
         final String entityKey = "wiki";
 
-        if (!Neo4JHandler.isInstalled())
-        {
-            return ResponseEntity.internalServerError().body("Neo4J is not installed");
-        }
-
-        else if (!body.containsKey(entityKey))
+        if (!body.containsKey(entityKey))
         {
             return ResponseEntity.badRequest().body("Missing \"" + entityKey + "\" entry in JSON body as input entity");
         }
@@ -304,12 +262,7 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
     {
         final String entityKey = "entity";
 
-        if (!Neo4JHandler.isInstalled())
-        {
-            return ResponseEntity.internalServerError().body("Neo4J is not installed");
-        }
-
-        else if (!body.containsKey(entityKey))
+        if (!body.containsKey(entityKey))
         {
             return ResponseEntity.badRequest().body("Missing \"" + entityKey + "\" entry in JSON body as input entity");
         }
