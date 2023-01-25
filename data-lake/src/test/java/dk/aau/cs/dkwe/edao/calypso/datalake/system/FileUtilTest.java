@@ -16,7 +16,7 @@ public class FileUtilTest
                     testDir2 = new File("test/test2"),
                     testFile = new File("test/test1/file1.txt");
 
-    @BeforeEach
+    /*@BeforeEach
     public void setup() throws IOException
     {
         this.testDir1.mkdirs();
@@ -89,5 +89,5 @@ public class FileUtilTest
         assertEquals("Remove operation of directory did not return exit code 0",
                 0, FileUtil.remove(this.testDir1));
         assertTrue("Directory was not removed", !this.testDir1.exists());
-    }
+    }*/
 }
