@@ -29,12 +29,7 @@ public class Neo4JWriter extends Neo4JHandler implements IndexIO
     @Override
     public void performIO() throws IOException
     {
-        if (!Neo4JHandler.isInstalled())
-        {
-            throw new IOException("Neo4J has not been installed");
-        }
-
-        else if (!new File(IMPORT_SCRIPT).exists())
+        if (!new File(IMPORT_SCRIPT).exists())
         {
             throw new IOException("Data import script is missing");
         }
@@ -81,12 +76,7 @@ public class Neo4JWriter extends Neo4JHandler implements IndexIO
     {
         File links = new File(linksFolder);
 
-        if (!Neo4JHandler.isInstalled())
-        {
-            throw new IOException("Neo4J has not been installed");
-        }
-
-        else if (!new File(INSERT_LINKS_SCRIPT).exists())
+        if (!new File(INSERT_LINKS_SCRIPT).exists())
         {
             throw new IOException("Missing script to insert table links");
         }
