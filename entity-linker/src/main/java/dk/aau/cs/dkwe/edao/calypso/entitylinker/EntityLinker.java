@@ -42,6 +42,13 @@ public class EntityLinker implements WebServerFactoryCustomizer<ConfigurableWebS
             Logger.log(Logger.Level.INFO, "No Lucene index found");
 
             File kgDir = new File(Configuration.getKGDir());
+
+            if (!kgDir.exists())
+            {
+                Logger.log(Logger.Level.ERROR, "Missing KG files or KG directory. Read the README.md instructions to setup Jazero correctly.");
+                System.exit(1);
+            }
+
             LuceneFactory.build(kgDir, true);
             Logger.log(Logger.Level.INFO, "Lucene index build finished");
         }

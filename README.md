@@ -3,12 +3,14 @@ Welcome to Jazero: A semantic data lake microservice architecture for semantical
 
 ## Setup
 ### Loading Knowledge Graph
-First thing to do is to install Neo4J in Docker ind import the knowledge graph (KG) data.
-Simply run the following command and pass the path to the folder with the KG files:
+First, create a folder `kg` in the parent directory and move your knowledge graph (KG) files here.
+Then, start an instance by running the following command:
 
 ```bash
-./import <PATH TO KG DIRECTORY>
+./start
 ```
+
+The first time you start an instance, the entity linker will construct its indexes which will take around 1 hour for a 10GB KG dataset.
 
 ## Starting Jazero
 Setting up and running Jazero is very simple.
@@ -19,9 +21,6 @@ Start Jazero with the following simple command
 ```bash
 ./start.sh
 ```
-
-The first time Jazero is started, the entity linker service will build a Lucene index, which can take around an hour for a 10GB KG.
-Then, Jazero is accessible on localhost or on the machine's IP address.
 
 Alternatively, but not recommended, you can build each service manually and run the built .jar file.
 This requires having Java 17 and Maven installed.

@@ -45,7 +45,7 @@ public class LuceneFactory
         Directory directory = FSDirectory.open(indexPath);
         IndexWriterConfig config = new IndexWriterConfig(analyzer);
         IndexWriter writer = new IndexWriter(directory, config);
-        double prog = 0.0, filesCount = kgDir.listFiles().length;
+        double prog = 0.0, filesCount = kgDir.listFiles() == null ? 0 : kgDir.listFiles().length;
 
         if (verbose)
         {
