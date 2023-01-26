@@ -42,9 +42,9 @@ services:
     container_name: jazero_neo4j
     network_mode: host
     volumes:
-      - ./index/neo4j/data:/data
-      - ./index/neo4j/plugins:/plugins
-      - ./index/neo4j/import:/import
+      - ./index/neo4j/data:/var/lib/neo4j/data
+      - ./index/neo4j/plugins:/var/lib/neo4j/plugins
+      - ./index/neo4j/import:/var/lib/neo4j/import
       - ./kg:/kg
       - ./knowledge-graph/neo4j/:/scripts
     environment:
