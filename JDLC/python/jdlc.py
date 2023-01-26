@@ -50,6 +50,10 @@ class Connector:
     def insert(self, tablesDir, jazeroDir, storageType, tableEntityPrefix = '', kgEntityPrefix = ''):
         relativeTablesDir = self.__RELATIVE_MOUNT
         sharedDir = jazeroDir + "/" + relativeTablesDir
+
+        if (len(os.listdir(sharedDir))):
+            raise 'There are already tables in \'' + sharedDir + '\''
+
         shutil.copytree(tablesDir, sharedDir, dirs_exist_ok = True)
 
         headers = {'Content-Type': 'application/json', 'Storage-Type': storageType}
