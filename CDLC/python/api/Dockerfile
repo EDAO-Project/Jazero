@@ -6,10 +6,10 @@ RUN apt update
 RUN apt install python3 pip git -y
 RUN python3 -m pip install Django tzdata requests
 
-COPY api/cdlc_web/ cdlc_web/
-COPY cdlc.py cdlc_web/cdlc/
+COPY api/jdlc_web/ jdlc_web/
+COPY jdlc.py jdlc_web/jdlc/
 
-WORKDIR cdlc_web/
+WORKDIR jdlc_web/
 
 EXPOSE 8084
 ENTRYPOINT python3 manage.py runserver 0.0.0.0:8084

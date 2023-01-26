@@ -11,7 +11,7 @@ class Connector:
         self.__sdlPort = 8081
         self.__entityLinkerPort = 8082
         self.__ekgPort = 8083
-        self.__RELATIVE_MOUNT = '/knowledge-graph/neo4j'
+        self.__RELATIVE_MOUNT = '.tables'
 
     def getHost(self):
         return self.__host
@@ -35,6 +35,8 @@ class Connector:
         j = json.loads(content)
         req = requests.post(self.__host + ':' + str(self.__sdlPort) + '/embeddings', json = j)
 
+        os.remove('/home/' + self.__RELATIVE_MOUNT + '/' + embeddingsFile.split('/')[-1])
+
         if (req.status_code != 200):
             return 'Failed inserting embeddings: ' + req.text
 
@@ -46,7 +48,7 @@ class Connector:
     # tableEntityPrefix: Prefix string of entities in the tables (if not all table entities share the same prefix, don't specify this parameter)
     # kgEntityPrefix: Prefix string of entities in the knowledge graph (if not all KG entities share the same prefix, don't specify this parameter)
     def insert(self, tablesDir, jazeroDir, storageType, tableEntityPrefix = '', kgEntityPrefix = ''):
-        relativeTablesDir = self.__RELATIVE_MOUNT + "/tables"
+        relativeTablesDir = self.__RELATIVE_MOUNT
         sharedDir = jazeroDir + "/" + relativeTablesDir
         shutil.copytree(tablesDir, sharedDir)
 

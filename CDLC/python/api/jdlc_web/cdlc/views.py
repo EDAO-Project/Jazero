@@ -4,10 +4,10 @@ from django.template import loader
 from django.core.exceptions import BadRequest
 
 import os
-from cdlc.cdlc import Connector
+from jdlc.jdlc import Connector
 
 def index(request):
-    template = loader.get_template('cdlc/index.html')
+    template = loader.get_template('jdlc/index.html')
     context = {}
     return HttpResponse(template.render(context, request))
 
@@ -26,7 +26,7 @@ def result(request):
         raise BadRequest("Missing query")
 
     # TODO: Finish getting results using connector
-    template = loader.get_template('cdlc/index.html')
+    template = loader.get_template('jdlc/index.html')
     context = {}
     conn = Connector(host)
 
