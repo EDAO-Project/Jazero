@@ -17,6 +17,7 @@ echo "Creating index"
 ${NEO4J_HOME}/bin/cypher-shell -u neo4j -p 'jazero_admin' "CREATE CONSTRAINT n10s_unique_uri ON (r:Resource) ASSERT r.uri IS UNIQUE;"
 ${NEO4J_HOME}/bin/cypher-shell -u neo4j -p 'jazero_admin' 'call n10s.graphconfig.init( { handleMultival: "OVERWRITE",  handleVocabUris: "SHORTEN", keepLangTag: false, handleRDFTypes: "NODES" })'
 
+echo
 echo "Moving and cleaning"
 rm -rf ${NEO4J_IMPORT}/*
 

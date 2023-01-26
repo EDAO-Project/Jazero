@@ -39,7 +39,7 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
     {
         try
         {
-            TimeUnit.SECONDS.sleep(15);
+            TimeUnit.SECONDS.sleep(30);
             endpoint = Neo4JHandler.getConnector();
             SpringApplication.run(KnowledgeGraph.class, args);
         }
