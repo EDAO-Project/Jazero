@@ -11,7 +11,8 @@ class Connector:
         self.__sdlPort = 8081
         self.__entityLinkerPort = 8082
         self.__ekgPort = 8083
-        self.__RELATIVE_MOUNT = '.tables'
+        self.__TABLES_MOUNT = '/srv/storage'
+        self.__RELATIVE_TABLES = '.tables'
 
     def getHost(self):
         return self.__host
@@ -28,14 +29,14 @@ class Connector:
         return sdl.status_code == 200 and entityLinker.status_code == 200 and ekg.status_code == 200
 
     def insertEmbeddings(self, jazeroDir, embeddingsFile, embeddingsDelimiter):
-        mountedPath = jazeroDir + self.__RELATIVE_MOUNT
+        mountedPath = jazeroDir + '/' + self.__RELATIVE_TABLES
         shutil.copyfile(embeddingsFile, mountedPath + '/' + embeddingsFile.split('/')[-1])
 
-        content = '{"file": "/home/' + self.__RELATIVE_MOUNT + '/' + embeddingsFile.split('/')[-1] + '", "delimiter": "' + embeddingsDelimiter + '"}'
+        content = '{"file": "' + self.__TABLES_MOUNT + '/' + embeddingsFile.split('/')[-1] + '", "delimiter": "' + embeddingsDelimiter + '"}'
         j = json.loads(content)
         req = requests.post(self.__host + ':' + str(self.__sdlPort) + '/embeddings', json = j)
 
-        os.remove('/home/' + self.__RELATIVE_MOUNT + '/' + embeddingsFile.split('/')[-1])
+        os.remove('/home/' + self.__TABLES_MOUNT + '/' + embeddingsFile.split('/')[-1])
 
         if (req.status_code != 200):
             return 'Failed inserting embeddings: ' + req.text
@@ -48,16 +49,16 @@ class Connector:
     # tableEntityPrefix: Prefix string of entities in the tables (if not all table entities share the same prefix, don't specify this parameter)
     # kgEntityPrefix: Prefix string of entities in the knowledge graph (if not all KG entities share the same prefix, don't specify this parameter)
     def insert(self, tablesDir, jazeroDir, storageType, tableEntityPrefix = '', kgEntityPrefix = ''):
-        relativeTablesDir = self.__RELATIVE_MOUNT
+        relativeTablesDir = self.__RELATIVE_TABLES
         sharedDir = jazeroDir + "/" + relativeTablesDir
 
         if (len(os.listdir(sharedDir))):
-            raise 'There are already tables in \'' + sharedDir + '\''
+            raise Exception('There are already tables in \'' + sharedDir + '\'')
 
         shutil.copytree(tablesDir, sharedDir, dirs_exist_ok = True)
 
         headers = {'Content-Type': 'application/json', 'Storage-Type': storageType}
-        content = '{"directory": "/home/' + relativeTablesDir + '", "table-prefix": "' + tableEntityPrefix + '", "kg-prefix": "' + kgEntityPrefix + '"}'
+        content = '{"directory": "' + self.__TABLES_MOUNT + '", "table-prefix": "' + tableEntityPrefix + '", "kg-prefix": "' + kgEntityPrefix + '"}'
         j = json.loads(content)
         req = requests.post(self.__host + ':' + str(self.__sdlPort) + '/insert', json = j, headers = headers)
 
