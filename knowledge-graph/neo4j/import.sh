@@ -26,7 +26,7 @@ do
   filename="$(basename ${f})"
 
   echo "importing ${filename} from ${NEO4J_IMPORT}"
-  ${NEO4J_HOME}/bin/cypher-shell -u neo4j -p 'admin' "CALL  n10s.rdf.import.fetch(\"file://${NEO4J_IMPORT}/${filename}\",\"Turtle\");"
+  ${NEO4J_HOME}/bin/cypher-shell -u neo4j -p 'jazero_admin' "CALL  n10s.rdf.import.fetch(\"file://${NEO4J_IMPORT}/${filename}\",\"Turtle\");"
 done
 
 echo "Done"
