@@ -8,7 +8,20 @@ input=$2
 export NEO4J_HOME=$neo4j
 export NEO4J_IMPORT=${NEO4J_HOME}"/import"
 
+NEOSEM_VERSION=4.1.0.1
+NEOSEM_FILE=neosemantics-${NEOSEM_VERSION}.jar
+
 ulimit -n 65535
+
+if [ ! -f ${NEO4J_HOME}/plugins/${NEOSEM_FILE} ]
+then
+    echo "Downloading Neo4j RDF plugin..."
+    wget -P ${NEO4J_HOME}/plugins/ https://github.com/neo4j-labs/neosemantics/releases/download/${NEOSEM_VERSION}/${NEOSEM_FILE}
+fi
+
+echo "Creating index"
+${NEO4J_HOME}/bin/cypher-shell -u neo4j -p 'jazero_admin' "CREATE CONSTRAINT n10s_unique_uri ON (r:Resource) ASSERT r.uri IS UNIQUE;"
+${NEO4J_HOME}/bin/cypher-shell -u neo4j -p 'jazero_admin' 'call n10s.graphconfig.init( { handleMultival: "OVERWRITE",  handleVocabUris: "SHORTEN", keepLangTag: false, handleRDFTypes: "NODES" })'
 
 echo "Moving and cleaning"
 rm -rf ${NEO4J_IMPORT}/*

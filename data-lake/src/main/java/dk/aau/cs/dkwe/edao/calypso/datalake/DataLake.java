@@ -25,6 +25,7 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Type;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.DynamicTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.Table;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Configuration;
+import dk.aau.cs.dkwe.edao.calypso.datalake.system.EndpointAnalysis;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.FileLogger;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Logger;
 import dk.aau.cs.dkwe.edao.calypso.datalake.tables.JsonTable;
@@ -53,6 +54,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     private static EntityTable entityTable;
     private static EntityTableLink tableLink;
     private static EmbeddingsIndex<String> embeddingsIndex;
+    private static EndpointAnalysis analysis;
     private static final int THREADS = 4;
     private static final File DATA_DIR = new File("../knowledge-graph/neo4j/mappings/");
 
@@ -74,6 +76,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
     private static void loadIndexes()
     {
+        analysis = new EndpointAnalysis();
+
         if (Configuration.areIndexesLoaded())
         {
             try
@@ -101,6 +105,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     @GetMapping(value = "/ping")
     public ResponseEntity<String> ping()
     {
+        analysis.record("ping", 1);
         return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body("pong");
     }
 
@@ -222,6 +227,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         }
 
         JsonObject jsonResult = resultToJson(result, search.elapsedNanoSeconds(), search.getReduction());
+        analysis.record("search", 1);
+
         return ResponseEntity
                 .ok()
                 .contentType(MediaType.APPLICATION_JSON)
@@ -391,6 +398,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             Configuration.setIndexesLoaded(true);
             loadIndexes();
             FileLogger.log(FileLogger.Service.SDL_Manager, "Loaded " + indexWriter.loadedTables() + " tables");
+            analysis.record("insert", 1);
 
             return ResponseEntity.ok("Loaded tables: " + indexWriter.loadedTables() + "\nIndex time: " +
                     TimeUnit.SECONDS.convert(indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s\nTotal elapsed time: " +
@@ -475,6 +483,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             FileLogger.log(FileLogger.Service.SDL_Manager, "Loaded " + batchSizeCount +
                     " entity embeddings corresponding to " + loaded + " mb");
             db.close();
+            analysis.record("embeddings", 1);
 
             return ResponseEntity.ok("Loaded " + batchSizeCount + " entity embeddings (" + loaded + " mb)");
         }

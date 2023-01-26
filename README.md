@@ -20,6 +20,8 @@ This can run in parallel with the index construction in the entity linker.
 docker exec jazero_neo4j /scripts/import.sh . /kg
 ```
 
+Feel free to delete the contents of the `kg` folder once the construction of entity linker indexes and population of the KG have finished.
+
 ## Starting Jazero
 Start Jazero with the following simple command
 

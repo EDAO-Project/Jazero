@@ -143,6 +143,9 @@ public class Configuration
         if (!props.contains("logDir"))
             props.setProperty("logDir", "/logs");
 
+        if (!props.contains("analysisFile"))
+            props.setProperty("analysisFile", "/logs/analysis.txt");
+
         writeProperties(props);
     }
 
@@ -394,5 +397,10 @@ public class Configuration
     public static String getIndexDir()
     {
         return "/index";
+    }
+
+    public static String getAnalysisDir()
+    {
+        return readProperties().getProperty("analysisFile");
     }
 }
