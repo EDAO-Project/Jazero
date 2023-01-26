@@ -19,6 +19,9 @@ then
     wget -P ${NEO4J_HOME}/plugins/ https://github.com/neo4j-labs/neosemantics/releases/download/${NEOSEM_VERSION}/${NEOSEM_FILE}
 fi
 
+echo "Installing Neo4j RDF plugin..."
+echo 'dbms.unmanaged_extension_classes=n10s.endpoint=/rdf' >> ${NEO4J_HOME}/conf/neo4j.conf
+
 echo "Creating index"
 ${NEO4J_HOME}/bin/cypher-shell -u neo4j -p 'jazero_admin' "CREATE CONSTRAINT n10s_unique_uri ON (r:Resource) ASSERT r.uri IS UNIQUE;"
 ${NEO4J_HOME}/bin/cypher-shell -u neo4j -p 'jazero_admin' 'call n10s.graphconfig.init( { handleMultival: "OVERWRITE",  handleVocabUris: "SHORTEN", keepLangTag: false, handleRDFTypes: "NODES" })'
