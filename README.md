@@ -2,7 +2,8 @@
 Welcome to Jazero: A semantic data lake microservice architecture for semantically augmented table search.
 
 ## Setup
-### Loading Knowledge Graph
+Make sure to have docker-compose version 2+ installed.
+
 First, create a folder `kg` in the parent directory and move your knowledge graph (KG) files here.
 Then, start an instance by running the following command:
 
@@ -12,10 +13,14 @@ Then, start an instance by running the following command:
 
 The first time you start an instance, the entity linker will construct its indexes which will take around 1 hour for a 10GB KG dataset.
 
-## Starting Jazero
-Setting up and running Jazero is very simple.
-All you need is to have Docker and Docker-compose installed. Make sure to have Docker-compose version 2+ installed.
+The following command will populate the KG with your KG files.
+This can run in parallel with the index construction in the entity linker.
 
+```bash
+docker exec jazero_neo4j /scripts/import.sh . /kg
+```
+
+## Starting Jazero
 Start Jazero with the following simple command
 
 ```bash
