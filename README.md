@@ -17,13 +17,20 @@ The following command will populate the KG with your KG files.
 This can run in parallel with the index construction in the entity linker.
 
 ```bash
+docker exec jazero_neo4j /scripts/install.sh
+```
+
+Once you see a tabular output, restart the Neo4J container and start populating the KG.
+
+```bash
+docker restart jazero_neo4j
 docker exec jazero_neo4j /scripts/import.sh . /kg
 ```
 
 Feel free to delete the contents of the `kg` folder once the construction of entity linker indexes and population of the KG have finished.
 
 ## Starting Jazero
-Start Jazero with the following simple command
+Start Jazero with the following simple command:
 
 ```bash
 ./start.sh
