@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 @SpringBootApplication
 @RestController
@@ -38,6 +39,7 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
     {
         try
         {
+            TimeUnit.SECONDS.sleep(15);
             endpoint = Neo4JHandler.getConnector();
             SpringApplication.run(KnowledgeGraph.class, args);
         }
@@ -45,6 +47,11 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
         catch (IOException e)
         {
             throw new RuntimeException("Could not create connection to Neo4J: " + e.getMessage());
+        }
+
+        catch (InterruptedException e)
+        {
+            throw new RuntimeException("Could not wait for Neo4J docker container to start");
         }
     }
 

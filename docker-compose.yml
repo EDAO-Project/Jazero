@@ -45,6 +45,8 @@ services:
       - ./index/neo4j/data:/data
       - ./index/neo4j/plugins:/plugins
       - ./index/neo4j/import:/import
+      - ./kg:/kg
+      - ./knowledge-graph/neo4j/:/scripts
     environment:
       - NEO4J_AUTH=neo4j/jazero_admin
       - NEO4JLABS_PLUGINS='["apoc", "n10s"]'
