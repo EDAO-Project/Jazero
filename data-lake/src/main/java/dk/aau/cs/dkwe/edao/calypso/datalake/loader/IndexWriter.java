@@ -7,6 +7,7 @@ import com.google.gson.GsonBuilder;
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.DBDriverBatch;
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.service.ELService;
 import dk.aau.cs.dkwe.edao.calypso.datalake.connector.service.KGService;
+import dk.aau.cs.dkwe.edao.calypso.datalake.parser.ParsingException;
 import dk.aau.cs.dkwe.edao.calypso.datalake.parser.TableParser;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.*;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Id;
@@ -16,6 +17,7 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Type;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.DynamicTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.Table;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Configuration;
+import dk.aau.cs.dkwe.edao.calypso.datalake.system.FileLogger;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Logger;
 import dk.aau.cs.dkwe.edao.calypso.datalake.tables.JsonTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.utilities.Utils;
@@ -115,7 +117,7 @@ public class IndexWriter implements IndexIO
 
     private boolean load(Path tablePath)
     {
-        JsonTable table = TableParser.parse(tablePath);
+        JsonTable table = parseTable(tablePath);
 
         if (table == null ||  table._id == null || table.rows == null)
             return false;
@@ -207,6 +209,21 @@ public class IndexWriter implements IndexIO
         saveStats(table, FilenameUtils.removeExtension(tableName), entities.iterator(), entityMatches);
         this.storage.insert(tablePath.toFile());
         return true;
+    }
+
+    private static JsonTable parseTable(Path tablePath)
+    {
+        try
+        {
+            return TableParser.parse(tablePath);
+        }
+
+        catch (ParsingException e)
+        {
+            FileLogger.log(FileLogger.Service.SDL_Manager, e.getMessage());
+            Logger.log(Logger.Level.ERROR, e.getMessage());
+            return null;
+        }
     }
 
     private void saveStats(JsonTable jTable, String tableFileName, Iterator<String> entities, Map<Pair<Integer, Integer>, List<String>> entityMatches)

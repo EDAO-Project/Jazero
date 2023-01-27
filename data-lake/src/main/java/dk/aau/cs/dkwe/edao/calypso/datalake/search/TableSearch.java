@@ -1,6 +1,7 @@
 package dk.aau.cs.dkwe.edao.calypso.datalake.search;
 
 import dk.aau.cs.dkwe.edao.calypso.datalake.loader.Stats;
+import dk.aau.cs.dkwe.edao.calypso.datalake.parser.ParsingException;
 import dk.aau.cs.dkwe.edao.calypso.datalake.parser.TableParser;
 import dk.aau.cs.dkwe.edao.calypso.datalake.similarity.JaccardSimilarity;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EmbeddingsIndex;
@@ -13,6 +14,7 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Type;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.DynamicTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.Table;
+import dk.aau.cs.dkwe.edao.calypso.datalake.system.FileLogger;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Logger;
 import dk.aau.cs.dkwe.edao.calypso.datalake.tables.JsonTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.utilities.HungarianAlgorithm;
@@ -20,6 +22,7 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.utilities.Utils;
 import dk.aau.cs.dkwe.edao.calypso.storagelayer.StorageHandler;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Predicate;
@@ -180,7 +183,7 @@ public class TableSearch extends AbstractSearch
 
     private Pair<File, Double> searchTable(Table<String> query, File table)
     {
-        JsonTable jTable = TableParser.parse(table);
+        JsonTable jTable = parseTable(table);
         Stats.StatBuilder statBuilder = Stats.build();
 
         if (jTable == null || jTable.numDataRows == 0)
@@ -277,6 +280,21 @@ public class TableSearch extends AbstractSearch
         this.tableStats.put(table.getName(), statBuilder.finish());
 
         return new Pair<>(table, score);
+    }
+
+    private static JsonTable parseTable(File tableFile)
+    {
+        try
+        {
+            return TableParser.parse(tableFile);
+        }
+
+        catch (ParsingException e)
+        {
+            FileLogger.log(FileLogger.Service.SDL_Manager, e.getMessage());
+            Logger.log(Logger.Level.ERROR, e.getMessage());
+            return null;
+        }
     }
 
     /**

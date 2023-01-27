@@ -11,6 +11,7 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.connector.service.KGService;
 import dk.aau.cs.dkwe.edao.calypso.datalake.loader.IndexReader;
 import dk.aau.cs.dkwe.edao.calypso.datalake.loader.IndexWriter;
 import dk.aau.cs.dkwe.edao.calypso.datalake.parser.EmbeddingsParser;
+import dk.aau.cs.dkwe.edao.calypso.datalake.parser.ParsingException;
 import dk.aau.cs.dkwe.edao.calypso.datalake.parser.TableParser;
 import dk.aau.cs.dkwe.edao.calypso.datalake.search.Result;
 import dk.aau.cs.dkwe.edao.calypso.datalake.search.TableSearch;
@@ -247,24 +248,29 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             JsonObject jsonScore = new JsonObject();
             jsonScore.add("table ID", new JsonPrimitive(score.first().getName()));
 
-            JsonTable table = TableParser.parse(score.first());
-            JsonArray rows = new JsonArray(table.rows.size());
-
-            for (List<JsonTable.TableCell> row : table.rows)
+            try
             {
-                JsonArray column = new JsonArray(row.size());
-                row.forEach(cell -> {
-                    JsonObject cellObject = new JsonObject();
-                    cellObject.addProperty("text", cell.text);
-                    column.add(cellObject);
-                });
+                JsonTable table = TableParser.parse(score.first());
+                JsonArray rows = new JsonArray(table.rows.size());
 
-                rows.add(column);
+                for (List<JsonTable.TableCell> row : table.rows)
+                {
+                    JsonArray column = new JsonArray(row.size());
+                    row.forEach(cell -> {
+                        JsonObject cellObject = new JsonObject();
+                        cellObject.addProperty("text", cell.text);
+                        column.add(cellObject);
+                    });
+
+                    rows.add(column);
+                }
+
+                jsonScore.add("table", rows);
+                jsonScore.add("score", new JsonPrimitive(score.second()));
+                array.add(jsonScore);
             }
 
-            jsonScore.add("table", rows);
-            jsonScore.add("score", new JsonPrimitive(score.second()));
-            array.add(jsonScore);
+            catch (ParsingException e) {}
         }
 
         object.add("scores", array);
