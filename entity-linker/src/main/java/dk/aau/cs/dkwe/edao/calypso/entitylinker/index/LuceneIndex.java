@@ -4,10 +4,8 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.store.Index;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -58,7 +56,7 @@ public class LuceneIndex implements Index<String, String>, Serializable
             return doc.get(URI_FIELD);
         }
 
-        catch (IOException | ParseException e)
+        catch (IOException | ParseException | IllegalArgumentException e)
         {
             return null;
         }
