@@ -62,30 +62,6 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
     }
 
     /**
-     * Request a serialized view of the full KG
-     * the KG is returned in a file
-     * @return Full KG
-     */
-    @GetMapping("/get-kg")
-    public synchronized ResponseEntity<String> getKG(@RequestHeader Map<String, String> headers)
-    {
-        try
-        {
-            Neo4JReader reader = new Neo4JReader(endpoint);
-            reader.performIO();
-
-            return ResponseEntity.ok()
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body("{\"file\": " + reader.getGraphFile() + "}");
-        }
-
-        catch (IOException | RuntimeException exc)
-        {
-            return ResponseEntity.internalServerError().body("Failed reading KG: " + exc.getMessage());
-        }
-    }
-
-    /**
      * Returns a sub-KG containing entities and text literals of entity objects
      * Warning: This is a potential endpoint that can crash the service if the graph is very large!
      *          A solution would be to only returns textual objects of given entities, but the entity linker service does

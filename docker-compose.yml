@@ -45,6 +45,7 @@ services:
       - ./index/neo4j/data:/var/lib/neo4j/data
       - ./index/neo4j/plugins:/var/lib/neo4j/plugins
       - ./index/neo4j/import:/var/lib/neo4j/import
+      - ./index/mappings/:/index/mappings
       - ./kg:/kg
       - ./knowledge-graph/neo4j/:/scripts
     environment:

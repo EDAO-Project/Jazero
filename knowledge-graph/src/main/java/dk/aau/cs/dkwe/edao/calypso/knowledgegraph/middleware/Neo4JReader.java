@@ -23,8 +23,6 @@ import java.util.stream.Collectors;
 public class Neo4JReader extends Neo4JHandler implements IndexIO
 {
     private Neo4jEndpoint endpoint;
-    private static final String KG_FILE = Neo4JHandler.HOME_IMPORT +  "kg.ttl";
-    private static final String EXPORT_SCRIPT = Neo4JHandler.BASE + "export.sh";
 
     public Neo4JReader(Neo4jEndpoint endpoint)
     {
@@ -33,22 +31,7 @@ public class Neo4JReader extends Neo4JHandler implements IndexIO
 
     @Override
     public void performIO() throws IOException
-    {
-        if (!new File(KG_FILE).exists())
-        {
-            throw new RuntimeException("KG file does not exist: Make sure to insert graph first");
-        }
-    }
-
-    public String getGraphFile()
-    {
-        if (!new File(KG_FILE).exists())
-        {
-            throw new RuntimeException("KG file does not exist: Make sure to insert graph first");
-        }
-
-        return KG_FILE;
-    }
+    {}
 
     /**
      * Returns all entities and some of their textual literal objects

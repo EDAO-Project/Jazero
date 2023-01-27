@@ -7,9 +7,8 @@ import java.io.IOException;
 
 public abstract class Neo4JHandler
 {
-    protected static final String BASE = "neo4j/";
-    protected static final String HOME = BASE + "neo4j-server/";
-    protected static final String HOME_IMPORT = HOME + "import/";
+    protected static final String BASE = "/scripts/";
+    protected static final String HOME = "./";
     protected static final String KG_DIR = BASE + "kg/";
     protected static final String CONFIG_FILE = BASE + "config.properties";
 

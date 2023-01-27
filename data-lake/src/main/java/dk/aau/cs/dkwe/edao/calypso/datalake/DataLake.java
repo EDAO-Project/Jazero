@@ -57,7 +57,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     private static EmbeddingsIndex<String> embeddingsIndex;
     private static EndpointAnalysis analysis;
     private static final int THREADS = 4;
-    private static final File DATA_DIR = new File("../knowledge-graph/neo4j/mappings/");
+    private static final File DATA_DIR = new File("/index/mappings/");
 
     @Override
     public void customize(ConfigurableWebServerFactory factory)
