@@ -99,7 +99,7 @@ public class Neo4JWriter extends Neo4JHandler implements IndexIO
 
             int exitCode;
             Runtime rt = Runtime.getRuntime();
-            Process process = rt.exec("./" + INSERT_LINKS_SCRIPT + " " + Neo4JHandler.HOME + " " + linksFolder);
+            Process process = rt.exec("docker exec jazero_neo4j " + INSERT_LINKS_SCRIPT + " " + Neo4JHandler.HOME + " " + linksFolder);
 
             if ((exitCode = process.waitFor()) != 0)
             {
