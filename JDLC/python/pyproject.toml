@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling", "requests", "shutils", "simplejson", "argparse"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jdlc"
+version = "0.1.0"
+authors = [
+    { name="Martin Pekár", email="mpch@cs.aau.dk" },
+]
+description = "JDLC Python package for interacting with the Jazero semantic data lake."
+readme = "README.md"
+requires-python = ">=3.6"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/EDAO-Project/Jazero"
+"Bug Tracker" = "https://github.com/EDAO-Project/Jazero/issues"

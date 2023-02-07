@@ -134,14 +134,12 @@ Loading a table corpus of 200,000 tables will take approximately 34 hours.
 The repository for the connector to communicate with Jazero can be found <a href="https://github.com/EDAO-Project/Jazero/tree/main/CDLC">here</a>.
 There is both a Java connector and Python connector.
 
+To use the Python connector, following <a href="https://github.com/EDAO-Project/Jazero/blob/main/JDLC/python/README.md">these</a> instructions.
+Remember to run the methods to insert tables and embeddings on the machine running Jazero. Only searching can be performed remotely.
+
 To use the Java connector, build the CDLC library .jar file with Maven and Java 17 running `mvn clean install` in the `CDLC` folder.
 The .jar file can be found in the `target` folder and can now be included in your project.
 This also needs to be done in the folders `data-lake`, `storage`, and `communication`.
-
-The Python connector can be found in the `cdlc.py` file <a href="https://github.com/EDAO-Project/Jazero/tree/main/CDLC/python">here</a>.
-Import the `Connector` class and initialize it with a host name as constructor argument, such as `localhost`, `127.0.0.1`, or something else if you want to connect to Jazero from another machine.
-You can use the Python connector directly from the terminal. Just run `python cdlc.py -h` to see commands.
-Remember to run the methods to insert tables and embeddings on the machine running Jazero. Only searching can be performed remotely.
 
 ##### Loading in Java
 Once the Java CDLC .jar library file has been included in your project, use the class `CDLC` to communicate with Jazero.

@@ -7,7 +7,7 @@ RUN apt install python3 pip git -y
 RUN python3 -m pip install Django tzdata requests
 
 COPY api/jdlc_web/ jdlc_web/
-COPY jdlc.py jdlc_web/jdlc/
+COPY jdlc/jdlc.py jdlc_web/jdlc/
 
 WORKDIR jdlc_web/
 
