@@ -79,14 +79,9 @@ public class KGService extends Service
             return response.getResponseCode() == HttpStatus.OK.value();
         }
 
-        catch (MalformedURLException e)
-        {
-            throw new RuntimeException("URL for EKG Manager to retrieve entity types is malformed: " + e.getMessage());
-        }
-
         catch (IOException e)
         {
-            throw new RuntimeException("IOException when sending POST request to insert table links: " + e.getMessage());
+            return false;
         }
     }
 
