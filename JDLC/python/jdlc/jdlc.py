@@ -36,7 +36,7 @@ class Connector:
         j = json.loads(content)
         req = requests.post(self.__host + ':' + str(self.__sdlPort) + '/embeddings', json = j)
 
-        os.remove('/home/' + self.__TABLES_MOUNT + '/' + embeddingsFile.split('/')[-1])
+        os.remove(mountedPath + '/' + embeddingsFile.split('/')[-1])
 
         if (req.status_code != 200):
             return 'Failed inserting embeddings: ' + req.text
