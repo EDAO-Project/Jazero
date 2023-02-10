@@ -13,7 +13,7 @@ Then, start an instance by running the following command:
 
 The first time you start an instance, the entity linker will construct its indexes which will take around 1 hour for a 10GB KG dataset.
 
-The following command will populate the KG with your KG files.
+The following command will install the necessary plugins.
 This can run in parallel with the index construction in the entity linker.
 
 ```bash

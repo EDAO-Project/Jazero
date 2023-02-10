@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Type;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Configuration;
+import dk.aau.cs.dkwe.edao.calypso.datalake.system.Logger;
 import dk.aau.cs.dkwe.edao.calypso.knowledgegraph.connector.Neo4jEndpoint;
 import dk.aau.cs.dkwe.edao.calypso.knowledgegraph.middleware.Neo4JHandler;
 import dk.aau.cs.dkwe.edao.calypso.knowledgegraph.middleware.Neo4JReader;
@@ -58,6 +59,7 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
     @GetMapping("/ping")
     public ResponseEntity<String> ping()
     {
+        Logger.log(Logger.Level.INFO, "PING");
         return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body("pong");
     }
 

@@ -20,8 +20,8 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * Calypso Data Lake Connector (CDLC)
- * Connector class to communicate with Calypso
+ * Jazero Data Lake Connector (CDLC)
+ * Connector class to communicate with Jazerp
  */
 public class CDLC implements Connector
 {
@@ -75,7 +75,7 @@ public class CDLC implements Connector
     }
 
     /**
-     * Perform table search in Calypso
+     * Perform table search in Jazero
      * @param k The Top-K value
      * @param scoringType Either use Jaccard of RDF types or embeddings representation of entities using different similarity functions on Cosine similarity
      * @param query The query itself
@@ -130,26 +130,26 @@ public class CDLC implements Connector
 
         catch (IOException e)
         {
-            throw new RuntimeException("Failed searching Calypso: " + e.getMessage());
+            throw new RuntimeException("Failed searching Jazero: " + e.getMessage());
         }
     }
 
     /**
-     * Insertion of JSON tables into Calypso
-     * Copies the tables into a directory mounted to a shared Calypso directory
-     * This call must be executed locally on the machine hosting Calypso to avoid transferring all files to a remote machine
-     * @param tablesDir Directory of tables to be loaded into Calypso
-     * @param calypsoDir Directory path to Calypso repository
+     * Insertion of JSON tables into Jazero
+     * Copies the tables into a directory mounted to a shared Jazero directory
+     * This call must be executed locally on the machine hosting Jazero to avoid transferring all files to a remote machine
+     * @param tablesDir Directory of tables to be loaded into Jazero
+     * @param jazeroDir Directory path to Jazero repository
      * @param storageType Type of storage that the tables will be stored in
      * @param tableEntityPrefix
      * @param kgEntityPrefix
      * @return Indexing statistics
      */
     @Override
-    public Map<String, Double> insert(File tablesDir, File calypsoDir, StorageHandler.StorageType storageType, String tableEntityPrefix, String kgEntityPrefix)
+    public Map<String, Double> insert(File tablesDir, File jazeroDir, StorageHandler.StorageType storageType, String tableEntityPrefix, String kgEntityPrefix)
     {
         String relativeTablesDir = RELATIVE_MOUNT + "/tables";
-        String sharedDir = calypsoDir.getAbsolutePath() + "/" + relativeTablesDir;
+        String sharedDir = jazeroDir.getAbsolutePath() + "/" + relativeTablesDir;
 
         try
         {
@@ -158,7 +158,7 @@ public class CDLC implements Connector
 
         catch (IOException e)
         {
-            throw new RuntimeException("Failed copying tables in directory '" + tablesDir + "' to mounted Calypso directory '" + sharedDir + "'");
+            throw new RuntimeException("Failed copying tables in directory '" + tablesDir + "' to mounted Jazero directory '" + sharedDir + "'");
         }
 
         Map<String, String> headers = new HashMap<>();
@@ -166,7 +166,7 @@ public class CDLC implements Connector
         headers.put("Storage-Type", storageType.name());
 
         JsonObject json = new JsonObject();
-        json.addProperty("directory", "/home/Calypso/" + relativeTablesDir);
+        json.addProperty("directory", "/home/Jazero/" + relativeTablesDir);
         json.addProperty("table-prefix", tableEntityPrefix);
         json.addProperty("kg-prefix", kgEntityPrefix);
 
@@ -191,7 +191,7 @@ public class CDLC implements Connector
 
         catch (IOException e)
         {
-            throw new RuntimeException("Failed inserting tables into Calypso: " + e.getMessage());
+            throw new RuntimeException("Failed inserting tables into Jazero: " + e.getMessage());
         }
     }
 
@@ -206,19 +206,19 @@ public class CDLC implements Connector
     }
 
     /**
-     * Inserts embeddings into Calypso
+     * Inserts embeddings into Jazero
      * Embeddings file must be formatted so each entity and its embeddings are on one line
      * Each line starts with the entity following by its embedding values, all separated by the same delimiter (including the entity)
-     * This call must be executed locally on the machine hosting Calypso to avoid transferring embeddings to a remote machine
-     * @param calypsoDir Path to Calypso repository
+     * This call must be executed locally on the machine hosting Jazero to avoid transferring embeddings to a remote machine
+     * @param jazeroDir Path to Jazero repository
      * @param embeddingsFile The embeddings file
      * @param delimiter Delimiter string
      * @return Statistics about number of loaded entities and disk memory produced from loading embeddings
      */
     @Override
-    public Map<String, Double> insertEmbeddings(File calypsoDir, File embeddingsFile, String delimiter)
+    public Map<String, Double> insertEmbeddings(File jazeroDir, File embeddingsFile, String delimiter)
     {
-        String mountedPath = calypsoDir.getAbsolutePath() + "/" + RELATIVE_MOUNT, kgDir = "/home/" + RELATIVE_MOUNT;
+        String mountedPath = jazeroDir.getAbsolutePath() + "/" + RELATIVE_MOUNT, kgDir = "/home/" + RELATIVE_MOUNT;
 
         try
         {
@@ -227,7 +227,7 @@ public class CDLC implements Connector
 
         catch (IOException e)
         {
-            throw new RuntimeException("Failed copying embeddings file '" + embeddingsFile + "' to mounted Calypso directory '" + mountedPath + "'");
+            throw new RuntimeException("Failed copying embeddings file '" + embeddingsFile + "' to mounted Jazero directory '" + mountedPath + "'");
         }
 
         Map<String, String> headers = new HashMap<>();
@@ -257,7 +257,7 @@ public class CDLC implements Connector
 
         catch (IOException e)
         {
-            throw new RuntimeException("Failed inserting embeddings into Calypso: " + e.getMessage());
+            throw new RuntimeException("Failed inserting embeddings into Jazero: " + e.getMessage());
         }
     }
 }

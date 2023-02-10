@@ -26,7 +26,7 @@ services:
       context: .
       dockerfile: knowledge-graph/Dockerfile
     volumes:
-      - ./knowledge-graph/neo4j/:/home/knowledge-graph/neo4j
+      - ./knowledge-graph/neo4j/:/scripts
       - ./index/:/index
       - ./kg:/home/kg
   embeddings:

@@ -8,9 +8,6 @@ input=$2
 export NEO4J_HOME=$neo4j
 export NEO4J_IMPORT=${NEO4J_HOME}"/import"
 
-NEOSEM_VERSION=4.1.0.1
-NEOSEM_FILE=neosemantics-${NEOSEM_VERSION}.jar
-
 ulimit -n 65535
 
 echo "Creating index"

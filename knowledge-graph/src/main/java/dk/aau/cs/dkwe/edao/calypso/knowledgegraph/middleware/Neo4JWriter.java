@@ -87,16 +87,6 @@ public class Neo4JWriter extends Neo4JHandler implements IndexIO
 
         try
         {
-            File[] linkFiles = links.listFiles();
-
-            if (linkFiles != null)
-            {
-                for (File f : linkFiles)
-                {
-                    f.delete();
-                }
-            }
-
             int exitCode;
             Runtime rt = Runtime.getRuntime();
             Process process = rt.exec("docker exec jazero_neo4j " + INSERT_LINKS_SCRIPT + " " + Neo4JHandler.HOME + " " + linksFolder);
