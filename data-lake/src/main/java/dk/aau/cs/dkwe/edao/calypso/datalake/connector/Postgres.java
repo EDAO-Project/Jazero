@@ -66,7 +66,6 @@ public class Postgres implements DBDriver<ResultSet, String>, ExplainableCause
             Statement stmt = this.connection.createStatement();
             stmt.executeUpdate(query);
             stmt.close();
-            commit();
 
             return true;
         }
@@ -74,7 +73,6 @@ public class Postgres implements DBDriver<ResultSet, String>, ExplainableCause
         catch (SQLException e)
         {
             setError(e.getMessage(), e.getStackTrace());
-            commit();
             return false;
         }
     }
