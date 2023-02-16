@@ -5,7 +5,7 @@ Welcome to Jazero: A semantic data lake microservice architecture for semantical
 Make sure to have docker-compose version 2+ installed.
 
 First, create a folder `kg` in the parent directory and move your knowledge graph (KG) files here.
-<u>Jazero only supports .ttl (Turtle) files</u>.
+**Jazero only supports .ttl (Turtle) files**.
 Then, start an instance by running the following command:
 
 ```bash
