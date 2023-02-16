@@ -438,4 +438,21 @@ public class Neo4jEndpoint implements AutoCloseable
             return caption;
         }
     }
+
+    public boolean insertFile(File file)
+    {
+        try (Session session = this.driver.session())
+        {
+            session.writeTransaction(tx ->
+                    tx.run("CALL n10s.rdf.import.fetch(\"file:///" +
+                            file.getAbsolutePath() + "\",\"Turtle\")"));
+
+            return true;
+        }
+
+        catch (Exception e)
+        {
+            return false;
+        }
+    }
 }

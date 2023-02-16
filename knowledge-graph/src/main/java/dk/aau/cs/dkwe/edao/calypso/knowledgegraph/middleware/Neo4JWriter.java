@@ -1,6 +1,7 @@
 package dk.aau.cs.dkwe.edao.calypso.knowledgegraph.middleware;
 
 import dk.aau.cs.dkwe.edao.calypso.datalake.loader.IndexIO;
+import dk.aau.cs.dkwe.edao.calypso.knowledgegraph.connector.Neo4jEndpoint;
 
 import java.io.File;
 import java.io.IOException;
@@ -71,7 +72,7 @@ public class Neo4JWriter extends Neo4JHandler implements IndexIO
      *                     necessary script files or folder do not exist,
      *                     or when an error occurs when running the scripts
      */
-    public static void insertTableToEntities(String linksFolder) throws IOException
+    public static void insertTableToEntities(String linksFolder, Neo4jEndpoint endpoint) throws IOException
     {
         File links = new File(linksFolder);
 
@@ -85,21 +86,17 @@ public class Neo4JWriter extends Neo4JHandler implements IndexIO
             throw new IOException("Folder of table links could not be found");
         }
 
-        try
+        else if (links.listFiles() == null)
         {
-            int exitCode;
-            Runtime rt = Runtime.getRuntime();
-            Process process = rt.exec(INSERT_LINKS_SCRIPT + " " + Neo4JHandler.HOME + " " + linksFolder);
-
-            if ((exitCode = process.waitFor()) != 0)
-            {
-                throw new IOException("Table links insertion did not complete: exit code " + exitCode);
-            }
+            throw new IOException("There are no files in folder");
         }
 
-        catch (InterruptedException e)
+        for (File file : links.listFiles())
         {
-            throw new IOException("Table links insertion was interrupted");
+            if (!endpoint.insertFile(file))
+            {
+                throw new IOException("Failed inserting file '" + file.getAbsolutePath() + "'");
+            }
         }
     }
 }

@@ -144,7 +144,7 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
 
         try
         {
-            Neo4JWriter.insertTableToEntities(body.get("folder"));
+            Neo4JWriter.insertTableToEntities(body.get("folder"), endpoint);
             return ResponseEntity.ok().build();
         }
 
