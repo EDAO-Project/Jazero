@@ -382,7 +382,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
             if (!kgService.insertLinks(DATA_DIR))
             {
-                Logger.log(Logger.Level.ERROR, "Failed inserting generated TTL mapping files into KG service");
+                FileLogger.log(FileLogger.Service.EKG_Manager, "Failed inserting Turtle mapping files into the EKG service");
+                Logger.log(Logger.Level.ERROR, "Failed inserting generated TTL mapping files into the EKG service");
             }
 
             Set<Type> entityTypes = new HashSet<>();
