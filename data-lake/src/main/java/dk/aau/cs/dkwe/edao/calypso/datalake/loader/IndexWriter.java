@@ -276,7 +276,7 @@ public class IndexWriter implements IndexIO
         if (jTable.numNumericCols == jTable.numCols)
             tableColumnsIsNumeric = new ArrayList<>(Collections.nCopies(jTable.numCols, true));
 
-        else
+        else if (!jTable.rows.isEmpty())
         {
             int colId = 0;
 
