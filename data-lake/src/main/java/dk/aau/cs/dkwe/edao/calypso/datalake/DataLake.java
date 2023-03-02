@@ -374,7 +374,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                     "' or '" + StorageHandler.StorageType.HDFS.name() + "'");
         }
 
-        else if (!headers.containsKey("Signature-Size") || !headers.containsKey("Band-Size"))
+        else if (!headers.containsKey("signature-size") || !headers.containsKey("band-size"))
         {
             return ResponseEntity.badRequest().body("Missing LSH parameters ('Signature-Size', 'Band-Size')");
         }
