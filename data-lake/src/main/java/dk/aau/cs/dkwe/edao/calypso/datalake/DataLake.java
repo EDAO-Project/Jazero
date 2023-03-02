@@ -235,11 +235,6 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             {
                 prefilter = new Prefilter(linker, entityTable, tableLink, embeddingsIndex, embeddingLSH);
             }
-
-            else
-            {
-                return ResponseEntity.badRequest().body("Unrecognized type of LSH pre-filtering (choose between 'TYPES' and 'EMBEDDINGS')");
-            }
         }
 
         Table<String> query = new DynamicTable<>();

@@ -48,7 +48,7 @@ class Connector:
     # storageType: Type of storage of tables in Jazero (must be one of 'native' and 'hdfs')
     # tableEntityPrefix: Prefix string of entities in the tables (if not all table entities share the same prefix, don't specify this parameter)
     # kgEntityPrefix: Prefix string of entities in the knowledge graph (if not all KG entities share the same prefix, don't specify this parameter)
-    def insert(self, tablesDir, jazeroDir, storageType, tableEntityPrefix = '', kgEntityPrefix = ''):
+    def insert(self, tablesDir, jazeroDir, storageType, tableEntityPrefix = '', kgEntityPrefix = '', signatureSize = 30, bandSize = 10):
         relativeTablesDir = self.__RELATIVE_TABLES
         sharedDir = jazeroDir + "/" + relativeTablesDir
 
@@ -57,7 +57,7 @@ class Connector:
 
         shutil.copytree(tablesDir, sharedDir, dirs_exist_ok = True)
 
-        headers = {'Content-Type': 'application/json', 'Storage-Type': storageType}
+        headers = {'Content-Type': 'application/json', 'Storage-Type': storageType, 'Signature-Size': signatureSize, 'Band-Size': bandSize}
         content = '{"directory": "' + self.__TABLES_MOUNT + '", "table-prefix": "' + tableEntityPrefix + '", "kg-prefix": "' + kgEntityPrefix + '"}'
         j = json.loads(content)
         req = requests.post(self.__host + ':' + str(self.__sdlPort) + '/insert', json = j, headers = headers)
@@ -71,7 +71,7 @@ class Connector:
     # scoringType: Type of scoring pairs of tables (must be one of 'TYPE', 'COSINE_NORM', 'COSINE_ABS', 'COSINE_ANG')
     # similarityMeasure: Type of similarity measurement of between vectors of entity scores using a scoring type (must be one of 'EUCLIDEAN', 'COSINE')
     # query: A table query of entity string representations
-    def search(self, topK, scoringType, query, similarityMeasure = 'EUCLIDEAN'):
+    def search(self, topK, scoringType, query, similarityMeasure = 'EUCLIDEAN', prefilter = ''):
         useEmbeddings = 'true'
         cosFunction = scoringType.split('_')[-1] + '_COS'
 
@@ -80,7 +80,8 @@ class Connector:
 
         content = '{"top-k": "' + str(topK) + '", "use-embeddings": "' + useEmbeddings + '", "cosine-function": "' + cosFunction + \
                   '", "single-column-per-query-entity": "true", "weighted-jaccard": "false", "adjusted-jaccard": "true", ' + \
-                  '"use-max-similarity-per-column": "true", "similarity-measure": "' + similarityMeasure + '", "query": "' + self.__toString(query) + '"}'
+                  '"use-max-similarity-per-column": "true", "similarity-measure": "' + similarityMeasure + '", "lsh": "' + \
+                  prefilter + '", "query": "' + self.__toString(query) + '"}'
         j = json.loads(content)
         req = requests.post(self.__host + ':' + str(self.__sdlPort) + '/search', json = j)
 
@@ -146,6 +147,9 @@ if __name__ == '__main__':
     parser.add_argument('-kgp', '--kgentityprefix', metavar = 'KGEntityPrefix', type = str, help = 'Prefix of KG entity IRIs', required = False, default = '')
     parser.add_argument('-e', '--embeddings', metavar = 'Embeddings', type = str, help = 'Absolute path to embeddings file on the machine running Jazero', required = False)
     parser.add_argument('-d', '--delimiter', metavar = 'Delimiter', type = str, help = 'Delimiter in embeddings file (see README)', required = False, default = ' ')
+    parser.add_argument('-ss', '--signaturesize', metavar = 'SignatureSize', type = str, help = 'Size of signature or number of permutation/projection vectors', required = False, default = '30')
+    parser.add_argument('-bs', '--bandsize', metavar = 'BandSize', type = str, help = 'Size of signature bands', required = False, default = '10')
+    parser.add_argument('-pf', '--prefilter', metavar = 'Prefilter', type = str, help = 'Type of LSH pre-filter', required = False, default = '')
 
     args = parser.parse_args()
     host = args.host
@@ -163,6 +167,7 @@ if __name__ == '__main__':
         scoringType = args.scoringtype
         topK = int(args.topk)
         similarityMeasure = args.similaritymeasure
+        prefilter = args.prefilter
         query = []
 
         if (queryFile == None):
@@ -184,7 +189,7 @@ if __name__ == '__main__':
 
                 query.append(rowData)
 
-        output = conn.search(topK, scoringType, query, similarityMeasure)
+        output = conn.search(topK, scoringType, query, similarityMeasure, prefilter)
 
     elif (op == 'insert'):
         location = args.location
@@ -192,6 +197,8 @@ if __name__ == '__main__':
         storageType = args.storagetype
         tableEntityPrefix = args.tableentityprefix
         kgEntityPrefix = args.kgentityprefix
+        signatureSize = args.signaturesize
+        bandSize = args.bandsize
 
         if (location == None):
             print('Missing table corpus location')
@@ -201,7 +208,7 @@ if __name__ == '__main__':
             print('Missing directory of Jazero repository')
             exit(1)
 
-        output = conn.insert(location, jazero, storageType, tableEntityPrefix, kgEntityPrefix)
+        output = conn.insert(location, jazero, storageType, tableEntityPrefix, kgEntityPrefix, signatureSize, bandSize)
 
     elif (op == 'loadembeddings'):
         jazero = args.jazerodir
