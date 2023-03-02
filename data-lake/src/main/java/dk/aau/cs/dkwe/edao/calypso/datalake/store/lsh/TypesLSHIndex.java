@@ -1,10 +1,10 @@
 package dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh;
 
-import dk.aau.cs.dkwe.edao.calypso.datalake.connector.service.KGService;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.PairNonComparable;
+import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Type;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.Aggregator;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.ColumnAggregator;
@@ -32,7 +32,7 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
     private transient int threads;
     private transient final Object lock = new Object();
     private transient EntityLinking linker = null;
-    private transient KGService kg;
+    private transient EntityTable entityTable = null;
     private final Map<Id, Integer> entityToSigIndex = new HashMap<>();
     private boolean aggregateColumns;
     private Set<String> unimportantTypes;
@@ -46,7 +46,7 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
      */
     public TypesLSHIndex(int permutationVectors, int bandSize, int shingleSize,
                          Set<PairNonComparable<String, Table<String>>> tables, HashFunction hash, int bucketGroups,
-                         int bucketCount, int threads, EntityLinking linker, KGService kgService, EntityTable entityTable,
+                         int bucketCount, int threads, EntityLinking linker, EntityTable entityTable,
                          boolean aggregateColumns)
     {
         super(bucketGroups, bucketCount);
@@ -68,11 +68,11 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
         this.hash = hash;
         this.threads = threads;
         this.linker = linker;
-        this.kg = kgService;
+        this.entityTable = entityTable;
         this.aggregateColumns = aggregateColumns;
 
         Set<Table<String>> linkedTables = tables.stream().map(PairNonComparable::getSecond).collect(Collectors.toSet());
-        loadTypes(entityTable, linkedTables, linker);
+        loadTypes(linkedTables, linker);
 
         try
         {
@@ -90,16 +90,16 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
         this.linker = linker;
     }
 
-    public void useKGService(KGService kgService)
+    public void useEntityTable(EntityTable entityTable)
     {
-        this.kg = kgService;
+        this.entityTable = entityTable;
     }
 
-    private void loadTypes(EntityTable entityTable, Set<Table<String>> linkedTables, EntityLinking linker)
+    private void loadTypes(Set<Table<String>> linkedTables, EntityLinking linker)
     {
         int counter = 0;
         this.universeTypes = new HashMap<>();
-        Iterator<Type> types = entityTable.allTypes();
+        Iterator<Type> types = this.entityTable.allTypes();
 
         while (types.hasNext())
         {
@@ -111,7 +111,7 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
             }
         }
 
-        this.unimportantTypes = new TypeStats(entityTable).popularByTable(UNIMPORTANT_TABLE_PERCENTAGE,
+        this.unimportantTypes = new TypeStats(this.entityTable).popularByTable(UNIMPORTANT_TABLE_PERCENTAGE,
                 linkedTables, linker);
     }
 
@@ -199,7 +199,7 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
         List<PairNonComparable<Id, Set<Integer>>> matrix = new ArrayList<>();
         Aggregator<String> aggregator = new ColumnAggregator<>(table);
         List<Set<String>> aggregatedColumns =
-                aggregator.aggregate(cell -> new HashSet<>(this.kg.searchTypes(cell)),
+                aggregator.aggregate(cell -> types(cell),
                         coll -> {
                             Set<String> types = new HashSet<>();
                             coll.forEach(types::addAll);
@@ -250,7 +250,7 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
 
     private Set<Integer> bitVector(String entity)
     {
-        Set<String> types = new HashSet<>(this.kg.searchTypes(entity));
+        Set<String> types = types(entity);
         return bitVector(types);
     }
 
@@ -277,6 +277,25 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
         }
 
         return indices;
+    }
+
+    private Set<String> types(String entity)
+    {
+        Id id = this.linker.uriLookup(entity);
+
+        if (id == null)
+        {
+            return new HashSet<>();
+        }
+
+        Entity e = this.entityTable.find(id);
+
+        if (e == null)
+        {
+            return new HashSet<>();
+        }
+
+        return e.getTypes().stream().map(Type::getType).collect(Collectors.toSet());
     }
 
     private static List<List<Integer>> createPermutations(int vectors, int dimension)
@@ -402,9 +421,9 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
             throw new RuntimeException("No EntityLinker object has been specified");
         }
 
-        else if (this.kg == null)
+        else if (this.entityTable == null)
         {
-            throw new RuntimeException("You must initialize KG service (call useKGService())");
+            throw new RuntimeException("No EntityTable object has been specified");
         }
 
         Id entityId = this.linker.uriLookup(entity);
@@ -463,9 +482,9 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
             throw new RuntimeException("No EntityLinker object has been specified");
         }
 
-        else if (this.kg == null)
+        else if (this.entityTable == null)
         {
-            throw new RuntimeException("You must initialize KG service (call useKGService())");
+            throw new RuntimeException("No EntityTable object has been specified");
         }
 
         int entitySignatureIdx = createOrGetSignature(entity);
@@ -505,16 +524,16 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
             throw new RuntimeException("No EntityLinker object has been specified");
         }
 
-        else if (this.kg == null)
+        else if (this.entityTable == null)
         {
-            throw new RuntimeException("You must initialize KG service (call useKGService())");
+            throw new RuntimeException("No EntityTable object has been specified");
         }
 
         Set<String> mergedTypes = new HashSet<>();
 
         for (String key : keys)
         {
-            mergedTypes.addAll(this.kg.searchTypes(key));
+            mergedTypes.addAll(types(key));
         }
 
         Set<Integer> aggregatedBitVector = bitVector(mergedTypes);

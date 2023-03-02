@@ -98,9 +98,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 typesLSH = indexReader.getTypesLSH();
                 embeddingLSH = indexReader.getVectorsLSH();
 
-                KGService kg = new KGService(Configuration.getEKGManagerHost(), Configuration.getEKGManagerPort());
                 typesLSH.useEntityLinker(linker);
-                typesLSH.useKGService(kg);
+                typesLSH.useEntityTable(entityTable);
                 embeddingLSH.useEntityLinker(linker);
                 embeddingLSH.useEmbeddingIndex(embeddingsIndex);
             }
