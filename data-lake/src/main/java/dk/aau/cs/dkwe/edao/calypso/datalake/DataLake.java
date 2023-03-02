@@ -415,7 +415,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 Logger.log(Logger.Level.ERROR, "KG is empty. Make sure to load the KG according to README. Continuing...");
             }
 
-            int signatureSize = Integer.valueOf(body.get("Signature-Size")), bandSize = Integer.valueOf(body.get("Band-Size"));
+            int signatureSize = Integer.valueOf(headers.get("signature-size")), bandSize = Integer.valueOf(headers.get("band-size"));
             Stream<Path> fileStream = Files.find(dir.toPath(), Integer.MAX_VALUE,
                     (filePath, fileAttr) -> fileAttr.isRegularFile() && filePath.getFileName().toString().endsWith(".json"));
             List<Path> filePaths = fileStream.collect(Collectors.toList());
