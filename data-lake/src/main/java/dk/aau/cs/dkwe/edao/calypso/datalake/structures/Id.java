@@ -42,6 +42,11 @@ public record Id(int id) implements Serializable, Comparable<Id>
         return new IdAllocator().allocId();
     }
 
+    public static Id any()
+    {
+        return new Id(-1);
+    }
+
     public Id(int id)
     {
         this.id = id;

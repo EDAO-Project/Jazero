@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
 import com.google.gson.TypeAdapter;
@@ -16,8 +17,8 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.similarity.CosineSimilarity;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.Table;
 import dk.aau.cs.dkwe.edao.calypso.datalake.tables.JsonTable;
 
-public class Utils {
-
+public class Utils
+{
     /**
      * Returns the JsonTable from a path to the json file
      * @param path: Path to the Json file corresponding to a table
@@ -48,6 +49,37 @@ public class Utils {
 
         return table;
     }
+
+    public static List<Double> averageVector(List<List<Double>> vec)
+    {
+        if (vec.isEmpty())
+        {
+            return List.of();
+        }
+
+        List<Double> avgVec = new ArrayList<>(Collections.nCopies(vec.get(0).size(), 0.0));
+
+        for (int vector = 0; vector < vec.size(); vector++)
+        {
+            if (vec.get(vector).size() != avgVec.size())
+            {
+                throw new IllegalArgumentException("Dimension mis-match when computing average vector");
+            }
+
+            for (int row = 0; row < vec.get(vector).size(); row++)
+            {
+                avgVec.set(row, avgVec.get(row) + vec.get(vector).get(row));
+            }
+        }
+
+        for (int i = 0; i < avgVec.size(); i++)
+        {
+            avgVec.set(i, avgVec.get(i) / vec.size());
+        }
+
+        return avgVec.stream().map(val -> val / vec.size()).collect(Collectors.toList());
+    }
+
 
     /**
      * Returns the average vector given a row of vector scores

@@ -11,11 +11,13 @@ public class EmbeddingsIndex<C> implements ClusteredIndex<C, Id, List<Double>>, 
 {
     private final Map<Id, List<Double>> embeddingsMap = new ConcurrentHashMap<>();
     private Map<C, Map<Id, List<Double>>> clusteredEmbeddings = new ConcurrentHashMap<>();
+    private int dim;
 
     @Override
     public void insert(Id key, List<Double> value)
     {
         this.embeddingsMap.put(key, value);
+        this.dim = value.size();
     }
 
     @Override
@@ -92,5 +94,10 @@ public class EmbeddingsIndex<C> implements ClusteredIndex<C, Id, List<Double>>, 
         }
 
         return null;
+    }
+
+    public int getDimension()
+    {
+        return this.dim;
     }
 }

@@ -67,6 +67,8 @@ public class TableSearch extends AbstractSearch
     private Map<String, Stats> tableStats = new TreeMap<>();
     private final Object lock = new Object();
     private StorageHandler storage;
+    private Prefilter prefilter;
+    private Set<File> filteredCorpus = null;
 
     public TableSearch(StorageHandler tableStorage, EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
                        EmbeddingsIndex<String> embeddingIdx, int topK, int threads, boolean useEmbeddings,
@@ -88,9 +90,35 @@ public class TableSearch extends AbstractSearch
         this.storage = tableStorage;
     }
 
+    public TableSearch(StorageHandler tableStorage, EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
+                       EmbeddingsIndex<String> embeddingIdx, int topK, int threads, boolean useEmbeddings,
+                       CosineSimilarityFunction cosineFunction, boolean singleColumnPerQueryEntity, boolean weightedJaccard,
+                       boolean adjustedJaccard, boolean useMaxSimilarityPerColumn, boolean hungarianAlgorithmSameAlignmentAcrossTuples,
+                       SimilarityMeasure similarityMeasure, Prefilter prefilter)
+    {
+        this(tableStorage, linker, entityTable, entityTableLink, embeddingIdx, topK, threads, useEmbeddings, cosineFunction, singleColumnPerQueryEntity,
+                weightedJaccard, adjustedJaccard, useMaxSimilarityPerColumn, hungarianAlgorithmSameAlignmentAcrossTuples,
+                similarityMeasure);
+        this.prefilter = prefilter;
+    }
+
     public void setCorpus(StorageHandler handler)
     {
         this.storage = handler;
+    }
+
+    private void prefilterSearchSpace(Table<String> query)
+    {
+        int initialSize = this.storage.count();
+        Iterator<Pair<File, Double>> res = this.prefilter.search(query).getResults();
+        this.filteredCorpus = new HashSet<>();
+
+        while (res.hasNext())
+        {
+            this.filteredCorpus.add(res.next().first());
+        }
+
+        this.reduction = initialSize > 0 ? (1 - ((double) this.filteredCorpus.size() / initialSize)) : 0;
     }
 
     /**
@@ -103,7 +131,11 @@ public class TableSearch extends AbstractSearch
     {
         long start = System.nanoTime();
 
-        // TODO: Perform pre-filtering here
+        if (this.prefilter != null)
+        {
+            prefilterSearchSpace(query);
+            Logger.log(Logger.Level.INFO, "Pre-filtered corpus in " + this.prefilter.elapsedNanoSeconds() + "ns");
+        }
 
         try
         {
@@ -111,6 +143,11 @@ public class TableSearch extends AbstractSearch
             ExecutorService threadPool = Executors.newFixedThreadPool(this.threads);
             List<Future<Pair<File, Double>>> parsed = new ArrayList<>(this.storage.count());
             Set<File> tableFiles = this.storage.elements();
+
+            if (this.filteredCorpus != null)
+            {
+                tableFiles = this.filteredCorpus;
+            }
 
             for (File f : tableFiles)
             {

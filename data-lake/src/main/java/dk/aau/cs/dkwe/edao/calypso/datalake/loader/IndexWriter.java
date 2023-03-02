@@ -10,8 +10,12 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.connector.service.KGService;
 import dk.aau.cs.dkwe.edao.calypso.datalake.parser.ParsingException;
 import dk.aau.cs.dkwe.edao.calypso.datalake.parser.TableParser;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.*;
+import dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh.HashFunction;
+import dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh.TypesLSHIndex;
+import dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh.VectorLSHIndex;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Pair;
+import dk.aau.cs.dkwe.edao.calypso.datalake.structures.PairNonComparable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Type;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.DynamicTable;
@@ -48,16 +52,43 @@ public class IndexWriter implements IndexIO
     private SynchronizedIndex<Id, Entity> entityTable;
     private SynchronizedIndex<Id, List<String>> entityTableLink;
     private SynchronizedIndex<Id, List<Double>> embeddingsIdx;
+    private TypesLSHIndex typesLSH;
+    private VectorLSHIndex embeddingsLSH;
     private DBDriverBatch<List<Double>, String> embeddingsDB;
     private BloomFilter<String> filter = BloomFilter.create(
             Funnels.stringFunnel(Charset.defaultCharset()),
             5_000_000,
             0.01);
     private final Map<String, Stats> tableStats = new TreeMap<>();
+    private final Set<PairNonComparable<String, Table<String>>> tableEntities = Collections.synchronizedSet(new HashSet<>());
 
     private static final List<String> DISALLOWED_ENTITY_TYPES =
             Arrays.asList("http://www.w3.org/2002/07/owl#Thing", "http://www.wikidata.org/entity/Q5");
     private static final String STATS_DIR = "statistics/";
+
+    private static final HashFunction HASH_FUNCTION_NUMERIC = (obj, num) -> {
+        List<Integer> sig = (List<Integer>) obj;
+        int sum1 = 0, sum2 = 0, size = sig.size();
+
+        for (int i = 0; i < size; i++)
+        {
+            sum1 = (sum1 + sig.get(i)) % 255;
+            sum2 = (sum2 + sum1) % 255;
+        }
+
+        return ((sum2 << 8) | sum1) % num;
+    };
+    private static final HashFunction HASH_FUNCTION_BOOLEAN = (obj, num) -> {
+        List<Integer> vector = (List<Integer>) obj;
+        int sum = 0, dim = vector.size();
+
+        for (int i = 0; i < dim; i++)
+        {
+            sum += vector.get(i) * Math.pow(2, i);
+        }
+
+        return sum % num;
+    };
 
     public IndexWriter(List<Path> files, File indexPath, File dataOutputPath, StorageHandler.StorageType storageType, KGService kgService,
                        ELService elService, DBDriverBatch<List<Double>, String> embeddingStore, int threads, String wikiPrefix, String uriPrefix)
@@ -104,6 +135,9 @@ public class IndexWriter implements IndexIO
         Logger.log(Logger.Level.INFO, "Collecting IDF weights...");
         loadIDFs();
 
+        Logger.log(Logger.Level.INFO, "Building LSH indexes");
+        loadLSHIndexes();
+
         Logger.log(Logger.Level.INFO, "Writing indexes and stats on disk...");
         flushToDisk();
         writeStats();
@@ -113,6 +147,28 @@ public class IndexWriter implements IndexIO
         Logger.log(Logger.Level.INFO, "A total of " + this.loadedTables.get() + " tables were loaded");
         Logger.log(Logger.Level.INFO, "Elapsed time: " + this.elapsed / (1e9) + " seconds");
         Logger.log(Logger.Level.INFO, "Computing IDF weights...");
+    }
+
+    private void loadLSHIndexes()
+    {
+        int permutations = Configuration.getPermutationVectors(), bandSize = Configuration.getBandSize();
+        int bucketGroups = permutations / bandSize, bucketsPerGroup = (int) Math.pow(2, bandSize);
+
+        if (permutations % bandSize != 0)
+        {
+            throw new IllegalArgumentException("Number of permutation/projection vectors is not divisible by band size");
+        }
+
+        Logger.log(Logger.Level.INFO, "Loaded LSH index 0/2");
+        this.typesLSH = new TypesLSHIndex(permutations, bandSize, 2,
+                this.tableEntities, HASH_FUNCTION_NUMERIC, bucketGroups, bucketsPerGroup, this.threads, getEntityLinker(),
+                this.kg, getEntityTable(), false);
+
+        Logger.log(Logger.Level.INFO, "Loaded LSH index 1/2");
+
+        this.embeddingsLSH = new VectorLSHIndex(bucketGroups, bucketsPerGroup, permutations, bandSize, this.tableEntities,
+                this.threads, getEntityLinker(), getEmbeddingsIndex(), HASH_FUNCTION_BOOLEAN, false);
+        Logger.log(Logger.Level.INFO, "Loaded LSH index 2/2");
     }
 
     private boolean load(Path tablePath)
@@ -194,18 +250,7 @@ public class IndexWriter implements IndexIO
             row++;
         }
 
-        int rows = inputEntities.rowCount();
-
-        for (row = 0; row < rows; row++)
-        {
-            int columns = inputEntities.getRow(row).size();
-
-            for (int column = 0; column < columns; column++)
-            {
-
-            }
-        }
-
+        this.tableEntities.add(new PairNonComparable<>(tableName, inputEntities));
         saveStats(table, FilenameUtils.removeExtension(tableName), entities.iterator(), entityMatches);
         this.storage.insert(tablePath.toFile());
         return true;
@@ -407,6 +452,18 @@ public class IndexWriter implements IndexIO
         outputStream.flush();
         outputStream.close();
 
+        // LSH of entity types
+        outputStream = new ObjectOutputStream(new FileOutputStream(this.indexDir + "/" + Configuration.getTypesLSHIndexFile()));
+        outputStream.writeObject(this.typesLSH);
+        outputStream.flush();
+        outputStream.close();
+
+        // LSH of entity embeddings
+        outputStream = new ObjectOutputStream(new FileOutputStream(this.indexDir + "/" + Configuration.getEmbeddingsLSHFile()));
+        outputStream.writeObject(this.embeddingsLSH);
+        outputStream.flush();
+        outputStream.close();
+
         genNeo4jTableMappings();
     }
 
@@ -512,6 +569,24 @@ public class IndexWriter implements IndexIO
     public EmbeddingsIndex<String> getEmbeddingsIndex()
     {
         return (EmbeddingsIndex<String>) this.embeddingsIdx.getIndex();
+    }
+
+    /**
+     * Getter to LSH index of entity types
+     * @return Entity types-based LSH index
+     */
+    public TypesLSHIndex getTypesLSH()
+    {
+        return this.typesLSH;
+    }
+
+    /**
+     * Getter to LSH index of entity embeddings
+     * @return Entity embeddings-based LSH index
+     */
+    public VectorLSHIndex getEmbeddingsLSH()
+    {
+        return this.embeddingsLSH;
     }
 
     public long getApproximateEntityMentions()

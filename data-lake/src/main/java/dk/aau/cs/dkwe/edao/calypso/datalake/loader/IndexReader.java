@@ -4,6 +4,8 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.store.EmbeddingsIndex;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTableLink;
+import dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh.TypesLSHIndex;
+import dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh.VectorLSHIndex;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Logger;
 
@@ -23,7 +25,9 @@ public class IndexReader implements IndexIO
     private EntityTable entityTable;
     private EntityTableLink entityTableLink;
     private EmbeddingsIndex<String> embeddingsIdx;
-    private static final int INDEX_COUNT = 4;
+    private TypesLSHIndex typesLSH;
+    private VectorLSHIndex vectorsLSH;
+    private static final int INDEX_COUNT = 5;
 
     public IndexReader(File indexDir, boolean isMultithreaded, boolean logProgress)
     {
@@ -50,12 +54,13 @@ public class IndexReader implements IndexIO
         Future<?> f2 = threadPoolService.submit(this::loadEntityTable);
         Future<?> f3 = threadPoolService.submit(this::loadEntityTableLink);
         Future<?> f4 = threadPoolService.submit(this::loadEmbeddingsIndex);
+        Future<?> f5 = threadPoolService.submit(this::loadLSHIndexes);
         int completed = -1;
 
-        while (!f1.isDone() || !f2.isDone() || !f3.isDone() || !f4.isDone())
+        while (!f1.isDone() || !f2.isDone() || !f3.isDone() || !f4.isDone() || !f5.isDone())
         {
             int tmpCompleted = (f1.isDone() ? 1 : 0) + (f2.isDone() ? 1 : 0) + (f3.isDone() ? 1 : 0) +
-                    (f4.isDone() ? 1 : 0);
+                    (f4.isDone() ? 1 : 0) + (f5.isDone() ? 1 : 0);
 
             if (tmpCompleted != completed)
             {
@@ -72,6 +77,7 @@ public class IndexReader implements IndexIO
             f2.get();
             f3.get();
             f4.get();
+            f5.get();
         }
 
         catch (InterruptedException | ExecutionException e)
@@ -100,6 +106,12 @@ public class IndexReader implements IndexIO
     private void loadEmbeddingsIndex()
     {
         this.embeddingsIdx = (EmbeddingsIndex<String>) readIndex(this.indexDir + "/" + Configuration.getEmbeddingsIndexFile());
+    }
+
+    private void loadLSHIndexes()
+    {
+        this.typesLSH = (TypesLSHIndex) readIndex(this.indexDir + "/" + Configuration.getTypesLSHIndexFile());
+        this.vectorsLSH = (VectorLSHIndex) readIndex(this.indexDir + "/" + Configuration.getEmbeddingsLSHFile());
     }
 
     private Object readIndex(String file)
@@ -145,5 +157,15 @@ public class IndexReader implements IndexIO
     public EmbeddingsIndex<String> getEmbeddingsIndex()
     {
         return this.embeddingsIdx;
+    }
+
+    public TypesLSHIndex getTypesLSH()
+    {
+        return this.typesLSH;
+    }
+
+    public VectorLSHIndex getVectorsLSH()
+    {
+        return this.vectorsLSH;
     }
 }

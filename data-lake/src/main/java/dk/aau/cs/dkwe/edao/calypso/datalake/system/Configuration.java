@@ -146,6 +146,12 @@ public class Configuration
         if (!props.contains("analysisFile"))
             props.setProperty("analysisFile", "/logs/analysis.txt");
 
+        if (!props.contains("TypesLSH"))
+            props.setProperty("TypesLSH", "types_lsh.ser");
+
+        if (!props.contains("EmbeddingsLSH"))
+            props.setProperty("EmbeddingsLSH", "embeddings_lsh.ser");
+
         writeProperties(props);
     }
 
@@ -402,5 +408,35 @@ public class Configuration
     public static String getAnalysisDir()
     {
         return readProperties().getProperty("analysisFile");
+    }
+
+    public static String getTypesLSHIndexFile()
+    {
+        return readProperties().getProperty("TypesLSH");
+    }
+
+    public static String getEmbeddingsLSHFile()
+    {
+        return readProperties().getProperty("EmbeddingsLSH");
+    }
+
+    public static void setPermutationVectors(int num)
+    {
+        addProperty("PermutationVectors", String.valueOf(num));
+    }
+
+    public static int getPermutationVectors()
+    {
+        return Integer.parseInt(readProperties().getProperty("PermutationVectors"));
+    }
+
+    public static void setBandSize(int value)
+    {
+        addProperty("BandSize", String.valueOf(value));
+    }
+
+    public static int getBandSize()
+    {
+        return Integer.parseInt(readProperties().getProperty("BandSize"));
     }
 }

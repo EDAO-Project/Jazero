@@ -13,12 +13,15 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.loader.IndexWriter;
 import dk.aau.cs.dkwe.edao.calypso.datalake.parser.EmbeddingsParser;
 import dk.aau.cs.dkwe.edao.calypso.datalake.parser.ParsingException;
 import dk.aau.cs.dkwe.edao.calypso.datalake.parser.TableParser;
+import dk.aau.cs.dkwe.edao.calypso.datalake.search.Prefilter;
 import dk.aau.cs.dkwe.edao.calypso.datalake.search.Result;
 import dk.aau.cs.dkwe.edao.calypso.datalake.search.TableSearch;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EmbeddingsIndex;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTableLink;
+import dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh.TypesLSHIndex;
+import dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh.VectorLSHIndex;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Pair;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Entity;
@@ -55,6 +58,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     private static EntityTable entityTable;
     private static EntityTableLink tableLink;
     private static EmbeddingsIndex<String> embeddingsIndex;
+    private static TypesLSHIndex typesLSH;
+    private static VectorLSHIndex embeddingLSH;
     private static EndpointAnalysis analysis;
     private static final int THREADS = 4;
     private static final File DATA_DIR = new File("/index/mappings/");
@@ -90,6 +95,14 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 entityTable = indexReader.getEntityTable();
                 tableLink = indexReader.getEntityTableLink();
                 embeddingsIndex = indexReader.getEmbeddingsIndex();
+                typesLSH = indexReader.getTypesLSH();
+                embeddingLSH = indexReader.getVectorsLSH();
+
+                KGService kg = new KGService(Configuration.getEKGManagerHost(), Configuration.getEKGManagerPort());
+                typesLSH.useEntityLinker(linker);
+                typesLSH.useKGService(kg);
+                embeddingLSH.useEntityLinker(linker);
+                embeddingLSH.useEmbeddingIndex(embeddingsIndex);
             }
 
             catch (IOException e)
@@ -123,6 +136,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      *                  ["weighted-jaccard": "<BOOLEAN VALUE>,]
      *                  ["adjusted-jaccard": "<BOOLEAN VALUE>",]
      *                  ["cosine-function": "NORM_COS|ABS_COS|ANG_COS"]
+     *                  ["lsh": "TYPES|EMBEDDINGS",]
      *                  "query": "<QUERY STRING>"
      *             }
      *
@@ -185,6 +199,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         boolean weightedJaccard = false, adjustedJaccard = false;
         TableSearch.SimilarityMeasure similarityMeasure = TableSearch.SimilarityMeasure.valueOf(body.get("similarity-measure"));
         TableSearch.CosineSimilarityFunction cosineFunction = TableSearch.CosineSimilarityFunction.ABS_COS;
+        Prefilter prefilter = null;
 
         if (useEmbeddings)
         {
@@ -207,12 +222,39 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             adjustedJaccard = Boolean.parseBoolean(body.get("adjusted-jaccard"));
         }
 
+        if (body.containsKey("lsh"))
+        {
+            String lshType = body.get("lsh").toUpperCase();
+
+            if (lshType.equals("TYPES"))
+            {
+                prefilter = new Prefilter(linker, entityTable, tableLink, embeddingsIndex, typesLSH);
+            }
+
+            else if (lshType.equals("EMBEDDINGS"))
+            {
+                prefilter = new Prefilter(linker, entityTable, tableLink, embeddingsIndex, embeddingLSH);
+            }
+
+            else
+            {
+                return ResponseEntity.badRequest().body("Unrecognized type of LSH pre-filtering (choose between 'TYPES' and 'EMBEDDINGS')");
+            }
+        }
+
         Table<String> query = new DynamicTable<>();
         String[] queryStrTuples = body.get("query").split("#");
         StorageHandler storageHandler = new StorageHandler(Configuration.getStorageType());
         TableSearch search = new TableSearch(storageHandler, linker, entityTable, tableLink, embeddingsIndex, topK, THREADS, useEmbeddings,
                 cosineFunction, singleColumnPerEntity, weightedJaccard, adjustedJaccard, useMaxSimilarityPerColumn,
                 false, similarityMeasure);
+
+        if (prefilter != null)
+        {
+            search = new TableSearch(storageHandler, linker, entityTable, tableLink, embeddingsIndex, topK, THREADS, useEmbeddings,
+                    cosineFunction, singleColumnPerEntity, weightedJaccard, adjustedJaccard, useMaxSimilarityPerColumn,
+                    false, similarityMeasure, prefilter);
+        }
 
         for (String tuple : queryStrTuples)
         {
@@ -283,9 +325,13 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     /**
      * POST request to load data lake
      * Make sure to only use this once as it will delete any previously loaded data
+     * 'Signature-Size' is number of permutation/projection vectors to be used in LSH index
+     * 'Band-Size' is size of bands for the LSH signature
      * @param headers Requires:
      *                Content-Type: application/json
      *                Storage-Type: native|HDFS
+     *                Signature-Size: <INTEGER>
+     *                Band-Size: <INTEGER>
      *
      * @param body JSON string with path to directory of JSON table files. Format:
      *             {
@@ -333,6 +379,11 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                     "' or '" + StorageHandler.StorageType.HDFS.name() + "'");
         }
 
+        else if (!headers.containsKey("Signature-Size") || !headers.containsKey("Band-Size"))
+        {
+            return ResponseEntity.badRequest().body("Missing LSH parameters ('Signature-Size', 'Band-Size')");
+        }
+
         else if (!body.containsKey(dirKey))
         {
             return ResponseEntity.badRequest().body("Body must be a JSON string containing a single entry '" + dirKey + "'");
@@ -369,10 +420,13 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 Logger.log(Logger.Level.ERROR, "KG is empty. Make sure to load the KG according to README. Continuing...");
             }
 
+            int signatureSize = Integer.valueOf(body.get("Signature-Size")), bandSize = Integer.valueOf(body.get("Band-Size"));
             Stream<Path> fileStream = Files.find(dir.toPath(), Integer.MAX_VALUE,
                     (filePath, fileAttr) -> fileAttr.isRegularFile() && filePath.getFileName().toString().endsWith(".json"));
             List<Path> filePaths = fileStream.collect(Collectors.toList());
             Collections.sort(filePaths);
+            Configuration.setPermutationVectors(signatureSize);
+            Configuration.setBandSize(bandSize);
             Logger.log(Logger.Level.INFO, "There are " + filePaths.size() + " files to be processed.");
 
             IndexWriter indexWriter = new IndexWriter(filePaths, new File(Configuration.getIndexDir()), DATA_DIR, storageType,
