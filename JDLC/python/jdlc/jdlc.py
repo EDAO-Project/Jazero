@@ -149,7 +149,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--delimiter', metavar = 'Delimiter', type = str, help = 'Delimiter in embeddings file (see README)', required = False, default = ' ')
     parser.add_argument('-ss', '--signaturesize', metavar = 'SignatureSize', type = str, help = 'Size of signature or number of permutation/projection vectors', required = False, default = '30')
     parser.add_argument('-bs', '--bandsize', metavar = 'BandSize', type = str, help = 'Size of signature bands', required = False, default = '10')
-    parser.add_argument('-pf', '--prefilter', metavar = 'Prefilter', type = str, help = 'Type of LSH pre-filter', required = False, default = '')
+    parser.add_argument('-pf', '--prefilter', metavar = 'Prefilter', type = str, help = 'Type of LSH pre-filter (\'TYPES\', \'EMBEDDINGS\')', required = False, default = '')
 
     args = parser.parse_args()
     host = args.host
