@@ -158,7 +158,7 @@ public class TableSearch extends AbstractSearch
 
             long done = 1, prev = 0;
 
-            while (done != this.storage.count())
+            while (done < tableFiles.size())
             {
                 done = parsed.stream().filter(Future::isDone).count();
 
