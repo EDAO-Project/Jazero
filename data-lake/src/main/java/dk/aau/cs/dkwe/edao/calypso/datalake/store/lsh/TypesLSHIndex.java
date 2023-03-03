@@ -176,6 +176,12 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
             for (int column = 0; column < columns; column++)
             {
                 String entity = t.getRow(row).get(column);
+
+                if (entity == null)
+                {
+                    continue;
+                }
+
                 Id entityId = this.linker.uriLookup(entity);
                 Set<Integer> entityBitVector = bitVector(entity);
 

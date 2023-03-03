@@ -195,7 +195,6 @@ public class IndexWriter implements IndexIO
                 List<String> matchesUris = new ArrayList<>();
                 String cellText = cell.text;
                 String uri = this.linker.mapTo(cellText);
-                inputRow.add(cellText);
 
                 if (uri == null)
                 {
@@ -223,6 +222,8 @@ public class IndexWriter implements IndexIO
                         }
                     }
                 }
+
+                inputRow.add(uri);
 
                 if (uri != null)
                 {

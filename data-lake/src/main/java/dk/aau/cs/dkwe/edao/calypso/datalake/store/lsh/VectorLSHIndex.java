@@ -120,6 +120,12 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
             for (int column = 0; column < t.getRow(row).size(); column++)
             {
                 String entity = t.getRow(row).get(column);
+
+                if (entity == null)
+                {
+                    continue;
+                }
+
                 List<Double> embedding;
                 Id entityId = this.linker.uriLookup(entity);
                 List<Integer> keys;
