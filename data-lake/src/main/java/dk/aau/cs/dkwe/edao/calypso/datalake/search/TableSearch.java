@@ -139,7 +139,6 @@ public class TableSearch extends AbstractSearch
 
         try
         {
-            Logger.log(Logger.Level.INFO, "There are " + this.storage.count() + " files to be processed.");
             ExecutorService threadPool = Executors.newFixedThreadPool(this.threads);
             List<Future<Pair<File, Double>>> parsed = new ArrayList<>(this.storage.count());
             Set<File> tableFiles = this.storage.elements();
@@ -148,6 +147,8 @@ public class TableSearch extends AbstractSearch
             {
                 tableFiles = this.filteredCorpus;
             }
+
+            Logger.log(Logger.Level.INFO, "There are " + tableFiles.size() + " files to be processed.");
 
             for (File f : tableFiles)
             {
