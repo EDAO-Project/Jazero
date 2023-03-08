@@ -60,7 +60,7 @@ public class TableSearch extends AbstractSearch
     Set<String> queryEntitiesMissingCoverage = new HashSet<>();
     private long elapsed = -1, parsedTables;
     private double reduction = 0.0;
-    private boolean useEmbeddings, singleColumnPerQueryEntity, weightedJaccard, adjustedJaccard,
+    private boolean useEmbeddings, singleColumnPerQueryEntity, weightedJaccard,
             useMaxSimilarityPerColumn, hungarianAlgorithmSameAlignmentAcrossTuples;
     private CosineSimilarityFunction embeddingSimFunction;
     private SimilarityMeasure measure;
@@ -73,7 +73,7 @@ public class TableSearch extends AbstractSearch
     public TableSearch(StorageHandler tableStorage, EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
                        EmbeddingsIndex<String> embeddingIdx, int topK, int threads, boolean useEmbeddings,
                        CosineSimilarityFunction cosineFunction, boolean singleColumnPerQueryEntity, boolean weightedJaccard,
-                       boolean adjustedJaccard, boolean useMaxSimilarityPerColumn, boolean hungarianAlgorithmSameAlignmentAcrossTuples,
+                       boolean useMaxSimilarityPerColumn, boolean hungarianAlgorithmSameAlignmentAcrossTuples,
                        SimilarityMeasure similarityMeasure)
     {
         super(linker, entityTable, entityTableLink, embeddingIdx);
@@ -83,7 +83,6 @@ public class TableSearch extends AbstractSearch
         this.embeddingSimFunction = cosineFunction;
         this.singleColumnPerQueryEntity = singleColumnPerQueryEntity;
         this.weightedJaccard = weightedJaccard;
-        this.adjustedJaccard = adjustedJaccard;
         this.hungarianAlgorithmSameAlignmentAcrossTuples = hungarianAlgorithmSameAlignmentAcrossTuples;
         this.useMaxSimilarityPerColumn = useMaxSimilarityPerColumn;
         this.measure = similarityMeasure;
@@ -93,11 +92,11 @@ public class TableSearch extends AbstractSearch
     public TableSearch(StorageHandler tableStorage, EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
                        EmbeddingsIndex<String> embeddingIdx, int topK, int threads, boolean useEmbeddings,
                        CosineSimilarityFunction cosineFunction, boolean singleColumnPerQueryEntity, boolean weightedJaccard,
-                       boolean adjustedJaccard, boolean useMaxSimilarityPerColumn, boolean hungarianAlgorithmSameAlignmentAcrossTuples,
+                       boolean useMaxSimilarityPerColumn, boolean hungarianAlgorithmSameAlignmentAcrossTuples,
                        SimilarityMeasure similarityMeasure, Prefilter prefilter)
     {
         this(tableStorage, linker, entityTable, entityTableLink, embeddingIdx, topK, threads, useEmbeddings, cosineFunction, singleColumnPerQueryEntity,
-                weightedJaccard, adjustedJaccard, useMaxSimilarityPerColumn, hungarianAlgorithmSameAlignmentAcrossTuples,
+                weightedJaccard, useMaxSimilarityPerColumn, hungarianAlgorithmSameAlignmentAcrossTuples,
                 similarityMeasure);
         this.prefilter = prefilter;
     }
@@ -417,18 +416,20 @@ public class TableSearch extends AbstractSearch
      */
     private double entitySimilarityScore(String ent1, String ent2)
     {
+        double sim = 0.0;
+
         if (!this.useEmbeddings)
-            return jaccardSimilarity(ent1, ent2);
+            sim = jaccardSimilarity(ent1, ent2);
 
         else if (entityExists(ent1) && entityExists(ent2))
-            return cosineSimilarity(ent1, ent2);
+            sim = cosineSimilarity(ent1, ent2);
 
         synchronized (this.lock)
         {
             this.nonEmbeddingComparisons++;
         }
 
-        return 0.0;
+        return Math.min(0.95, sim);
     }
 
     private double jaccardSimilarity(String ent1, String ent2)
@@ -443,23 +444,16 @@ public class TableSearch extends AbstractSearch
         if (getEntityTable().contains(ent2Id))
             entTypes2 = new HashSet<>(getEntityTable().find(ent2Id).getTypes());
 
-        double jaccardScore = 0.0;
-
         if (this.weightedJaccard)   // Run weighted Jaccard Similarity
         {
             Set<Pair<Type, Double>> weights = entTypes1.stream().map(t -> new Pair<>(t, t.getIdf())).collect(Collectors.toSet());
             weights.addAll(entTypes2.stream().map(t -> new Pair<>(t, t.getIdf())).collect(Collectors.toSet()));
             weights = weights.stream().filter(p -> p.second() >= 0).collect(Collectors.toSet());
-            jaccardScore = JaccardSimilarity.make(entTypes1, entTypes2, weights).similarity();
+            return JaccardSimilarity.make(entTypes1, entTypes2, weights).similarity();
         }
 
         else
-            jaccardScore = JaccardSimilarity.make(entTypes1, entTypes2).similarity();
-
-        if (this.adjustedJaccard)
-            return ent1.equals(ent2) ? 1.0 : Math.min(0.95, jaccardScore);
-
-        return jaccardScore;
+            return JaccardSimilarity.make(entTypes1, entTypes2).similarity();
     }
 
     private double cosineSimilarity(String ent1, String ent2)

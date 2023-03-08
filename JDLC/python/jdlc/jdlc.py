@@ -79,7 +79,7 @@ class Connector:
             useEmbeddings = 'false'
 
         content = '{"top-k": "' + str(topK) + '", "use-embeddings": "' + useEmbeddings + '", "cosine-function": "' + cosFunction + \
-                  '", "single-column-per-query-entity": "true", "weighted-jaccard": "false", "adjusted-jaccard": "true", ' + \
+                  '", "single-column-per-query-entity": "true", "weighted-jaccard": "false", ' + \
                   '"use-max-similarity-per-column": "true", "similarity-measure": "' + similarityMeasure + '", "lsh": "' + \
                   prefilter + '", "query": "' + self.__toString(query) + '"}'
         j = json.loads(content)

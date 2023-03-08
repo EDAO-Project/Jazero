@@ -133,7 +133,6 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      *                  "single-column-per-query-entity": "<BOOLEAN VALUE>",
      *                  "use-max-similarity-per-column": "<BOOLEAN VALUE>",
      *                  ["weighted-jaccard": "<BOOLEAN VALUE>,]
-     *                  ["adjusted-jaccard": "<BOOLEAN VALUE>",]
      *                  ["cosine-function": "NORM_COS|ABS_COS|ANG_COS"]
      *                  ["lsh": "TYPES|EMBEDDINGS",]
      *                  "query": "<QUERY STRING>"
@@ -195,7 +194,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         boolean useEmbeddings = Boolean.parseBoolean(body.get("use-embeddings"));
         boolean singleColumnPerEntity = Boolean.parseBoolean(body.get("single-column-per-query-entity"));
         boolean useMaxSimilarityPerColumn = Boolean.parseBoolean(body.get("use-max-similarity-per-column"));
-        boolean weightedJaccard = false, adjustedJaccard = false;
+        boolean weightedJaccard = false;
         TableSearch.SimilarityMeasure similarityMeasure = TableSearch.SimilarityMeasure.valueOf(body.get("similarity-measure"));
         TableSearch.CosineSimilarityFunction cosineFunction = TableSearch.CosineSimilarityFunction.ABS_COS;
         Prefilter prefilter = null;
@@ -212,13 +211,12 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
         else if (!useEmbeddings)
         {
-            if (!body.containsKey("weighted-jaccard") || !body.containsKey("adjusted-jaccard"))
+            if (!body.containsKey("weighted-jaccard"))
             {
-                return ResponseEntity.badRequest().body("Missing 'weighted-jaccard' or 'adjusted-jaccard' when searching using entity types");
+                return ResponseEntity.badRequest().body("Missing 'weighted-jaccard' when searching using entity types");
             }
 
             weightedJaccard = Boolean.parseBoolean(body.get("weighted-jaccard"));
-            adjustedJaccard = Boolean.parseBoolean(body.get("adjusted-jaccard"));
         }
 
         if (body.containsKey("lsh"))
@@ -240,13 +238,13 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         String[] queryStrTuples = body.get("query").split("#");
         StorageHandler storageHandler = new StorageHandler(Configuration.getStorageType());
         TableSearch search = new TableSearch(storageHandler, linker, entityTable, tableLink, embeddingsIndex, topK, THREADS, useEmbeddings,
-                cosineFunction, singleColumnPerEntity, weightedJaccard, adjustedJaccard, useMaxSimilarityPerColumn,
+                cosineFunction, singleColumnPerEntity, weightedJaccard, useMaxSimilarityPerColumn,
                 false, similarityMeasure);
 
         if (prefilter != null)
         {
             search = new TableSearch(storageHandler, linker, entityTable, tableLink, embeddingsIndex, topK, THREADS, useEmbeddings,
-                    cosineFunction, singleColumnPerEntity, weightedJaccard, adjustedJaccard, useMaxSimilarityPerColumn,
+                    cosineFunction, singleColumnPerEntity, weightedJaccard, useMaxSimilarityPerColumn,
                     false, similarityMeasure, prefilter);
         }
 
