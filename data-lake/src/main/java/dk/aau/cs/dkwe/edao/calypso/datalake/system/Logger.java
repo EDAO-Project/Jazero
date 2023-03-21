@@ -61,17 +61,13 @@ public class Logger
         }
     }
 
-    private static int prevLength = 0;
-    private static boolean prevWasNewLine = false;
-
     public static void log(Level level, String message)
     {
         Level configuredLevel = Level.parse(Configuration.getLogLevel());
 
         if (configuredLevel != null && level.getLevel() >= configuredLevel.getLevel())
         {
-            System.out.print("\n(" + new Date() + ") - " + level + ": " + message);
-            prevWasNewLine = true;
+            System.out.print("(" + new Date() + ") - " + level + ": " + message + "\n");
         }
     }
 }

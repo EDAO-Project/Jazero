@@ -128,7 +128,7 @@ An example of a table is given below:
 }
 ```
 
-Loading a table corpus of 200,000 tables will take approximately 34 hours.
+Loading a table corpus of 100K tables will take around a full day, depending on the machine.
 
 ### Connector
 
