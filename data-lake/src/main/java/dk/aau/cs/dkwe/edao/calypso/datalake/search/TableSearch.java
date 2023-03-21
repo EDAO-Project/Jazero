@@ -68,7 +68,6 @@ public class TableSearch extends AbstractSearch
     private final Object lock = new Object();
     private StorageHandler storage;
     private Prefilter prefilter;
-    private Set<File> filteredCorpus = null;
 
     public TableSearch(StorageHandler tableStorage, EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
                        EmbeddingsIndex<String> embeddingIdx, int topK, int threads, boolean useEmbeddings,
@@ -106,18 +105,19 @@ public class TableSearch extends AbstractSearch
         this.storage = handler;
     }
 
-    private void prefilterSearchSpace(Table<String> query)
+    private Set<File> prefilterSearchSpace(Table<String> query)
     {
         int initialSize = this.storage.count();
         Iterator<Pair<File, Double>> res = this.prefilter.search(query).getResults();
-        this.filteredCorpus = new HashSet<>();
+        Set<String> tableNames = new HashSet<>();
 
         while (res.hasNext())
         {
-            this.filteredCorpus.add(res.next().first());
+            tableNames.add(res.next().first().getName());
         }
 
-        this.reduction = initialSize > 0 ? (1 - ((double) this.filteredCorpus.size() / initialSize)) : 0;
+        this.reduction = initialSize > 0 ? (1 - ((double) tableNames.size() / initialSize)) : 0;
+        return this.storage.elements(f -> tableNames.contains(f.getName()));    // We have to iterate like this because we don't know how the storage type refers to a file absolutely
     }
 
     /**
@@ -128,24 +128,20 @@ public class TableSearch extends AbstractSearch
     @Override
     protected Result abstractSearch(Table<String> query)
     {
-        long start = System.nanoTime();
-
-        if (this.prefilter != null)
-        {
-            prefilterSearchSpace(query);
-            Logger.log(Logger.Level.INFO, "Pre-filtered corpus in " + this.prefilter.elapsedNanoSeconds() + "ns");
-        }
-
         try
         {
+            long start = System.nanoTime();
             ExecutorService threadPool = Executors.newFixedThreadPool(this.threads);
             List<Future<Pair<File, Double>>> parsed = new ArrayList<>(this.storage.count());
-            Set<File> tableFiles = this.storage.elements();
+            Set<File> tableFiles = switch (this.prefilter) {
+                case null -> {
+                    Set<File> reducedCorpus = prefilterSearchSpace(query);
+                    Logger.log(Logger.Level.INFO, "Pre-filtered corpus in " + this.prefilter.elapsedNanoSeconds() + "ns");
+                    yield reducedCorpus;
+                }
 
-            if (this.filteredCorpus != null)
-            {
-                tableFiles = this.filteredCorpus;
-            }
+                default -> this.storage.elements();
+            };
 
             Logger.log(Logger.Level.INFO, "There are " + tableFiles.size() + " files to be processed.");
 

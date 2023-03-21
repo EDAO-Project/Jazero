@@ -19,7 +19,7 @@
             </activation>
             <modules>
                 <module>communication</module>
-                <module>CDLC</module>
+                <module>JDLC</module>
                 <module>data-lake</module>
                 <module>entity-linker</module>
                 <module>knowledge-graph</module>

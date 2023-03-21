@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class Disk implements Storage<File>
@@ -65,6 +66,17 @@ public class Disk implements Storage<File>
     public Set<File> elements()
     {
         Set<String> filesStr = Set.of(Objects.requireNonNull(this.dir.list()));
-        return filesStr.stream().map(s -> new File(this.dir.toString() + "/" + s)).collect(Collectors.toSet());
+        return filesStr.stream()
+                .map(s -> new File(this.dir.toString() + "/" + s))
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<File> elements(Predicate<File> predicate)
+    {
+        return Set.of(Objects.requireNonNull(this.dir.list())).stream()
+                .map(s -> new File(this.dir.toString() + "/" + s))
+                .filter(predicate)
+                .collect(Collectors.toSet());
     }
 }

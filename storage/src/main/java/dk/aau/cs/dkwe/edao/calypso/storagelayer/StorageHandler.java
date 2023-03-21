@@ -7,6 +7,7 @@ import dk.aau.cs.dkwe.edao.calypso.storagelayer.layer.Storage;
 import java.io.File;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.function.Predicate;
 
 public class StorageHandler implements Storage<File>
 {
@@ -70,5 +71,11 @@ public class StorageHandler implements Storage<File>
     public Set<File> elements()
     {
         return this.storage.elements();
+    }
+
+    @Override
+    public Set<File> elements(Predicate<File> predicate)
+    {
+        return this.storage.elements(predicate);
     }
 }
