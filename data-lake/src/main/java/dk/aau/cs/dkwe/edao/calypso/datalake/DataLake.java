@@ -63,6 +63,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     private static EndpointAnalysis analysis;
     private static final int THREADS = 4;
     private static final File DATA_DIR = new File("/index/mappings/");
+    private boolean indexLoadingInProgress = false, embeddingsLoadingInProgress = false;
 
     @Override
     public void customize(ConfigurableWebServerFactory factory)
@@ -400,12 +401,18 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             return ResponseEntity.badRequest().body("'" + dir + "' is not a directory");
         }
 
+        else if (this.indexLoadingInProgress)
+        {
+            return ResponseEntity.badRequest().body("Indexes are currently being build. Wait until finished");
+        }
+
         try
         {
             long totalTime = System.nanoTime();
             KGService kgService = new KGService(Configuration.getEKGManagerHost(), Configuration.getEKGManagerPort());
             ELService elService = new ELService(Configuration.getEntityLinkerHost(), Configuration.getEntityLinkerPort());
             DBDriverBatch<List<Double>, String> embeddingStore = EmbeddingsFactory.fromConfig(false);
+            this.indexLoadingInProgress = true;
 
             if (kgService.size() < 1)
             {
@@ -452,6 +459,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             loadIndexes();
             FileLogger.log(FileLogger.Service.SDL_Manager, "Loaded " + indexWriter.loadedTables() + " tables");
             analysis.record("insert", 1);
+            this.indexLoadingInProgress = false;
 
             return ResponseEntity.ok("Loaded tables: " + indexWriter.loadedTables() + "\nIndex time: " +
                     TimeUnit.SECONDS.convert(indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s\nTotal elapsed time: " +
@@ -460,6 +468,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
         catch (IOException e)
         {
+            this.indexLoadingInProgress = false;
             Configuration.setIndexesLoaded(false);
             return ResponseEntity.badRequest().body("Error locating JSON table files: " + e.getMessage());
         }
@@ -471,6 +480,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 Configuration.setEmbeddingsLoaded(false);
             }
 
+            this.indexLoadingInProgress = false;
             Configuration.setIndexesLoaded(false);
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
@@ -513,10 +523,16 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
         try
         {
+            if (this.embeddingsLoadingInProgress)
+            {
+                return ResponseEntity.badRequest().body("Embeddings are currently being loading. Wait until finished.");
+            }
+
             EmbeddingsParser parser = new EmbeddingsParser(new FileInputStream(body.get("file")), body.get("delimiter").charAt(0));
             DBDriverBatch<List<Double>, String> db = EmbeddingsFactory.fromConfig(true);
             int batchSize = 100, batchSizeCount = batchSize;
             double loaded = 0;
+            this.embeddingsLoadingInProgress = true;
 
             while (parser.hasNext())
             {
@@ -537,18 +553,21 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                     " entity embeddings corresponding to " + loaded + " mb");
             db.close();
             analysis.record("embeddings", 1);
+            this.embeddingsLoadingInProgress = false;
 
             return ResponseEntity.ok("Loaded " + batchSizeCount + " entity embeddings (" + loaded + " mb)");
         }
 
         catch (FileNotFoundException e)
         {
+            this.embeddingsLoadingInProgress = false;
             Configuration.setEmbeddingsLoaded(false);
             return ResponseEntity.badRequest().body("Embeddings file does not exist");
         }
 
         catch (IllegalArgumentException e)
         {
+            this.embeddingsLoadingInProgress = false;
             Configuration.setEmbeddingsLoaded(false);
             return ResponseEntity.badRequest().body("Could not initialize embeddings database: " + e.getMessage());
         }
