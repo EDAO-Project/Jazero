@@ -36,4 +36,10 @@ public class HDFS implements Storage<File>
     {
         return null;
     }
+
+    @Override
+    public boolean clear()
+    {
+        return true;
+    }
 }

@@ -102,6 +102,14 @@ class Connector:
         strTable = strTable[:-1]
         return strTable
 
+    def clear(self):
+        req = requests.get(self.__host + ':' + str(self.__sdlPort) + '/clear')
+
+        if (req.status_code != 200):
+            return 'Failed removing tables: ' + req.text
+
+        return req.text
+
 # Use --host to specify host and -o for operation
 # Operations:
 #   search: -q <QUERY FILE NAME> -sq <SCORING TYPE ('TYPE', 'COSINE_NORM', 'COSINE_ABS', 'COSINE_ANG')> -k <TOP-K> -sm <SIMILARITY MEASURE ('EUCLIDEAN', 'COSINE')>
@@ -135,7 +143,7 @@ class Connector:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('CDLC Connector')
     parser.add_argument('--host', metavar = 'Host', type = str, help = 'Host of machine on which Jazero is deployed', required = True)
-    parser.add_argument('-o', '--operation', metavar = 'Op', type = str, help = 'Jazero operation to perform (search, insert, loadembeddings)', choices = ['search', 'insert', 'loadembeddings'], required = True)
+    parser.add_argument('-o', '--operation', metavar = 'Op', type = str, help = 'Jazero operation to perform (search, insert, loadembeddings, clear)', choices = ['search', 'insert', 'loadembeddings'], required = True)
     parser.add_argument('-q', '--query', metavar = 'Query', type = str, help = 'Query file path', required = False)
     parser.add_argument('-sq', '--scoringtype', metavar = 'ScoringType', type = str, help = 'Type of entity scoring (\'TYPE\', \'COSINE_NORM\', \'COSINE_ABS\', \'COSINE_ANG\')', choices = ['TYPE', 'COSINE_NORM', 'COSINE_ABS', 'COSINE_ANG'], required = False, default = 'TYPE')
     parser.add_argument('-k', '--topk', metavar = 'Top-K', type = str, help = 'Top-K value', required = False, default = '100')
@@ -224,5 +232,8 @@ if __name__ == '__main__':
             exit(1)
 
         output = conn.insertEmbeddings(jazero, embeddings, delimiter)
+
+    elif (op == 'clear'):
+        output = conn.clear()
 
     print(output)

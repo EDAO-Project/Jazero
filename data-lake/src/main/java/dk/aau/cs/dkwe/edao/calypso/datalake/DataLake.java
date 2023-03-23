@@ -617,4 +617,31 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
         return db.batchInsert(iris, vectors) ? loaded : 0;
     }
+
+    /**
+     * Remove all tables.
+     * KG, embeddings, and indexes remain untouched.
+     */
+    @GetMapping("/clear")
+    public synchronized ResponseEntity<String> size(@RequestHeader Map<String, String> headers)
+    {
+        if (this.indexLoadingInProgress )
+        {
+            return ResponseEntity.badRequest().body("Indexes are currently being loaded");
+        }
+
+        else if (!Configuration.areIndexesLoaded())
+        {
+            return ResponseEntity.badRequest().body("No tables to remove");
+        }
+
+        StorageHandler storage = new StorageHandler(Configuration.getStorageType());
+
+        if (!storage.clear())
+        {
+            return ResponseEntity.badRequest().body("Tables could not be removed: unknown reason");
+        }
+
+        return ResponseEntity.ok("Removed all tables successfully");
+    }
 }

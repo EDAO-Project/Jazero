@@ -78,4 +78,10 @@ public class StorageHandler implements Storage<File>
     {
         return this.storage.elements(predicate);
     }
+
+    @Override
+    public boolean clear()
+    {
+        return this.storage.clear();
+    }
 }

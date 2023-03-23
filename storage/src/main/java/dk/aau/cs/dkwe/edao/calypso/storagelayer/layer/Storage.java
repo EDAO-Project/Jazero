@@ -10,4 +10,5 @@ public interface Storage<E> extends Iterable<E>
     int count();
     Set<E> elements();
     Set<E> elements(Predicate<E> predicate);
+    boolean clear();
 }

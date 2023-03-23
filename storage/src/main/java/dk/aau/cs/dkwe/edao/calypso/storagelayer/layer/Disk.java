@@ -79,4 +79,18 @@ public class Disk implements Storage<File>
                 .filter(predicate)
                 .collect(Collectors.toSet());
     }
+
+    @Override
+    public boolean clear()
+    {
+        for (File file : this)
+        {
+            if (!file.delete())
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
