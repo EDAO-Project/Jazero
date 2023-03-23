@@ -132,7 +132,7 @@ Loading a table corpus of 100K tables will take around a full day, depending on 
 
 ### Connector
 
-The repository for the connector to communicate with Jazero can be found <a href="https://github.com/EDAO-Project/Jazero/tree/main/CDLC">here</a>.
+The repository for the connector to communicate with Jazero can be found <a href="https://github.com/EDAO-Project/Jazero/tree/main/JDLC">here</a>.
 There is both a Java connector and Python connector.
 
 To use the Python connector, following <a href="https://github.com/EDAO-Project/Jazero/blob/main/JDLC/python/README.md">these</a> instructions.
