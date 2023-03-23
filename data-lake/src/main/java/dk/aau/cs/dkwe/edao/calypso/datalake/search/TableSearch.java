@@ -395,12 +395,12 @@ public class TableSearch extends AbstractSearch
     /**
      * The similarity between two entities (this is a score between 0 and 1)
      *
-     * By default the similarity is the jaccard similarity of the entity types corresponding to the entities.
+     * By default, the similarity is the jaccard similarity of the entity types corresponding to the entities.
      *
-     * However if 'useEmbeddings' is specified and there exist embeddings for both entities
+     * However, if 'useEmbeddings' is specified and there exist embeddings for both entities
      * then use the angular distance between the two embedding vectors as the score.
      *
-     * If 'usePretrainedEmbeddings' is not specified but 'adjustedJaccardSimilarity' is specified then
+     * If 'usePretrainedEmbeddings' is not specified but 'adjustedJaccardSimilarity' is specified, then
      * an adjusted Jaccard similarity between two entities is used where the similarity score is 1 only if the two entities are identical.
      * Otherwise a maximum similarity score is placed if the two entities are different
      * @param ent1 entity URI
@@ -412,7 +412,7 @@ public class TableSearch extends AbstractSearch
         double sim = 0.0;
 
         if (!this.useEmbeddings)
-            sim = jaccardSimilarity(ent1, ent2);
+            sim = Math.min(jaccardSimilarity(ent1, ent2), 0.95);
 
         else if (entityExists(ent1) && entityExists(ent2))
             sim = cosineSimilarity(ent1, ent2);
@@ -422,7 +422,7 @@ public class TableSearch extends AbstractSearch
             this.nonEmbeddingComparisons++;
         }
 
-        return Math.min(0.95, sim);
+        return sim;
     }
 
     private double jaccardSimilarity(String ent1, String ent2)
