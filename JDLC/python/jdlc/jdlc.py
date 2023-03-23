@@ -143,7 +143,7 @@ class Connector:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('CDLC Connector')
     parser.add_argument('--host', metavar = 'Host', type = str, help = 'Host of machine on which Jazero is deployed', required = True)
-    parser.add_argument('-o', '--operation', metavar = 'Op', type = str, help = 'Jazero operation to perform (search, insert, loadembeddings, clear)', choices = ['search', 'insert', 'loadembeddings'], required = True)
+    parser.add_argument('-o', '--operation', metavar = 'Op', type = str, help = 'Jazero operation to perform (search, insert, loadembeddings, clear)', choices = ['search', 'insert', 'loadembeddings', 'clear'], required = True)
     parser.add_argument('-q', '--query', metavar = 'Query', type = str, help = 'Query file path', required = False)
     parser.add_argument('-sq', '--scoringtype', metavar = 'ScoringType', type = str, help = 'Type of entity scoring (\'TYPE\', \'COSINE_NORM\', \'COSINE_ABS\', \'COSINE_ANG\')', choices = ['TYPE', 'COSINE_NORM', 'COSINE_ABS', 'COSINE_ANG'], required = False, default = 'TYPE')
     parser.add_argument('-k', '--topk', metavar = 'Top-K', type = str, help = 'Top-K value', required = False, default = '100')
