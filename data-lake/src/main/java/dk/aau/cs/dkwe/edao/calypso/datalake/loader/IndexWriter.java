@@ -139,8 +139,9 @@ public class IndexWriter implements IndexIO
         loadLSHIndexes();
 
         Logger.log(Logger.Level.INFO, "Writing indexes and stats on disk...");
-        flushToDisk();
         writeStats();
+        this.tableStats.clear();    // Save memory before writing index objects to disk
+        flushToDisk();
 
         this.elapsed = System.nanoTime() - startTime;
         Logger.log(Logger.Level.INFO, "Done");
@@ -593,10 +594,5 @@ public class IndexWriter implements IndexIO
     public long getApproximateEntityMentions()
     {
         return this.filter.approximateElementCount();
-    }
-
-    public Map<String, Stats> getTableStats()
-    {
-        return this.tableStats;
     }
 }
