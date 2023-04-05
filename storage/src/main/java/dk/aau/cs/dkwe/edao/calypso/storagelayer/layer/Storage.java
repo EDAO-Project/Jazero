@@ -1,6 +1,5 @@
 package dk.aau.cs.dkwe.edao.calypso.storagelayer.layer;
 
-import java.io.File;
 import java.util.Set;
 import java.util.function.Predicate;
 

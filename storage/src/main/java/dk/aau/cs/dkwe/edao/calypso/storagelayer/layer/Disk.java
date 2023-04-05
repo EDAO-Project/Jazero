@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 
 public class Disk implements Storage<File>
 {
-    private File dir;
+    private final File dir;
 
     public Disk(File storageDirectory)
     {
@@ -18,12 +18,12 @@ public class Disk implements Storage<File>
 
         if (!this.dir.exists() && !this.dir.mkdirs())
         {
-            throw new RuntimeException("Could not create directory '" + this.dir.toString() + "' to store on disk");
+            throw new RuntimeException("Could not create directory '" + this.dir + "' to store on disk");
         }
 
         else if (!this.dir.isDirectory())
         {
-            throw new IllegalArgumentException("Argument is not a directory: '" + this.dir.toString() + "'");
+            throw new IllegalArgumentException("Argument is not a directory: '" + this.dir + "'");
         }
     }
 
@@ -53,7 +53,8 @@ public class Disk implements Storage<File>
     @Override
     public int count()
     {
-        return this.dir.list().length;
+        String[] dirFiles = this.dir.list();
+        return dirFiles != null ? dirFiles.length : -1;
     }
 
     @Override
@@ -67,7 +68,7 @@ public class Disk implements Storage<File>
     {
         Set<String> filesStr = Set.of(Objects.requireNonNull(this.dir.list()));
         return filesStr.stream()
-                .map(s -> new File(this.dir.toString() + "/" + s))
+                .map(s -> new File(this.dir + "/" + s))
                 .collect(Collectors.toSet());
     }
 
@@ -75,7 +76,7 @@ public class Disk implements Storage<File>
     public Set<File> elements(Predicate<File> predicate)
     {
         return Set.of(Objects.requireNonNull(this.dir.list())).stream()
-                .map(s -> new File(this.dir.toString() + "/" + s))
+                .map(s -> new File(this.dir + "/" + s))
                 .filter(predicate)
                 .collect(Collectors.toSet());
     }

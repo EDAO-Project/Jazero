@@ -5,7 +5,7 @@ public enum FileFormat
     NT(".nt"),
     TTL(".ttl");
 
-    private String suffix;
+    private final String suffix;
 
     FileFormat(String suffix)
     {

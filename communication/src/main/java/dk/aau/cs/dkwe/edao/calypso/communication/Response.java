@@ -2,8 +2,8 @@ package dk.aau.cs.dkwe.edao.calypso.communication;
 
 public class Response
 {
-    private int responseCode;
-    private Object content;
+    private final int responseCode;
+    private final Object content;
 
     Response(int responseCode, Object response)
     {

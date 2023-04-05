@@ -27,8 +27,8 @@ public class StorageHandler implements Storage<File>
         HDFS
     }
 
-    private StorageType type;
-    private Storage<File> storage;
+    private final StorageType type;
+    private final Storage<File> storage;
 
     public StorageHandler(StorageType storageType)
     {

@@ -5,6 +5,7 @@ import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -31,7 +32,7 @@ public class Neo4jEndpoint implements AutoCloseable
 
         if (confFile.exists())
         {
-            inputStream = new FileInputStream(confFile);
+            inputStream = Files.newInputStream(confFile.toPath());
             prop.load(inputStream);
         }
 

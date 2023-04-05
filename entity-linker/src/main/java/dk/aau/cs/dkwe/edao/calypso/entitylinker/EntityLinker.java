@@ -6,7 +6,6 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.TableDeserializer;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.TableSerializer;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Logger;
-import dk.aau.cs.dkwe.edao.calypso.datalake.utilities.Deserializer;
 import dk.aau.cs.dkwe.edao.calypso.entitylinker.index.LuceneFactory;
 import dk.aau.cs.dkwe.edao.calypso.entitylinker.link.LuceneLinker;
 import org.springframework.boot.SpringApplication;

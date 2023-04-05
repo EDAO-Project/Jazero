@@ -4,25 +4,22 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.loader.IndexIO;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Type;
 import dk.aau.cs.dkwe.edao.calypso.knowledgegraph.connector.Neo4jEndpoint;
-import org.neo4j.driver.*;
 
-import javax.el.PropertyNotFoundException;
 import java.io.*;
-import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * Reads KG by exporting from Neo4J instance
  * Output is stored in kg.ttl
- *
+ * <p>
  * WARNING
  *      Using the RDF export procedure in Neo4J is an experimental feature which may change in the future
- *      - https://neo4j.com/labs/neosemantics/tutorial/#_using_the_cypher_n10s_rdf_export_procedure
+ *      - <a href="https://neo4j.com/labs/neosemantics/tutorial/#_using_the_cypher_n10s_rdf_export_procedure">...</a>
  */
 public class Neo4JReader extends Neo4JHandler implements IndexIO
 {
-    private Neo4jEndpoint endpoint;
+    private final Neo4jEndpoint endpoint;
 
     public Neo4JReader(Neo4jEndpoint endpoint)
     {

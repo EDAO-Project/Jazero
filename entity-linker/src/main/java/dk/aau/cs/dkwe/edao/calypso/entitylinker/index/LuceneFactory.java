@@ -2,11 +2,8 @@ package dk.aau.cs.dkwe.edao.calypso.entitylinker.index;
 
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Logger;
-import org.apache.jena.graph.Graph;
-import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.*;
-import org.apache.jena.rdf.model.impl.PropertyImpl;
 import org.apache.jena.util.iterator.ExtendedIterator;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -26,9 +23,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 public class LuceneFactory
 {
@@ -91,8 +86,7 @@ public class LuceneFactory
     private static String uriPostfix(String uri)
     {
         String[] uriSplit = uri.split("/");
-        String postfix = uriSplit[uriSplit.length - 1].replace('_', ' ');
-        return postfix;
+        return uriSplit[uriSplit.length - 1].replace('_', ' ');
     }
 
     public static LuceneIndex get() throws IOException
@@ -100,6 +94,6 @@ public class LuceneFactory
         Directory directory = FSDirectory.open(new File(Configuration.getLuceneDir()).toPath());
         DirectoryReader reader = DirectoryReader.open(directory);
 
-        return new LuceneIndex(new IndexSearcher(reader), new StandardAnalyzer());
+        return new LuceneIndex(new IndexSearcher(reader));
     }
 }

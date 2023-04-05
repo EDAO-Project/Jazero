@@ -11,7 +11,7 @@ import java.io.IOException;
  */
 public class Neo4JWriter extends Neo4JHandler implements IndexIO
 {
-    private String file;
+    private final String file;
     private static final String IMPORT_SCRIPT = Neo4JHandler.BASE + "import.sh";
     private static final String INSERT_LINKS_SCRIPT = Neo4JHandler.BASE + "insert-links.sh";
 

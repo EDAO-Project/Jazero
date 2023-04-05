@@ -1,7 +1,6 @@
 package dk.aau.cs.dkwe.edao.calypso.entitylinker.index;
 
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.Index;
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -15,15 +14,13 @@ import java.io.Serializable;
 
 public class LuceneIndex implements Index<String, String>, Serializable
 {
-    private IndexSearcher searcher;
-    private Analyzer analyzer;
+    private final IndexSearcher searcher;
     public static final String URI_FIELD = "uri";
     public static final String TEXT_FIELD = "text";
 
-    public LuceneIndex(IndexSearcher searcher, Analyzer analyzer)
+    public LuceneIndex(IndexSearcher searcher)
     {
         this.searcher = searcher;
-        this.analyzer = analyzer;
     }
 
     @Override

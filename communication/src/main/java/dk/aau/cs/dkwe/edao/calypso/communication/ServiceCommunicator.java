@@ -11,7 +11,7 @@ import java.util.Map;
 
 public class ServiceCommunicator implements Communicator
 {
-    private URL url, testUrl;
+    private final URL url, testUrl;
 
     public static ServiceCommunicator init(String hostName, String mapping, boolean secure) throws MalformedURLException
     {
@@ -60,7 +60,7 @@ public class ServiceCommunicator implements Communicator
      * @param content Content to be send in request body
      * @param headers Headers of POST request
      * @return Response code
-     * @throws IOException
+     * @throws IOException when an error is encountered
      */
     @Override
     public Response send(Object content, Map<String, String> headers) throws IOException

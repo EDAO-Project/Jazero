@@ -2,7 +2,6 @@ package dk.aau.cs.dkwe.edao.calypso.knowledgegraph.middleware;
 
 import dk.aau.cs.dkwe.edao.calypso.knowledgegraph.connector.Neo4jEndpoint;
 
-import java.io.File;
 import java.io.IOException;
 
 public abstract class Neo4JHandler

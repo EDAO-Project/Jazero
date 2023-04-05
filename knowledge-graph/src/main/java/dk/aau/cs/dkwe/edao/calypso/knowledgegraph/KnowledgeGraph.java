@@ -83,7 +83,7 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
      *                  ...
      *              ]
      *          }
-     *
+     * <p>
      * WARNING:
      *      This endpoint can memory crash the service for large KGs since this loads the sub-graph into memory
      */
@@ -124,7 +124,7 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
      *  {
      *      "folder": "<FOLDER>"
      *  }
-     *
+     * <p>
      *  The folder must have two .ttl files: one with table ID to entities and one with table ID to types
      *  Table ID to entities must contain lines of the format <TABLE ID URI> <https://schema.org/mentions> <KG entity IRI>
      *  Table ID to types must contain lines of the format <TABLE ID URI> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Table>
