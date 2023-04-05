@@ -105,7 +105,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 embeddingLSH.useEmbeddingIndex(embeddingsIndex);
             }
 
-            catch (IOException e)
+            catch (IOException | RuntimeException e)
             {
                 FileLogger.log(FileLogger.Service.SDL_Manager, "Failed loading indexes: " + e.getMessage());
                 Configuration.setIndexesLoaded(false);
