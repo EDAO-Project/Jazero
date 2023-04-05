@@ -2,7 +2,7 @@ package dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh;
 
 import java.util.List;
 
-public class HammingDistance<E> extends Distance
+public class HammingDistance<E> extends Distance<E>
 {
     public HammingDistance(List<E> vector1, List<E> vector2)
     {

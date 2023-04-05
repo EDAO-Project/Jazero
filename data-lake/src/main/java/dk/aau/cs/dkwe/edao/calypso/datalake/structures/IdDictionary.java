@@ -3,10 +3,10 @@ package dk.aau.cs.dkwe.edao.calypso.datalake.structures;
 import java.io.Serializable;
 import java.util.*;
 
-public class IdDictionary<K> extends Dictionary<K, Id> implements Serializable
+public class IdDictionary<K extends Comparable<K>> extends Dictionary<K, Id> implements Serializable
 {
-    private Map<K, Id> map;
-    private Map<Id, K> inverse;
+    private final Map<K, Id> map;
+    private final Map<Id, K> inverse;
 
     public IdDictionary(boolean ordered)
     {

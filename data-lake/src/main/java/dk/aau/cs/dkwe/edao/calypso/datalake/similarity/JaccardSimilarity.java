@@ -7,7 +7,7 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Pair;
 
 public class JaccardSimilarity<E extends Comparable<E>> implements Similarity
 {
-    private Set<E> s1, s2;
+    private final Set<E> s1, s2;
     private Set<Pair<E, Double>> weights = null;
 
     private JaccardSimilarity(Set<E> s1, Set<E> s2)
@@ -29,12 +29,12 @@ public class JaccardSimilarity<E extends Comparable<E>> implements Similarity
 
     public static <E extends Comparable<E>> JaccardSimilarity<E> make(Set<E> s1, Set<E> s2)
     {
-        return new JaccardSimilarity<E>(s1, s2);
+        return new JaccardSimilarity<>(s1, s2);
     }
 
     public static <E extends Comparable<E>> JaccardSimilarity<E> make(Set<E> s1, Set<E> s2, Set<Pair<E, Double>> weights)
     {
-        return new JaccardSimilarity<E>(s1, s2, weights);
+        return new JaccardSimilarity<>(s1, s2, weights);
     }
 
     @Override

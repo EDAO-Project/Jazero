@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 public class TypeShingles implements Shingles
 {
-    private Set<List<String>> shingles;
+    private final Set<List<String>> shingles;
 
     public static Set<List<String>> shingles(Set<String> types, int shingleSize)
     {

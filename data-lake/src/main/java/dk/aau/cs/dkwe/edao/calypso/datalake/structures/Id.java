@@ -62,10 +62,9 @@ public record Id(int id) implements Serializable, Comparable<Id>
     @Override
     public boolean equals(Object other)
     {
-        if (!(other instanceof Id))
+        if (!(other instanceof Id otherId))
             return false;
 
-        Id otherId = (Id) other;
         return this.id == otherId.id;
     }
 

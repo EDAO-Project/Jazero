@@ -32,7 +32,7 @@ import java.util.Arrays;
  * one worker and so that no worker is assigned to more than one job in such a
  * manner so as to minimize the total cost of completing the jobs.
  * <p>
- * 
+ *
  * An assignment for a cost matrix that has more workers than jobs will
  * necessarily include unassigned workers, indicated by an assignment value of
  * -1; in no other circumstance will there be unassigned workers. Similarly, an
@@ -41,13 +41,13 @@ import java.util.Arrays;
  * jobs. For completeness, an assignment for a square cost matrix will give
  * exactly one unique worker to each job.
  * <p>
- * 
+ *
  * This version of the Hungarian algorithm runs in time O(n^3), where n is the
  * maximum among the number of workers and the number of jobs.
- * 
+ *
  * @author Kevin L. Stern
- * 
- * Code taken from: https://github.com/KevinStern/software-and-algorithms/blob/master/src/main/java/blogspot/software_and_algorithms/stern_library/optimization/HungarianAlgorithm.java
+ *
+ * Code taken from: <a href="https://github.com/KevinStern/software-and-algorithms/blob/master/src/main/java/blogspot/software_and_algorithms/stern_library/optimization/HungarianAlgorithm.java">...</a>
  */
 public class HungarianAlgorithm {
   private final double[][] costMatrix;

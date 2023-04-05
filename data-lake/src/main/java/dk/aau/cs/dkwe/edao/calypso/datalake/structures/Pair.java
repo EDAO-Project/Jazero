@@ -3,7 +3,7 @@ package dk.aau.cs.dkwe.edao.calypso.datalake.structures;
 import java.io.Serializable;
 import java.util.Objects;
 
-public record Pair<F extends Comparable, S extends Comparable>(F first, S second) implements Serializable, Comparable<Pair<F, S>>
+public record Pair<F extends Comparable<F>, S extends Comparable<S>>(F first, S second) implements Serializable, Comparable<Pair<F, S>>
 {
     public Pair
     {
@@ -31,12 +31,10 @@ public record Pair<F extends Comparable, S extends Comparable>(F first, S second
             return true;
         }
 
-        if (!(other instanceof Pair))
+        if (!(other instanceof Pair<?, ?> m))
         {
             return false;
         }
-
-        Pair<?,?> m = (Pair<?,?>) other;
 
         try
         {

@@ -12,9 +12,9 @@ import java.util.Map;
 
 public class Result implements Externalizable
 {
-    private int k, size;
-    private List<Pair<File, Double>> tableScores;
-    private Map<String, Stats> stats;
+    private final int k, size;
+    private final List<Pair<File, Double>> tableScores;
+    private final Map<String, Stats> stats;
 
     public Result(int k, List<Pair<File, Double>> tableScores, Map<String, Stats> tableStats)
     {
@@ -57,7 +57,7 @@ public class Result implements Externalizable
     /**
      * Writes results in JSON format
      * @param out the stream to write the results to
-     * @throws IOException
+     * @throws IOException When an error occurs during writing result to disk
      */
     @Override
     public void writeExternal(ObjectOutput out) throws IOException

@@ -12,7 +12,7 @@ import java.util.*;
  */
 public class EntityTable implements Index<Id, Entity>, Serializable
 {
-    private Map<Id, Entity> idx = new HashMap<>();
+    private final Map<Id, Entity> idx = new HashMap<>();
 
     @Override
     public void insert(Id key, Entity value)

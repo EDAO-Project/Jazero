@@ -4,7 +4,7 @@ import java.util.List;
 
 public abstract class Distance<E>
 {
-    private List<E> vec1, vec2;
+    private final List<E> vec1, vec2;
 
     protected Distance(List<E> v1, List<E> v2)
     {

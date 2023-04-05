@@ -5,15 +5,15 @@ import java.util.Set;
 
 public class Stats
 {
-    private int numRows, numCols, numsCells, numEntities, numMappedCells, entityMappedRows;
-    private long cellToEntityMatches;
-    private List<Integer> entitiesPerRow, entitiesPerColumn, cellToEntityMatchesPerCol;
-    List<Boolean> numericTableColumns;
-    private Set<String> entities;
-    private List<List<String>> tupleQueryAlignment;
-    private double fractionOfEntityMappedRows;
-    private List<Double> queryRowScores;
-    private List<List<Double>> queryRowVectors;
+    private final int numRows, numCols, numsCells, numEntities, numMappedCells, entityMappedRows;
+    private final long cellToEntityMatches;
+    private final List<Integer> entitiesPerRow, entitiesPerColumn, cellToEntityMatchesPerCol;
+    private final List<Boolean> numericTableColumns;
+    private final Set<String> entities;
+    private final List<List<String>> tupleQueryAlignment;
+    private final double fractionOfEntityMappedRows;
+    private final List<Double> queryRowScores;
+    private final List<List<Double>> queryRowVectors;
 
     public static class StatBuilder
     {

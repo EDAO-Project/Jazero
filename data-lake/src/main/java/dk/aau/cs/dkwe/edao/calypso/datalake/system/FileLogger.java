@@ -15,7 +15,7 @@ public class FileLogger
         EKG_Manager("EKG Manager"),
         EntityLinker_Manager("Entity linker service");
 
-        private String name;
+        private final String name;
 
         Service(String name)
         {
@@ -38,7 +38,11 @@ public class FileLogger
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFile, true)))
         {
             Date date = DateTime.now().toDate();
-            writer.append(service.toString() + " (" + date.toString() + "): " + log);
+            writer.append(service.toString());
+            writer.append(" (");
+            writer.append(date.toString());
+            writer.append("): ");
+            writer.append(log);
             writer.newLine();
             writer.flush();
         }

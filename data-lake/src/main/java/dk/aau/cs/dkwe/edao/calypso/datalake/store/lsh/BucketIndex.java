@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 public abstract class BucketIndex<K, V> implements Serializable
 {
-    private List<BucketGroup<K, V>> groups;
+    private final List<BucketGroup<K, V>> groups;
 
     protected BucketIndex(int groups, int groupBuckets)
     {
@@ -46,7 +46,7 @@ public abstract class BucketIndex<K, V> implements Serializable
     }
 
     /**
-     * Add key-value pair to bucket bucket group
+     * Add key-value pair to bucket group
      * @param group Group containing bucket to be populated
      * @param bucketIndex Index of bucket within group to be populated
      * @param key Key from key-value pair to be added
@@ -61,7 +61,7 @@ public abstract class BucketIndex<K, V> implements Serializable
      * Getter to set of values in bucket from a specific bucket group
      * @param group Index of bucket group with bucket of interest
      * @param bucketIndex Bucket of interest within bucket group
-     * @return All values in bucket in bucket group
+     * @return All values in bucket group
      */
     protected Set<V> get(int group, int bucketIndex)
     {

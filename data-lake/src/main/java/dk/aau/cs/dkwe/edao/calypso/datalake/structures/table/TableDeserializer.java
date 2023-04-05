@@ -3,6 +3,7 @@ package dk.aau.cs.dkwe.edao.calypso.datalake.structures.table;
 import dk.aau.cs.dkwe.edao.calypso.datalake.utilities.Deserializer;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /** Deserialized a table
@@ -10,7 +11,7 @@ import java.util.List;
  */
 public class TableDeserializer extends Deserializer<Table<String>>
 {
-    private String serialized;
+    private final String serialized;
 
     public static TableDeserializer create(String serialized)
     {
@@ -38,12 +39,7 @@ public class TableDeserializer extends Deserializer<Table<String>>
 
             String[] elementSplit = rowStr.split("<>");
             List<String> row = new ArrayList<>(elementSplit.length);
-
-            for (String element : elementSplit)
-            {
-                row.add(element);
-            }
-
+            Collections.addAll(row, elementSplit);
             table.addRow(new Table.Row<>(row));
         }
 

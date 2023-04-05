@@ -2,18 +2,11 @@ package dk.aau.cs.dkwe.edao.calypso.datalake.store;
 
 import java.io.Serializable;
 
-public class SynchronizedIndex<K, V> implements Index<K, V>, Serializable
+public record SynchronizedIndex<K, V>(Index<K, V> index) implements Index<K, V>, Serializable
 {
-    private Index<K, V> index;
-
     public static <Key, Value> SynchronizedIndex<Key, Value> wrap(Index<Key, Value> index)
     {
         return new SynchronizedIndex<>(index);
-    }
-
-    public SynchronizedIndex(Index<K, V> index)
-    {
-        this.index = index;
     }
 
     @Override
@@ -50,10 +43,5 @@ public class SynchronizedIndex<K, V> implements Index<K, V>, Serializable
     public void clear()
     {
         this.index.clear();
-    }
-
-    public Index<K, V> getIndex()
-    {
-        return this.index;
     }
 }

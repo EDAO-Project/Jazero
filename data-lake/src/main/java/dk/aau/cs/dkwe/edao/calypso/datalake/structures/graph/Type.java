@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 public class Type implements Comparable<Type>, Serializable
 {
-    private String type;
+    private final String type;
     private double idf = -1;
 
     public Type(String type)
@@ -47,10 +47,9 @@ public class Type implements Comparable<Type>, Serializable
     @Override
     public boolean equals(Object o)
     {
-        if (!(o instanceof Type))
+        if (!(o instanceof Type other))
             return false;
 
-        Type other = (Type) o;
         return this.type.equals(other.type) && this.idf == other.idf;
     }
 

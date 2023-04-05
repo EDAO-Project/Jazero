@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class EmbeddingsIndex<C> implements ClusteredIndex<C, Id, List<Double>>, Serializable
 {
     private final Map<Id, List<Double>> embeddingsMap = new ConcurrentHashMap<>();
-    private Map<C, Map<Id, List<Double>>> clusteredEmbeddings = new ConcurrentHashMap<>();
+    private final Map<C, Map<Id, List<Double>>> clusteredEmbeddings = new ConcurrentHashMap<>();
     private int dim;
 
     @Override

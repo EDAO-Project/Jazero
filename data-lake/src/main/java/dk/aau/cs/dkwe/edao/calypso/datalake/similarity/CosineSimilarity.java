@@ -5,7 +5,7 @@ import java.util.List;
 
 public class CosineSimilarity implements Similarity
 {
-    private List<Double> l1, l2;
+    private final List<Double> l1, l2;
 
     private CosineSimilarity(List<Double> l1, List<Double> l2)
     {

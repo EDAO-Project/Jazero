@@ -7,7 +7,7 @@ import java.util.function.Function;
 
 public class ColumnAggregator<C> implements Aggregator<C>
 {
-    private Table<C> table;
+    private final Table<C> table;
 
     public ColumnAggregator(Table<C> table)
     {
@@ -19,7 +19,7 @@ public class ColumnAggregator<C> implements Aggregator<C>
      * @param mapper Mapping function from cell to some value
      * @param aggregator Aggregator function that aggregated all content of a column
      * @return List of aggregated columns
-     * @param <E>
+     * @param <E> Return type of mapper function
      */
     public <E> List<E> aggregate(Function<C, E> mapper, Function<Collection<E>, E> aggregator)
     {

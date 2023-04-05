@@ -1,7 +1,5 @@
 package dk.aau.cs.dkwe.edao.calypso.datalake.system;
 
-import org.slf4j.LoggerFactory;
-
 import java.util.Date;
 
 public class Logger
@@ -10,7 +8,7 @@ public class Logger
     {
         INFO(1), DEBUG(2), RESULT(3), ERROR(4);
 
-        private int level;
+        private final int level;
 
         Level(int level)
         {
@@ -19,23 +17,13 @@ public class Logger
 
         public String toString()
         {
-            switch (this.level)
-            {
-                case 1:
-                    return INFO.name();
-
-                case 2:
-                    return ERROR.name();
-
-                case 3:
-                    return RESULT.name();
-
-                case 4:
-                    return DEBUG.name();
-
-                default:
-                    return null;
-            }
+            return switch (this.level) {
+                case 1 -> INFO.name();
+                case 2 -> ERROR.name();
+                case 3 -> RESULT.name();
+                case 4 -> DEBUG.name();
+                default -> null;
+            };
         }
 
         public int getLevel()
@@ -45,19 +33,14 @@ public class Logger
 
         public static Level parse(String str)
         {
-            if ("info".equals(str.toLowerCase()))
-                return INFO;
+            return switch (str.toLowerCase()) {
+                case "info" -> INFO;
+                case "error" -> ERROR;
+                case "debug" -> DEBUG;
+                case "result" -> RESULT;
+                default -> null;
+            };
 
-            else if ("error".equals(str.toLowerCase()))
-                return ERROR;
-
-            else if ("debug".equals(str.toLowerCase()))
-                return DEBUG;
-
-            else if ("result".equals(str.toLowerCase()))
-                return RESULT;
-
-            return null;
         }
     }
 

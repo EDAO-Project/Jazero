@@ -6,8 +6,8 @@ import java.util.List;
 
 public class Entity implements Comparable<Entity>, Serializable
 {
-    private String uri;
-    private List<Type> types;
+    private final String uri;
+    private final List<Type> types;
     private double idf = -1;
 
     public Entity(String uri, Type ... types)
@@ -56,10 +56,8 @@ public class Entity implements Comparable<Entity>, Serializable
     @Override
     public boolean equals(Object o)
     {
-        if (!(o instanceof Entity))
+        if (!(o instanceof Entity other))
             return false;
-
-        Entity other = (Entity) o;
 
         return this.uri.equals(other.uri) && this.types.equals(other.types);
     }

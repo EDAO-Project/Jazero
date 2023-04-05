@@ -10,8 +10,8 @@ import java.util.Vector;
  */
 public class DynamicTable<T> implements Table<T>
 {
-    private List<Row<T>> table;
-    private List<String> labels;
+    private final List<Row<T>> table;
+    private final List<String> labels;
 
     public DynamicTable(String ... columnLabels)
     {
@@ -25,7 +25,7 @@ public class DynamicTable<T> implements Table<T>
 
         for (List<T> row : table)
         {
-            this.table.add(new Row<T>(row));
+            this.table.add(new Row<>(row));
         }
     }
 
@@ -51,7 +51,7 @@ public class DynamicTable<T> implements Table<T>
                 elements.add(row.get(index));
         }
 
-        return new Column<T>(this.labels.get(index), elements);
+        return new Column<>(this.labels.get(index), elements);
     }
 
     @Override

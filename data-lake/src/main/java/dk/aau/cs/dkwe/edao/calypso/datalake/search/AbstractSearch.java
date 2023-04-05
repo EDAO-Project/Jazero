@@ -1,6 +1,5 @@
 package dk.aau.cs.dkwe.edao.calypso.datalake.search;
 
-import dk.aau.cs.dkwe.edao.calypso.datalake.search.*;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EmbeddingsIndex;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTable;
@@ -9,10 +8,10 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.Table;
 
 public abstract class AbstractSearch implements Search
 {
-    private EntityLinking linker;
-    private EntityTable entityTable;
-    private EntityTableLink entityTableLink;
-    private EmbeddingsIndex<String> embeddingIdx;
+    private final EntityLinking linker;
+    private final EntityTable entityTable;
+    private final EntityTableLink entityTableLink;
+    private final EmbeddingsIndex<String> embeddingIdx;
 
     protected AbstractSearch(EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
                              EmbeddingsIndex<String> embeddingIndex)

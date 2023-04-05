@@ -13,8 +13,8 @@ import java.util.*;
 public class EntityLinking implements Linker<String, String>, Serializable
 {
     private IdDictionary<String> uriDict, tableCellDict;
-    private Map<Id, Id> tableCellToUri;    // Table cell text to entity URI
-    private Map<Id, Id> uriToTableCell;    // entity URI to table cell text
+    private final Map<Id, Id> tableCellToUri;    // Table cell text to entity URI
+    private final Map<Id, Id> uriToTableCell;    // entity URI to table cell text
     String tableEntityPrefix, kgEntityPrefix;
 
     public EntityLinking(String cellPrefix, String uriPrefix)
@@ -27,7 +27,7 @@ public class EntityLinking implements Linker<String, String>, Serializable
         this.kgEntityPrefix = uriPrefix;
     }
 
-    public EntityLinking(IdDictionary<String> uriDict, IdDictionary cellDict, String cellPrefix, String uriPrefix)
+    public EntityLinking(IdDictionary<String> uriDict, IdDictionary<String> cellDict, String cellPrefix, String uriPrefix)
     {
         this(cellPrefix, uriPrefix);
         this.uriDict = uriDict;

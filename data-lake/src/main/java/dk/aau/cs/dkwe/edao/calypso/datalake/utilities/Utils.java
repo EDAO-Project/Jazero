@@ -22,13 +22,13 @@ public class Utils
     /**
      * Returns the JsonTable from a path to the json file
      * @param path: Path to the Json file corresponding to a table
-     * @return a JsonTable object if table from path read succesfully. Otherwise returns an empty JsonTable
+     * @return a JsonTable object if table from path read successfully. Otherwise, returns an empty JsonTable
     */
     public static JsonTable getTableFromPath(Path path)
     {
         // Tries to parse the JSON file, it fails if file not found or JSON is not well formatted
         TypeAdapter<JsonTable> strictGsonObjectAdapter = new Gson().getAdapter(JsonTable.class);
-        JsonTable table = new JsonTable();
+        JsonTable table;
 
         try (JsonReader reader = new JsonReader(new FileReader(path.toFile())))
         {
@@ -42,7 +42,7 @@ public class Utils
         }
 
         // We check if all the required json attributes are set
-        if(table == null || table._id  == null || table.rows == null)
+        if (table == null || table._id  == null || table.rows == null)
         {
             throw new ParsingException("Failed to parse '" + path + "'");
         }
@@ -158,7 +158,7 @@ public class Utils
 
     /**
      * Returns the weighted Euclidean Distance between two lists
-     * 
+     * <p>
      * Assumes that the sizes of `vectorA`, `vectorB` and `weightVector` are all the same
      */
     public static double euclideanDistance(List<Double> vectorA, List<Double> vectorB, List<Double> weightVector)
@@ -186,7 +186,7 @@ public class Utils
             sum += val;
         }
 
-        for (Integer i=0; i < vec.size(); i++)
+        for (int i = 0; i < vec.size(); i++)
         {
             normVec.set(i, vec.get(i) / sum);
         }
@@ -201,7 +201,7 @@ public class Utils
     {
         List<Double> returnVector = new ArrayList<>(Collections.nCopies(vectorA.size(), 0.0));
 
-        for (Integer i=0; i < vectorA.size(); i++)
+        for (int i = 0; i < vectorA.size(); i++)
         {
             returnVector.set(i, vectorA.get(i) * vectorB.get(i));
         }
@@ -209,7 +209,7 @@ public class Utils
         return returnVector;
     }
 
-    public static Parser getEmbeddingsParser(String content, char delimiter)
+    public static Parser<EmbeddingsParser.EmbeddingToken> getEmbeddingsParser(String content, char delimiter)
     {
         return new EmbeddingsParser(content, delimiter);
     }

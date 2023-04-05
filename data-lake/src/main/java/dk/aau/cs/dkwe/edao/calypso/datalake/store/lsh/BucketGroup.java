@@ -7,7 +7,7 @@ import java.util.Set;
 
 public class BucketGroup<K, V> implements Serializable
 {
-    private List<Bucket<K, V>> buckets;
+    private final List<Bucket<K, V>> buckets;
 
     public BucketGroup(int buckets)
     {

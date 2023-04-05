@@ -37,25 +37,25 @@ import java.util.stream.Collectors;
 
 public class IndexWriter implements IndexIO
 {
-    private List<Path> files;
-    private File indexDir, dataDir;
-    private StorageHandler storage;
-    private int threads;
-    private AtomicInteger loadedTables = new AtomicInteger(0),
+    private final List<Path> files;
+    private final File indexDir, dataDir;
+    private final StorageHandler storage;
+    private final int threads;
+    private final AtomicInteger loadedTables = new AtomicInteger(0),
             cellsWithLinks = new AtomicInteger(0), tableStatsCollected = new AtomicInteger(0);
     private final Object lock = new Object();
     private long elapsed = -1;
-    private Map<Integer, Integer> cellToNumLinksFrequency = Collections.synchronizedMap(new HashMap<>());
-    private KGService kg;
-    private ELService el;
-    private SynchronizedLinker<String, String> linker;
-    private SynchronizedIndex<Id, Entity> entityTable;
-    private SynchronizedIndex<Id, List<String>> entityTableLink;
-    private SynchronizedIndex<Id, List<Double>> embeddingsIdx;
+    private final Map<Integer, Integer> cellToNumLinksFrequency = Collections.synchronizedMap(new HashMap<>());
+    private final KGService kg;
+    private final ELService el;
+    private final SynchronizedLinker<String, String> linker;
+    private final  SynchronizedIndex<Id, Entity> entityTable;
+    private final SynchronizedIndex<Id, List<String>> entityTableLink;
+    private final SynchronizedIndex<Id, List<Double>> embeddingsIdx;
     private TypesLSHIndex typesLSH;
     private VectorLSHIndex embeddingsLSH;
-    private DBDriverBatch<List<Double>, String> embeddingsDB;
-    private BloomFilter<String> filter = BloomFilter.create(
+    private final DBDriverBatch<List<Double>, String> embeddingsDB;
+    private final BloomFilter<String> filter = BloomFilter.create(
             Funnels.stringFunnel(Charset.defaultCharset()),
             5_000_000,
             0.01);
@@ -108,7 +108,7 @@ public class IndexWriter implements IndexIO
         this.embeddingsIdx = SynchronizedIndex.wrap(new EmbeddingsIndex<>());
         this.entityTable = SynchronizedIndex.wrap(new EntityTable());
         this.entityTableLink = SynchronizedIndex.wrap(new EntityTableLink());
-        ((EntityTableLink) this.entityTableLink.getIndex()).setDirectory(files.get(0).toFile().getParent() + "/");
+        ((EntityTableLink) this.entityTableLink.index()).setDirectory(files.get(0).toFile().getParent() + "/");
     }
 
     /**
@@ -212,7 +212,7 @@ public class IndexWriter implements IndexIO
                             entityTypes.remove(type);
                         }
 
-                        Id entityId = ((EntityLinking) this.linker.getLinker()).uriLookup(uri);
+                        Id entityId = ((EntityLinking) this.linker.linker()).uriLookup(uri);
                         List<Double> embeddings = this.embeddingsDB.select(uri.replace("'", "''"));
                         this.entityTable.insert(entityId,
                                 new Entity(uri, entityTypes.stream().map(Type::new).collect(Collectors.toList())));
@@ -228,9 +228,9 @@ public class IndexWriter implements IndexIO
 
                 if (uri != null)
                 {
-                    Id entityId = ((EntityLinking) this.linker.getLinker()).uriLookup(uri);
+                    Id entityId = ((EntityLinking) this.linker.linker()).uriLookup(uri);
                     Pair<Integer, Integer> location = new Pair<>(row, column);
-                    ((EntityTableLink) this.entityTableLink.getIndex()).
+                    ((EntityTableLink) this.entityTableLink.index()).
                             addLocation(entityId, tableName, List.of(location));
                 }
 
@@ -295,13 +295,13 @@ public class IndexWriter implements IndexIO
         while (entities.hasNext())
         {
             entityCount++;
-            Id entityId = ((EntityLinking) this.linker.getLinker()).uriLookup(entities.next());
+            Id entityId = ((EntityLinking) this.linker.linker()).uriLookup(entities.next());
 
             if (entityId == null)
                 continue;
 
             List<Pair<Integer, Integer>> locations =
-                    ((EntityTableLink) this.entityTableLink.getIndex()).getLocations(entityId, tableFileName);
+                    ((EntityTableLink) this.entityTableLink.index()).getLocations(entityId, tableFileName);
 
             if (locations != null)
             {
@@ -381,7 +381,7 @@ public class IndexWriter implements IndexIO
 
     private void loadEntityIDFs()
     {
-        Iterator<Id> idIter = ((EntityLinking) this.linker.getLinker()).uriIds();
+        Iterator<Id> idIter = ((EntityLinking) this.linker.linker()).uriIds();
 
         while (idIter.hasNext())
         {
@@ -394,7 +394,7 @@ public class IndexWriter implements IndexIO
     private void loadTypeIDFs()
     {
         Map<Type, Integer> entityTypeFrequency = new HashMap<>();
-        Iterator<Id> idIterator = ((EntityLinking) this.linker.getLinker()).uriIds();
+        Iterator<Id> idIterator = ((EntityLinking) this.linker.linker()).uriIds();
 
         while (idIterator.hasNext())
         {
@@ -412,7 +412,7 @@ public class IndexWriter implements IndexIO
         }
 
         int totalEntityCount = this.entityTable.size();
-        idIterator = ((EntityLinking) this.linker.getLinker()).uriIds();
+        idIterator = ((EntityLinking) this.linker.linker()).uriIds();
 
         while (idIterator.hasNext())
         {
@@ -432,25 +432,25 @@ public class IndexWriter implements IndexIO
         // Entity linker
         ObjectOutputStream outputStream =
                 new ObjectOutputStream(new FileOutputStream(this.indexDir + "/" + Configuration.getEntityLinkerFile()));
-        outputStream.writeObject(this.linker.getLinker());
+        outputStream.writeObject(this.linker.linker());
         outputStream.flush();
         outputStream.close();
 
         // Entity table
         outputStream = new ObjectOutputStream(new FileOutputStream(this.indexDir + "/" + Configuration.getEntityTableFile()));
-        outputStream.writeObject(this.entityTable.getIndex());
+        outputStream.writeObject(this.entityTable.index());
         outputStream.flush();
         outputStream.close();
 
         // Entity to tables inverted index
         outputStream = new ObjectOutputStream(new FileOutputStream(this.indexDir + "/" + Configuration.getEntityToTablesFile()));
-        outputStream.writeObject(this.entityTableLink.getIndex());
+        outputStream.writeObject(this.entityTableLink.index());
         outputStream.flush();
         outputStream.close();
 
         // Embeddings index
         outputStream = new ObjectOutputStream(new FileOutputStream(this.indexDir + "/" + Configuration.getEmbeddingsIndexFile()));
-        outputStream.writeObject(this.embeddingsIdx.getIndex());
+        outputStream.writeObject(this.embeddingsIdx.index());
         outputStream.flush();
         outputStream.close();
 
@@ -473,7 +473,7 @@ public class IndexWriter implements IndexIO
     {
         FileOutputStream outputStream = new FileOutputStream(this.dataDir + "/" + Configuration.getTableToEntitiesFile());
         OutputStreamWriter writer = new OutputStreamWriter(outputStream);
-        Iterator<Id> entityIter = ((EntityLinking) this.linker.getLinker()).uriIds();
+        Iterator<Id> entityIter = ((EntityLinking) this.linker.linker()).uriIds();
 
         while (entityIter.hasNext())
         {
@@ -492,7 +492,7 @@ public class IndexWriter implements IndexIO
         outputStream = new FileOutputStream(this.dataDir + "/" + Configuration.getTableToTypesFile());
         writer = new OutputStreamWriter(outputStream);
         Set<String> tables = new HashSet<>();
-        Iterator<Id> entityIdIter = ((EntityLinking) this.linker.getLinker()).uriIds();
+        Iterator<Id> entityIdIter = ((EntityLinking) this.linker.linker()).uriIds();
 
         while (entityIdIter.hasNext())
         {
@@ -543,7 +543,7 @@ public class IndexWriter implements IndexIO
      */
     public EntityLinking getEntityLinker()
     {
-        return (EntityLinking) this.linker.getLinker();
+        return (EntityLinking) this.linker.linker();
     }
 
     /**
@@ -552,7 +552,7 @@ public class IndexWriter implements IndexIO
      */
     public EntityTable getEntityTable()
     {
-        return (EntityTable) this.entityTable.getIndex();
+        return (EntityTable) this.entityTable.index();
     }
 
     /**
@@ -561,7 +561,7 @@ public class IndexWriter implements IndexIO
      */
     public EntityTableLink getEntityTableLinker()
     {
-        return (EntityTableLink) this.entityTableLink.getIndex();
+        return (EntityTableLink) this.entityTableLink.index();
     }
 
     /**
@@ -570,7 +570,7 @@ public class IndexWriter implements IndexIO
      */
     public EmbeddingsIndex<String> getEmbeddingsIndex()
     {
-        return (EmbeddingsIndex<String>) this.embeddingsIdx.getIndex();
+        return (EmbeddingsIndex<String>) this.embeddingsIdx.index();
     }
 
     /**

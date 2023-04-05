@@ -7,11 +7,11 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.utilities.Serializer;
  */
 public class TableSerializer<E> extends Serializer
 {
-    private Table<E> table;
+    private final Table<E> table;
 
-    public static <E> TableSerializer create(Table<E> table)
+    public static <E> TableSerializer<E> create(Table<E> table)
     {
-        return new TableSerializer(table);
+        return new TableSerializer<>(table);
     }
 
     private TableSerializer(Table<E> table)

@@ -25,13 +25,13 @@ import java.util.concurrent.Future;
 public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<String, String>, Serializable
 {
     private Set<List<Double>> projections;
-    private int bandSize;
-    private boolean aggregateColumns;
-    private transient int threads;
+    private final int bandSize;
+    private final boolean aggregateColumns;
+    private final transient int threads;
     private transient final Object lock = new Object();
-    private transient EntityLinking linker = null;
-    private HashFunction hash;
-    private transient Cache<Id, List<Integer>> cache;
+    private transient EntityLinking linker;
+    private final HashFunction hash;
+    private final transient Cache<Id, List<Integer>> cache;
     private transient EmbeddingsIndex<String> embeddingsIdx;
 
     /**
@@ -105,8 +105,8 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
 
     private void loadTable(PairNonComparable<String, Table<String>> table)
     {
-        String tableName = table.getFirst();
-        Table<String> t = table.getSecond();
+        String tableName = table.first();
+        Table<String> t = table.second();
         int rows = t.rowCount();
 
         if (this.aggregateColumns)

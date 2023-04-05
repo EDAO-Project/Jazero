@@ -5,8 +5,8 @@ import java.util.*;
 
 public final class EndpointAnalysis
 {
-    private File analysisFile;
-    private Map<Integer, Map<Integer, Map<String, Integer>>> record = new HashMap<>();  // Year -> week number -> endpoint -> count literal
+    private final File analysisFile;
+    private final Map<Integer, Map<Integer, Map<String, Integer>>> record = new HashMap<>();  // Year -> week number -> endpoint -> count literal
 
     public EndpointAnalysis()
     {
@@ -20,6 +20,11 @@ public final class EndpointAnalysis
             }
 
             catch (IOException e) {}
+        }
+
+        else
+        {
+            load();
         }
     }
 
@@ -66,7 +71,7 @@ public final class EndpointAnalysis
     {
         try (FileWriter writer = new FileWriter(this.analysisFile))
         {
-            Comparator<Integer> sort = (e1, e2) -> e1 - e2;
+            Comparator<Integer> sort = Comparator.comparingInt(e -> e);
             List<Integer> years = new ArrayList<>(this.record.keySet());
             years.sort(sort);
 
@@ -96,6 +101,7 @@ public final class EndpointAnalysis
         catch (IOException e) {}
     }
 
+    // TODO: Not yet finished
     private void load()
     {
 

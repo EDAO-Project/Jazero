@@ -7,8 +7,8 @@ import java.net.MalformedURLException;
 
 public abstract class Service
 {
-    private String host;
-    private int port;
+    private final String host;
+    private final int port;
 
     protected Service(String host, int port)
     {

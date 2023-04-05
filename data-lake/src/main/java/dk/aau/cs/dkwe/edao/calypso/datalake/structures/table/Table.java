@@ -27,18 +27,11 @@ public interface Table<T>
         return builder.toString();
     }
 
-    class Row<E> implements Iterable<E>
+    record Row<E>(List<E> row) implements Iterable<E>
     {
-        private List<E> row;
-
         public Row(E ... elements)
         {
             this(List.of(elements));
-        }
-
-        public Row(List<E> elements)
-        {
-            this.row = elements;
         }
 
         public E get(int index)
@@ -54,10 +47,9 @@ public interface Table<T>
         @Override
         public boolean equals(Object o)
         {
-            if (!(o instanceof Row))
+            if (!(o instanceof Row<?> other))
                 return false;
 
-            Row other = (Row) o;
             return this.row.equals(other.row);
         }
 
@@ -87,20 +79,11 @@ public interface Table<T>
         }
     }
 
-    class Column<E> implements Iterable<E>
+    record Column<E>(String label, List<E> elements) implements Iterable<E>
     {
-        private String label;
-        private List<E> elements;
-
         public Column(String label, E ... columnElements)
         {
             this(label, List.of(columnElements));
-        }
-
-        public Column(String label, List<E> columnElements)
-        {
-            this.label = label;
-            this.elements = columnElements;
         }
 
         public String getLabel()

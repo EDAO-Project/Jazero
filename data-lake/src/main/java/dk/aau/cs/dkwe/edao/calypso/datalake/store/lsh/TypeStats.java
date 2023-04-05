@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 
 public final class TypeStats
 {
-    private EntityTable entityTable;
+    private final EntityTable entityTable;
 
     public TypeStats(EntityTable entityTable)
     {

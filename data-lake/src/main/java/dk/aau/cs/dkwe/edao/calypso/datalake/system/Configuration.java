@@ -9,8 +9,8 @@ public class Configuration
 {
     private static class ConfigurationIO
     {
-        private InputStream input;
-        private OutputStream output;
+        private final InputStream input;
+        private final OutputStream output;
 
         ConfigurationIO(InputStream input)
         {

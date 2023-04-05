@@ -24,17 +24,17 @@ import java.util.stream.Collectors;
  */
 public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<String, String>, Serializable
 {
-    private int shingles, permutationVectors, bandSize;
+    private final int shingles, permutationVectors, bandSize;
     private List<List<Integer>> permutations;
-    private List<PairNonComparable<Id, List<Integer>>> signature;
+    private final List<PairNonComparable<Id, List<Integer>>> signature;
     private Map<String, Integer> universeTypes;
-    private HashFunction hash;
-    private transient int threads;
+    private final HashFunction hash;
+    private final transient int threads;
     private transient final Object lock = new Object();
-    private transient EntityLinking linker = null;
-    private transient EntityTable entityTable = null;
+    private transient EntityLinking linker;
+    private transient EntityTable entityTable;
     private final Map<Id, Integer> entityToSigIndex = new HashMap<>();
-    private boolean aggregateColumns;
+    private final boolean aggregateColumns;
     private Set<String> unimportantTypes;
     private static final double UNIMPORTANT_TABLE_PERCENTAGE = 0.5;
 
@@ -71,7 +71,7 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
         this.entityTable = entityTable;
         this.aggregateColumns = aggregateColumns;
 
-        Set<Table<String>> linkedTables = tables.stream().map(PairNonComparable::getSecond).collect(Collectors.toSet());
+        Set<Table<String>> linkedTables = tables.stream().map(PairNonComparable::second).collect(Collectors.toSet());
         loadTypes(linkedTables, linker);
 
         try
@@ -158,9 +158,9 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
 
     private void loadTable(PairNonComparable<String, Table<String>> table)
     {
-        String tableName = table.getFirst();
+        String tableName = table.first();
         List<PairNonComparable<Id, Set<Integer>>> matrix = new ArrayList<>();
-        Table<String> t = table.getSecond();
+        Table<String> t = table.second();
         int rows = t.rowCount();
 
         if (this.aggregateColumns)
@@ -235,14 +235,14 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
 
     private void insertIntoBuckets(List<PairNonComparable<Id, Set<Integer>>> matrix, String tableName)
     {
-        Set<Integer> newSignatures = matrix.stream().map(e -> this.entityToSigIndex.get(e.getFirst())).collect(Collectors.toSet());
+        Set<Integer> newSignatures = matrix.stream().map(e -> this.entityToSigIndex.get(e.first())).collect(Collectors.toSet());
 
         for (int entityIdx : newSignatures)
         {
             List<Integer> keys = createKeys(this.permutations.size(), this.bandSize,
-                    this.signature.get(entityIdx).getSecond(), groupSize(), this.hash);
+                    this.signature.get(entityIdx).second(), groupSize(), this.hash);
             int keysCount = keys.size();
-            Id entityId = this.signature.get(entityIdx).getFirst();
+            Id entityId = this.signature.get(entityIdx).first();
 
             for (int group = 0; group < keysCount; group++)
             {
@@ -339,11 +339,11 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
         for (PairNonComparable<Id, Set<Integer>> entity : entityMatrix)
         {
             List<Integer> entitySignature;
-            Id entityId = entity.getFirst();
+            Id entityId = entity.first();
 
             if (!entityToSigIdx.containsKey(entityId))
             {
-                Set<Integer> bitVector = entity.getSecond();
+                Set<Integer> bitVector = entity.second();
 
                 if (bitVector.isEmpty())
                 {
@@ -361,7 +361,7 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
                     }
                 }
 
-                signature.add(new PairNonComparable<>(entity.getFirst(), entitySignature));
+                signature.add(new PairNonComparable<>(entity.first(), entitySignature));
                 entityToSigIdx.put(entityId, signature.size() - 1);
             }
         }
@@ -449,7 +449,7 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
             }
 
             List<Integer> bucketKeys = createKeys(this.permutations.size(), this.bandSize,
-                    this.signature.get(entitySignature).getSecond(), groupSize(), this.hash);
+                    this.signature.get(entitySignature).second(), groupSize(), this.hash);
 
             for (int group = 0; group < bucketKeys.size(); group++)
             {
@@ -498,7 +498,7 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
         if (entitySignatureIdx != -1)
         {
             List<Integer> keys = createKeys(this.permutations.size(), this.bandSize,
-                    this.signature.get(entitySignatureIdx).getSecond(), groupSize(), this.hash);
+                    this.signature.get(entitySignatureIdx).second(), groupSize(), this.hash);
             return super.search(keys, vote);
         }
 
@@ -548,7 +548,7 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
         if (signatureIdx != -1)
         {
             List<Integer> bandKeys = createKeys(this.permutations.size(), this.bandSize,
-                    this.signature.get(signatureIdx).getSecond(), groupSize(), this.hash);
+                    this.signature.get(signatureIdx).second(), groupSize(), this.hash);
             return super.search(bandKeys, vote);
         }
 

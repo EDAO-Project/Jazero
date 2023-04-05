@@ -22,7 +22,6 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.utilities.Utils;
 import dk.aau.cs.dkwe.edao.calypso.storagelayer.StorageHandler;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Predicate;
@@ -34,7 +33,7 @@ public class TableSearch extends AbstractSearch
     {
         COSINE("cosine"), EUCLIDEAN("euclidean");
 
-        private String measure;
+        private final String measure;
 
         SimilarityMeasure(String measure)
         {
@@ -55,18 +54,19 @@ public class TableSearch extends AbstractSearch
 
     public enum CosineSimilarityFunction {NORM_COS, ABS_COS, ANG_COS}
 
-    private int topK, threads, embeddingComparisons, nonEmbeddingComparisons,
+    private final int topK, threads;
+    private int embeddingComparisons, nonEmbeddingComparisons,
             embeddingCoverageSuccesses, embeddingCoverageFails;
     Set<String> queryEntitiesMissingCoverage = new HashSet<>();
     private long elapsed = -1, parsedTables;
     private double reduction = 0.0;
-    private boolean useEmbeddings, singleColumnPerQueryEntity, weightedJaccard,
+    private final boolean useEmbeddings, singleColumnPerQueryEntity, weightedJaccard,
             useMaxSimilarityPerColumn, hungarianAlgorithmSameAlignmentAcrossTuples;
-    private CosineSimilarityFunction embeddingSimFunction;
-    private SimilarityMeasure measure;
-    private Map<String, Stats> tableStats = new TreeMap<>();
+    private final CosineSimilarityFunction embeddingSimFunction;
+    private final SimilarityMeasure measure;
+    private final Map<String, Stats> tableStats = new TreeMap<>();
     private final Object lock = new Object();
-    private StorageHandler storage;
+    private final StorageHandler storage;
     private Prefilter prefilter;
 
     public TableSearch(StorageHandler tableStorage, EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
@@ -98,11 +98,6 @@ public class TableSearch extends AbstractSearch
                 weightedJaccard, useMaxSimilarityPerColumn, hungarianAlgorithmSameAlignmentAcrossTuples,
                 similarityMeasure);
         this.prefilter = prefilter;
-    }
-
-    public void setCorpus(StorageHandler handler)
-    {
-        this.storage = handler;
     }
 
     private Set<File> prefilterSearchSpace(Table<String> query)
@@ -394,12 +389,12 @@ public class TableSearch extends AbstractSearch
 
     /**
      * The similarity between two entities (this is a score between 0 and 1)
-     *
+     * <p>
      * By default, the similarity is the jaccard similarity of the entity types corresponding to the entities.
-     *
+     * <p>
      * However, if 'useEmbeddings' is specified and there exist embeddings for both entities
      * then use the angular distance between the two embedding vectors as the score.
-     *
+     * <p>
      * If 'usePretrainedEmbeddings' is not specified but 'adjustedJaccardSimilarity' is specified, then
      * an adjusted Jaccard similarity between two entities is used where the similarity score is 1 only if the two entities are identical.
      * Otherwise a maximum similarity score is placed if the two entities are different
@@ -685,19 +680,6 @@ public class TableSearch extends AbstractSearch
     protected long abstractElapsedNanoSeconds()
     {
         return this.elapsed;
-    }
-
-    private Set<String> distinctTables()
-    {
-        Set<String> tables = new HashSet<>();
-        Iterator<Id> entityIter = getLinker().uriIds();
-
-        while (entityIter.hasNext())
-        {
-            tables.addAll(getEntityTableLink().find(entityIter.next()));
-        }
-
-        return tables;
     }
 
     public int getEmbeddingComparisons()

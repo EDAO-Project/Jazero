@@ -58,12 +58,6 @@ public class SynchronizedTable<T> extends SimpleTable<T> implements Table<T>
     }
 
     @Override
-    public String toString()
-    {
-        return toStr();
-    }
-
-    @Override
     public boolean equals(Object o)
     {
         return super.equals(o);

@@ -4,7 +4,7 @@ import java.sql.*;
 
 public class Postgres implements DBDriver<ResultSet, String>, ExplainableCause
 {
-    private Connection connection;
+    private final Connection connection;
     private boolean error = false;
     private String errorMsg, stackTrace;
 

@@ -8,7 +8,7 @@ import java.util.*;
 
 public class EmbeddingDBWrapper implements DBDriverBatch<List<Double>, String>, ExplainableCause, Setup
 {
-    private Object driver;
+    private final Object driver;
     private static final String IRI_FIELD = "iri";
     private static final String EMBEDDING_FIELD = "embedding";
     private static final String COLLECTION_NAME = "Embeddings";

@@ -138,8 +138,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      *                  ["lsh": "TYPES|EMBEDDINGS",]
      *                  "query": "<QUERY STRING>"
      *             }
-     *
-     *             The <QUERY STRING> is a list of tuples, each tuple separated by a hash tag (#),
+     * <p>
+     *             The <QUERY STRING> is a list of tuples, each tuple separated by a hashtag (#),
      *             and each tuple element is separated by a diamond (<>).
      * @return JSON array of found tables. Each element is a pair of table ID and score.
      */
@@ -210,7 +210,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             cosineFunction = TableSearch.CosineSimilarityFunction.valueOf(body.get("cosine-function"));
         }
 
-        else if (!useEmbeddings)
+        else
         {
             if (!body.containsKey("weighted-jaccard"))
             {
@@ -332,7 +332,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      *                  "table-prefix": "<TABLE PREFIX>",
      *                  "kg-prefix": "<KG PREFIX>"
      *             }
-     *
+     * <p>
      *             "table-prefix" is the common prefix for table entities, just like kg-prefix. If the prefix differs
      *             from entity to entity, use the empty string.
      *             Optionally, an entry 'disallowed_types' for a JSON array of entity types can be added to indicated
@@ -419,11 +419,10 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 Logger.log(Logger.Level.ERROR, "KG is empty. Make sure to load the KG according to README. Continuing...");
             }
 
-            int signatureSize = Integer.valueOf(headers.get("signature-size")), bandSize = Integer.valueOf(headers.get("band-size"));
+            int signatureSize = Integer.parseInt(headers.get("signature-size")), bandSize = Integer.parseInt(headers.get("band-size"));
             Stream<Path> fileStream = Files.find(dir.toPath(), Integer.MAX_VALUE,
                     (filePath, fileAttr) -> fileAttr.isRegularFile() && filePath.getFileName().toString().endsWith(".json"));
             List<Path> filePaths = fileStream.collect(Collectors.toList());
-            Collections.sort(filePaths);
             Configuration.setPermutationVectors(signatureSize);
             Configuration.setBandSize(bandSize);
             Logger.log(Logger.Level.INFO, "There are " + filePaths.size() + " files to be processed.");
@@ -498,7 +497,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      *                  "file": "<PATH/TO/EMBEDDINGS>"
      *                  "delimiter: " "<Delimiter separating each floating-point value and entity string>"
      *             }
-     * @return
+     * @return Basic stats
      */
     @PostMapping(value = "/embeddings")
     public ResponseEntity<String> loadEmbeddings(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)

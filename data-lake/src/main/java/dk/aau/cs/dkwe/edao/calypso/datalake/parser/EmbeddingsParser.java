@@ -1,7 +1,6 @@
 package dk.aau.cs.dkwe.edao.calypso.datalake.parser;
 
 import java.io.*;
-import java.text.ParseException;
 import java.util.List;
 
 /**
@@ -36,10 +35,10 @@ public class EmbeddingsParser implements Parser<EmbeddingsParser.EmbeddingToken>
         }
     }
 
-    private InputStream input;
+    private final InputStream input;
     private boolean isClosed = false;
     private EmbeddingToken prev = null;
-    private char delimiter;
+    private final char delimiter;
 
     public EmbeddingsParser(String content, char delimiter)
     {

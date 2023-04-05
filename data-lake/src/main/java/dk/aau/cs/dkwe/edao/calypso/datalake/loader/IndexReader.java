@@ -17,8 +17,8 @@ import java.util.concurrent.Future;
 
 public class IndexReader implements IndexIO
 {
-    private boolean multithreaded, logProgress;
-    private File indexDir;
+    private final boolean multithreaded, logProgress;
+    private final File indexDir;
 
     // Indexes
     private EntityLinking linker;
@@ -44,7 +44,7 @@ public class IndexReader implements IndexIO
 
     /**
      * Reads indexes from disk
-     * @throws IOException
+     * @throws IOException thrown on IO error
      */
     @Override
     public void performIO() throws IOException
