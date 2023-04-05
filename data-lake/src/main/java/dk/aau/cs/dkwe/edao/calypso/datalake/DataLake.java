@@ -108,7 +108,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             catch (IOException e)
             {
                 FileLogger.log(FileLogger.Service.SDL_Manager, "Failed loading indexes: " + e.getMessage());
-                throw new RuntimeException("IOException when reading indexes: " + e.getMessage());
+                Configuration.setIndexesLoaded(false);
             }
         }
     }
