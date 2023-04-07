@@ -129,13 +129,14 @@ public class TableSearch extends AbstractSearch
             ExecutorService threadPool = Executors.newFixedThreadPool(this.threads);
             List<Future<Pair<File, Double>>> parsed = new ArrayList<>(this.storage.count());
             Set<File> tableFiles = this.prefilter != null ? prefilterSearchSpace(query) : this.storage.elements();
+            int tableCount = tableFiles.size();
 
             if (this.prefilter != null)
             {
                 Logger.log(Logger.Level.INFO, "Pre-filtered corpus in " + this.prefilter.elapsedNanoSeconds() + "ns");
             }
 
-            Logger.log(Logger.Level.INFO, "There are " + tableFiles.size() + " files to be processed.");
+            Logger.log(Logger.Level.INFO, "There are " + tableCount + " files to be processed.");
 
             for (File f : tableFiles)
             {
@@ -145,13 +146,13 @@ public class TableSearch extends AbstractSearch
 
             long done = 1, prev = 0;
 
-            while (done < tableFiles.size())
+            while (done < tableCount)
             {
                 done = parsed.stream().filter(Future::isDone).count();
 
                 if (done - prev >= 100)
                 {
-                    Logger.log(Logger.Level.INFO, "Processed " + done + "/" + this.storage.count() + " files...");
+                    Logger.log(Logger.Level.INFO, "Processed " + done + "/" + tableCount + " files...");
                     prev = done;
                 }
             }
