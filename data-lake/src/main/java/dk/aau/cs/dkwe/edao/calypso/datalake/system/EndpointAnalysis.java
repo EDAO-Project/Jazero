@@ -10,7 +10,12 @@ public final class EndpointAnalysis
 
     public EndpointAnalysis()
     {
-        this.analysisFile = new File(Configuration.getAnalysisDir());
+        this(new File(Configuration.getAnalysisDir()));
+    }
+
+    public EndpointAnalysis(File outputFile)
+    {
+        this.analysisFile = outputFile;
 
         if (!this.analysisFile.exists())
         {
@@ -26,11 +31,6 @@ public final class EndpointAnalysis
         {
             load();
         }
-    }
-
-    public EndpointAnalysis(File outputFile)
-    {
-        this.analysisFile = outputFile;
     }
 
     public void record(String endpoint, int increment)
@@ -101,9 +101,48 @@ public final class EndpointAnalysis
         catch (IOException e) {}
     }
 
-    // TODO: Not yet finished
-    private void load()
+    private boolean load()
     {
+        try (FileReader reader = new FileReader(this.analysisFile))
+        {
+            BufferedReader bufferedReader = new BufferedReader(reader);
+            String line;
+            int year = -1, week = -1;
 
+            while ((line = bufferedReader.readLine()) != null)
+            {
+                if (line.startsWith("-------"))
+                {
+                    year = Integer.parseInt(line.split(" ")[1]);
+                    this.record.put(year, new HashMap<>());
+                }
+
+                else if (line.startsWith("Week"))
+                {
+                    week = Integer.parseInt(line.split("Week ")[1]);
+                    this.record.get(year).put(week, new HashMap<>());
+                }
+
+                else if (line.contains(":"))
+                {
+                    String[] split = line.split(":");
+                    String endpoint = split[0];
+                    int frequency = Integer.parseInt(split[1].substring(1));
+                    this.record.get(year).get(week).put(endpoint, frequency);
+                }
+            }
+
+            return true;
+        }
+
+        catch (IOException | NumberFormatException e)
+        {
+            return false;
+        }
+    }
+
+    public Map<Integer, Map<Integer, Map<String, Integer>>> getAnalysis()
+    {
+        return this.record;
     }
 }
