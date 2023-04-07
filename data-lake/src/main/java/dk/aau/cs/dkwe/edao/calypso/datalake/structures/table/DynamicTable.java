@@ -13,13 +13,18 @@ public class DynamicTable<T> implements Table<T>
     private final List<Row<T>> table;
     private final List<String> labels;
 
-    public DynamicTable(String ... columnLabels)
+    public DynamicTable(List<String> columnLabels)
     {
-        this.labels = List.of(columnLabels);
+        this.labels = columnLabels;
         this.table = new Vector<>();    // Vector does the synchronization for us
     }
 
-    public DynamicTable(List<List<T>> table, String ... columnLabels)
+    public DynamicTable(String ... columnLabels)
+    {
+        this(List.of(columnLabels));
+    }
+
+    public DynamicTable(List<List<T>> table, List<String> columnLabels)
     {
         this(columnLabels);
 
@@ -29,9 +34,9 @@ public class DynamicTable<T> implements Table<T>
         }
     }
 
-    public DynamicTable(List<List<T>> table)
+    public DynamicTable(List<List<T>> table, String ... columnLabels)
     {
-        this(table, new String[]{});
+        this(table, List.of(columnLabels));
     }
 
     @Override
@@ -95,7 +100,7 @@ public class DynamicTable<T> implements Table<T>
     @Override
     public int columnCount()
     {
-        return this.labels.size();
+        return this.table.isEmpty() ? this.labels.size() : this.table.get(0).size();
     }
 
     @Override
@@ -107,12 +112,11 @@ public class DynamicTable<T> implements Table<T>
     @Override
     public boolean equals(Object o)
     {
-        if (!(o instanceof DynamicTable<?>))
+        if (!(o instanceof DynamicTable<?> other))
         {
             return false;
         }
 
-        DynamicTable<T> other = (DynamicTable<T>) o;
         int thisRows = this.table.size(), otherRows = other.rowCount();
 
         if (thisRows != otherRows)

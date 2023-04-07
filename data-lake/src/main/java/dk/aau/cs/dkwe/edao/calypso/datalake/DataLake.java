@@ -285,15 +285,17 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
             try
             {
-                JsonTable table = TableParser.parse(score.first());
-                JsonArray rows = new JsonArray(table.rows.size());
+                Table<String> table = TableParser.parse(score.first());
+                int rowCount = table.rowCount();
+                JsonArray rows = new JsonArray(rowCount);
 
-                for (List<JsonTable.TableCell> row : table.rows)
+                for (int rowIdx = 0; rowIdx < rowCount; rowIdx++)
                 {
+                    Table.Row<String> row = table.getRow(rowIdx);
                     JsonArray column = new JsonArray(row.size());
                     row.forEach(cell -> {
                         JsonObject cellObject = new JsonObject();
-                        cellObject.addProperty("text", cell.text);
+                        cellObject.addProperty("text", cell);
                         column.add(cellObject);
                     });
 

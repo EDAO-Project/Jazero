@@ -207,19 +207,25 @@ public class TableSearch extends AbstractSearch
         }
     }
 
-    private Pair<File, Double> searchTable(Table<String> query, File table)
+    private Pair<File, Double> searchTable(Table<String> query, File tableFile)
     {
-        JsonTable jTable = parseTable(table);
+        Table<String> table = parseTable(tableFile);
         Stats.StatBuilder statBuilder = Stats.build();
-
-        if (jTable == null || jTable.numDataRows == 0)
-            return null;
-
         List<List<Integer>> queryRowToColumnMappings = new ArrayList<>();  // If each query entity needs to map to only one column find the best mapping
 
-        if (this.singleColumnPerQueryEntity)
+        if (table == null)
         {
-            queryRowToColumnMappings = getQueryToColumnMapping(query, jTable);
+            return null;
+        }
+
+        else if (table.rowCount() == 0)     // Query to column mapping require at least one row to be available
+        {
+            return new Pair<>(tableFile, 0.0);
+        }
+
+        else if (this.singleColumnPerQueryEntity)
+        {
+            queryRowToColumnMappings = getQueryToColumnMapping(query, table);
             List<List<String>> queryRowToColumnNames = new ArrayList<>(); // Log in the `statisticsMap` the column names aligned with each query row
 
             for (int queryRow = 0; queryRow < queryRowToColumnMappings.size(); queryRow++)
@@ -230,8 +236,8 @@ public class TableSearch extends AbstractSearch
                 {
                     int alignedColNum = queryRowToColumnMappings.get(queryRow).get(entityId);
 
-                    if ((jTable.headers.size() > alignedColNum) && (alignedColNum >= 0))    // Ensure that `table` has headers that we can index them
-                        queryRowToColumnNames.get(queryRow).add(jTable.headers.get(alignedColNum).text);
+                    if ((table.getColumnLabels().length > alignedColNum) && (alignedColNum >= 0))    // Ensure that `table` has headers that we can index them
+                        queryRowToColumnNames.get(queryRow).add(table.getColumnLabels()[alignedColNum]);
                 }
             }
 
@@ -241,24 +247,26 @@ public class TableSearch extends AbstractSearch
         int numEntityMappedRows = 0;    // Number of rows in a table that have at least one cell mapping ot a known entity
         int queryRowsCount = query.rowCount();
         Table<List<Double>> scores = new DynamicTable<>();  // Each cell is a score of the corresponding query cell to the mapped cell in each table row
+        int rows = table.rowCount();
 
         for (int queryRowCounter = 0; queryRowCounter < queryRowsCount; queryRowCounter++)
         {
             int queryRowSize = query.getRow(queryRowCounter).size();
             List<List<Double>> queryRowScores = new ArrayList<>(Collections.nCopies(queryRowSize, new ArrayList<>()));
 
-            for (List<JsonTable.TableCell> tableRow : jTable.rows)
+            for (int row = 0; row < rows; row++)
             {
                 Map<Integer, String> columnToEntity = new HashMap<>();
+                int columns = table.getRow(row).size();
 
-                for (int tableColumn = 0; tableColumn < tableRow.size(); tableColumn++)
+                for (int column = 0; column < columns; column++)
                 {
-                    String cellText = tableRow.get(tableColumn).text;
+                    String cellText = table.getRow(row).get(column);
                     String uri = getLinker().mapTo(cellText);
 
                     if (uri != null)
                     {
-                        columnToEntity.put(tableColumn, uri);
+                        columnToEntity.put(column, uri);
                     }
                 }
 
@@ -301,14 +309,14 @@ public class TableSearch extends AbstractSearch
 
         // Update Statistics
         statBuilder.entityMappedRows(numEntityMappedRows);
-        statBuilder.fractionOfEntityMappedRows((double) numEntityMappedRows / jTable.numDataRows);
+        statBuilder.fractionOfEntityMappedRows((double) numEntityMappedRows / rows);
         Double score = aggregateTableSimilarities(query, scores, statBuilder);
-        this.tableStats.put(table.getName(), statBuilder.finish());
+        this.tableStats.put(tableFile.getName(), statBuilder.finish());
 
-        return new Pair<>(table, score);
+        return new Pair<>(tableFile, score);
     }
 
-    private static JsonTable parseTable(File tableFile)
+    private static Table<String> parseTable(File tableFile)
     {
         try
         {
@@ -327,9 +335,10 @@ public class TableSearch extends AbstractSearch
      * Initialize multi-dimensional array indexed by (tupleID, entityID, columnID) mapping to the
      * aggregated score for that query entity with respect to the column
      */
-    private List<List<Integer>> getQueryToColumnMapping(Table<String> query, JsonTable table)
+    private List<List<Integer>> getQueryToColumnMapping(Table<String> query, Table<String> table)
     {
         List<List<List<Double>>> entityToColumnScore = new ArrayList<>();
+        int tableRows = table.rowCount();
 
         for (int row = 0; row < query.rowCount(); row++)
         {
@@ -338,22 +347,23 @@ public class TableSearch extends AbstractSearch
 
             for (int rowEntity = 0; rowEntity < rowSize; rowEntity++)
             {
-                entityToColumnScore.get(row).add(new ArrayList<>(Collections.nCopies(table.numCols, 0.0)));
+                entityToColumnScore.get(row).add(new ArrayList<>(Collections.nCopies(table.columnCount(), 0.0)));
             }
         }
 
         // Loop over every cell in a table and populate 'entityToColumnScore'
-        for (List<JsonTable.TableCell> row : table.rows)
+        for (int tableRow = 0; tableRow < tableRows; tableRow++)
         {
             int colCounter = 0;
+            Table.Row<String> row = table.getRow(tableRow);
 
-            for (JsonTable.TableCell cell : row)
+            for (String cell : row)
             {
                 String curEntity = null;
 
-                if (getLinker().mapTo(cell.text) != null)    // Only consider links for which we have a known entity mapping
+                if (getLinker().mapTo(cell) != null)    // Only consider links for which we have a known entity mapping
                 {
-                    curEntity = getLinker().mapTo(cell.text);
+                    curEntity = getLinker().mapTo(cell);
                 }
 
                 if (curEntity != null)

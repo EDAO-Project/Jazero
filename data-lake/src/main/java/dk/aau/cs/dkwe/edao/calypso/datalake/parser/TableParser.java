@@ -11,9 +11,11 @@ import java.io.*;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class TableParser
 {
@@ -47,8 +49,23 @@ public class TableParser
         return table == null || table._id  == null || table.rows == null ? null : table;
     }
 
-    public static JsonTable parse(File file)
+    public static Table<String> parse(File file)
     {
-        return parse(file.toPath());
+        JsonTable jTable = parse(file.toPath());
+
+        if (jTable == null || jTable.numDataRows == 0)
+        {
+            return null;
+        }
+
+        List<String> headers = jTable.headers
+                .stream()
+                .map(cell -> cell.text)
+                .toList();
+        List<List<String>> rows = jTable.rows.stream()
+                .map(row -> row.stream()
+                        .map(cell -> cell.text)
+                .collect(Collectors.toList())).collect(Collectors.toList());
+        return new DynamicTable<>(rows, headers);
     }
 }
