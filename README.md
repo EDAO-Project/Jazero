@@ -143,7 +143,7 @@ To use the Java connector, build the CDLC library .jar file with Maven and Java 
 The .jar file can be found in the `target` folder and can now be included in your project.
 This also needs to be done in the folders `data-lake`, `storage`, and `communication`.
 
-For the C connector, follow the instructions <a href="https://github.com/EDAO-Project/Jazero/blob/main/JDLC/C/README.md">here</a>.
+For the C connector, follow the instructions <a href="https://github.com/EDAO-Project/Jazero/blob/main/JDLC/c/README.md">here</a>.
 
 ##### Loading in Java
 Once the Java CDLC .jar library file has been included in your project, use the class `CDLC` to communicate with Jazero.
