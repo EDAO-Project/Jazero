@@ -7,6 +7,10 @@ target/
 knowledge-graph/neo4j/neo4j-server
 knowledge-graph/neo4j/*.ttl
 knowledge-graph/neo4j/*.nt
+JDLC/c/build/
+JDLC/c/lib/
+JDLC/c/.idea/
+JDLC/c/.vscode/
 
 ### Mounts ###
 index/
