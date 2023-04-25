@@ -1,5 +1,5 @@
 # JDLC C Connector
-Test
+This is the Jazero C connector!
 
 ## Prerequisites
 To build the project, you only need to install CMake.
