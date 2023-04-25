@@ -4,6 +4,7 @@ project(jdlc C)
 include(CTest)
 
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_COMPILER_ID "GNU")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/)
 
 add_compile_options(-Wall -Wextra -pedantic -Werror)
@@ -12,7 +13,8 @@ include_directories(include/)
 add_library(jdlc
             src/jdlc.c
             src/structures/property.c
-            src/connection/address.c src/params.c)
+            src/connection/address.c
+            src/params.c)
 
 add_executable(test_address test/connection/address_test.c)
 add_executable(test_property test/structures/property_test.c)

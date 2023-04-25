@@ -1,87 +1,138 @@
+/*
+ * This implementation is meant for containing a few elements.
+ * A lot of data copying is taking place, so do not store large amount of data.
+ * It also linearly searches through keys to find the associated value.
+*/
+
 #include <structures/property.h>
 #include <stdlib.h>
 #include <string.h>
 
-static inline int insert_element(void **array, const void *element, int64_t bytes, int32_t array_count, const int64_t *bytes_manager)
+#define INCREASE_FACTOR 2
+
+static inline int8_t insert_value(void **dest, const void *value, uint64_t size, uint64_t consumed, uint64_t *restrict allocated)
 {
-    int64_t sum = 0;
-
-    for (int i = 0; i < array_count; i++)
+    if (consumed + size > *allocated)
     {
-        sum += bytes_manager[i];
+        size_t increase = *allocated * INCREASE_FACTOR + size;
+        void *copy = realloc(*dest, increase);
+
+        if (copy == NULL)
+        {
+            return 0;
+        }
+
+        *dest = copy;
+        *allocated = increase;
     }
 
-    void **copy = (void **) realloc(array, sum + bytes);
-
-    if (copy == NULL)
-    {
-        return 0;
-    }
-
-    array = copy;
-    array[array_count] = malloc(bytes);
-
-    if (array[array_count] == NULL)
-    {
-        return 0;
-    }
-
-    memcpy(array[array_count], element, bytes);
+    memcpy((int8_t *) *dest + consumed, value, size);
     return 1;
 }
 
-int8_t insert(struct properties *restrict properties, const char *key, const void *value, int64_t bytes)
+int8_t prop_insert(struct properties *restrict properties, const char *key, const void *value, uint64_t bytes)
 {
     static int first = 1;
 
     if (first)
     {
-        properties->bytes_manager = (int64_t *) malloc(sizeof(int64_t));
+        first = 0;
+        properties->count = 0;
+        properties->allocated = bytes;
+        properties->consumed = 0;
+        properties->freed = 0;
+        properties->bytes_manager = (uint64_t *) malloc(sizeof(uint64_t));
         properties->keys = (char **) malloc(sizeof(char *));
-        properties->values = (void **) malloc(sizeof(void *));
+        properties->values = malloc(bytes);
 
         if (properties->bytes_manager == NULL || properties->keys == NULL || properties->values == NULL)
         {
             return 0;
         }
-
-        first = 0;
-        properties->count = 0;
     }
 
-    int ret1 = insert_element((void **) properties->keys, key, (int64_t) strlen(key), properties->count, properties->bytes_manager);
-    int ret2 = insert_element(properties->values, value, bytes, properties->count, properties->bytes_manager);
+    else
+    {
+        char **copy_keys = (char **) realloc(properties->keys, sizeof(char *) * (properties->count + 1));
+        uint64_t *copy_bytes = (uint64_t *) realloc(properties->bytes_manager, sizeof(uint64_t) * (properties->count + 1));
 
-    if (!ret1 || !ret2)
+        if (copy_keys == NULL || copy_bytes == NULL)
+        {
+            return 0;
+        }
+
+        properties->keys = copy_keys;
+        properties->bytes_manager = copy_bytes;
+    }
+
+    insert_value(&properties->values, value, bytes, properties->consumed, &properties->allocated);
+    properties->keys[properties->count] = (char *) malloc(strlen(key));
+
+    if (properties->keys[properties->count] == NULL)
     {
         return 0;
     }
 
-    int64_t *bytes_manager_cpy = (int64_t *) realloc(properties->bytes_manager, sizeof(int64_t) * (properties->count + 1));
-
-    if (bytes_manager_cpy == NULL)
-    {
-        return 0;
-    }
-
-    properties->bytes_manager = bytes_manager_cpy;
+    strcpy(properties->keys[properties->count], key);
     properties->bytes_manager[properties->count++] = bytes;
+    properties->consumed += bytes;
+
     return 1;
 }
 
-int8_t remove(struct properties *restrict properties, const char *key)
+int8_t prop_remove(struct properties *restrict properties, const char *key)
 {
     strcpy(properties->keys[0], key);
     return 1;
 }
 
-const void *get(const char *key)
+static inline int32_t idx_of(const char **keys, const char *key, uint32_t key_count)
 {
-    return key;
+    for (uint32_t i = 0; i < key_count; i++)
+    {
+        if (strcmp(keys[i], key) == 0)
+        {
+            return (int32_t) i;
+        }
+    }
+
+    return -1;
 }
 
-void clear(struct properties *restrict properties)
+static uint64_t consumed_until(const uint64_t *bytes, uint32_t idx)
 {
-    properties->count++;
-    properties->count--;
+    uint64_t sum = 0;
+
+    for (uint32_t i = 0; i < idx; i++)
+    {
+        sum += bytes[i];
+    }
+
+    return sum;
+}
+
+int8_t prop_get(struct properties properties, const char *key, void *buffer)
+{
+    int32_t idx = idx_of((const char **) properties.keys, key, properties.count);
+
+    if (idx == -1)
+    {
+        return 0;
+    }
+
+    uint64_t size = properties.bytes_manager[idx], pos = consumed_until(properties.bytes_manager, idx);
+    memcpy(buffer, (char *) properties.values + pos, size);
+    return 1;
+}
+
+void prop_clear(struct properties *restrict properties)
+{
+    for (unsigned i = 0; i < properties->count; i++)
+    {
+        free(properties->keys[i]);
+    }
+
+    free(properties->bytes_manager);
+    free(properties->values);
+    properties->freed = 1;
 }
