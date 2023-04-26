@@ -111,20 +111,26 @@ int test_remove(void)
     prop_insert(&props, "Key2", (void *) &a, sizeof(a));
     prop_insert(&props, "Key3", (void *) &b, sizeof(b));
     prop_insert(&props, "Key4", (void *) &c, sizeof(c));
-    prop_remove(&props, "Key3");
 
-    if (props.count != 3)
+    int8_t ret = prop_remove(&props, "Key3");
+
+    if (!ret || props.count != 3)
     {
         prop_clear(&props);
         return 1;
     }
 
-    memcpy(&c_copy, (char *) props.values + 4 + sizeof(a), sizeof(c));
+    if (strcmp(props.keys[2], "Key4") != 0 || props.bytes_manager[2] != sizeof(c))
+    {
+        return 1;
+    }
+
+    memcpy(&c_copy, (int8_t *) props.values + 4 + sizeof(a), sizeof(c));
     prop_clear(&props);
-    return c != c_copy ? 0 : 1;
+    return c == c_copy ? 0 : 1;
 }
 
 int main(void)
 {
-    return test_insert();
+    return test_remove();
 }

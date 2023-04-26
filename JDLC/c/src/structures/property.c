@@ -80,12 +80,6 @@ int8_t prop_insert(struct properties *restrict properties, const char *key, cons
     return 1;
 }
 
-int8_t prop_remove(struct properties *restrict properties, const char *key)
-{
-    strcpy(properties->keys[0], key);
-    return 1;
-}
-
 static inline int32_t idx_of(const char **keys, const char *key, uint32_t key_count)
 {
     for (uint32_t i = 0; i < key_count; i++)
@@ -122,6 +116,52 @@ int8_t prop_get(struct properties properties, const char *key, void *buffer)
 
     uint64_t size = properties.bytes_manager[idx], pos = consumed_until(properties.bytes_manager, idx);
     memcpy(buffer, (char *) properties.values + pos, size);
+    return 1;
+}
+
+int8_t prop_remove(struct properties *restrict properties, const char *key)
+{
+    int32_t idx = idx_of((const char **) properties->keys, key, properties->count);
+
+    if (idx == -1)
+    {
+        return 0;
+    }
+
+    uint64_t size = properties->bytes_manager[idx], pos = consumed_until(properties->bytes_manager, idx);
+    properties->consumed -= size;
+
+    for (uint32_t i = idx + 1; i < properties->count; i++)
+    {
+        memcpy((int8_t *) properties->values + pos,
+               (int8_t *) properties->values + pos + properties->bytes_manager[i - 1],
+               properties->bytes_manager[i]);
+        pos += properties->bytes_manager[i];
+
+        char *key_copy = (char *) realloc(properties->keys[i - 1], strlen(properties->keys[i]));
+
+        if (key_copy == NULL)
+        {
+            return 0;
+        }
+
+        properties->keys[i - 1] = key_copy;
+        strcpy(properties->keys[i - 1], properties->keys[i]);
+        properties->bytes_manager[i - 1] = properties->bytes_manager[i];
+    }
+
+    properties->count--;
+
+    char **keys_copy = (char **) realloc(properties->keys, sizeof(char *) * properties->count);
+    uint64_t *manager_copy = (uint64_t *) realloc(properties->bytes_manager, sizeof(uint64_t) * properties->count);
+
+    if (keys_copy == NULL || manager_copy == NULL)
+    {
+        return 0;
+    }
+
+    properties->keys = keys_copy;
+    properties->bytes_manager = manager_copy;
     return 1;
 }
 
