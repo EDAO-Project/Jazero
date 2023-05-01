@@ -1,11 +1,20 @@
 # JDLC C Connector
 This is the Jazero C connector!
 
-## Prerequisites
-To build the project, you only need to install CMake.
+You can install the tool using apt as follows:
 
 ```bash
-apt install cmake -y
+apt install <INSERT_NAME>
+```
+
+## Building the Tool
+Here is the instructions to manually build the tool and generate a static `.a` file.
+
+### Prerequisites
+To build the project, you only need to install CMake and Curl.
+
+```bash
+apt install cmake curl libcurl4-gnutls-dev -y
 ```
 
 ## Building Static Library
