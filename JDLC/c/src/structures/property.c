@@ -176,3 +176,18 @@ void prop_clear(struct properties *restrict properties)
     free(properties->values);
     properties->freed = 1;
 }
+
+uint32_t prop_count(struct properties props)
+{
+    return props.count;
+}
+
+const char *prop_key(struct properties props, uint32_t index)
+{
+    if (index >= props.count)
+    {
+        return NULL;
+    }
+
+    return props.keys[index];
+}

@@ -18,5 +18,7 @@ int8_t prop_insert(struct properties *restrict properties, const char *key, cons
 int8_t prop_remove(struct properties *restrict properties, const char *key);
 int8_t prop_get(struct properties properties, const char *key, void *buffer);
 void prop_clear(struct properties *restrict props);
+uint32_t prop_count(struct properties props);
+const char *prop_key(struct properties props, uint32_t index);
 
 #endif

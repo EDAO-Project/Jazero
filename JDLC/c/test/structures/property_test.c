@@ -130,7 +130,47 @@ int test_remove(void)
     return c == c_copy ? 0 : 1;
 }
 
+int test_count(void)
+{
+    struct properties props;
+    int a = 1, b = 2;
+    double c = 1.1;
+    prop_insert(&props, "Key1", (void *) "Test", 4);
+    prop_insert(&props, "Key2", (void *) &a, sizeof(a));
+    prop_insert(&props, "Key3", (void *) &b, sizeof(b));
+    prop_insert(&props, "Key4", (void *) &c, sizeof(c));
+
+    uint32_t count = prop_count(props);
+    prop_clear(&props);
+
+    return count == 4 ? 0 : 1;
+}
+
+int test_get_key(void)
+{
+    struct properties props;
+    int a = 1, b = 2;
+    double c = 1.1;
+    prop_insert(&props, "Key1", (void *) "Test", 4);
+    prop_insert(&props, "Key2", (void *) &a, sizeof(a));
+    prop_insert(&props, "Key3", (void *) &b, sizeof(b));
+    prop_insert(&props, "Key4", (void *) &c, sizeof(c));
+
+    if (strcmp(prop_key(props, 0), "Key1") != 0 ||
+        strcmp(prop_key(props, 1), "Key2") != 0 ||
+        strcmp(prop_key(props, 2), "Key3") != 0 ||
+        strcmp(prop_key(props, 3), "Key4") != 0 ||
+        prop_key(props, 5) != NULL)
+    {
+        prop_clear(&props);
+        return 1;
+    }
+
+    prop_clear(&props);
+    return 0;
+}
+
 int main(void)
 {
-    return test_remove();
+    return test_get_key();
 }
