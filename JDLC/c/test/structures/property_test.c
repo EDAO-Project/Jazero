@@ -6,7 +6,7 @@
 
 int test_insert(void)
 {
-    struct properties props;
+    struct properties props = prop_init();
     int a = 1, a_copy, b = 2, b_copy;
     double c = 1.1, c_copy;
     char *str_copy = (char *) malloc(4);
@@ -62,7 +62,7 @@ int test_insert(void)
 
 int test_get(void)
 {
-    struct properties props;
+    struct properties props = prop_init();
     int a = 1, b = 2;
     double c = 1.1;
     prop_insert(&props, "Key1", (void *) "Test", 4);
@@ -104,7 +104,7 @@ int test_get(void)
 
 int test_remove(void)
 {
-    struct properties props;
+    struct properties props = prop_init();
     int a = 1, b = 2;
     double c = 1.1, c_copy;
     prop_insert(&props, "Key1", (void *) "Test", 4);
@@ -132,7 +132,7 @@ int test_remove(void)
 
 int test_count(void)
 {
-    struct properties props;
+    struct properties props = prop_init();
     int a = 1, b = 2;
     double c = 1.1;
     prop_insert(&props, "Key1", (void *) "Test", 4);
@@ -148,7 +148,7 @@ int test_count(void)
 
 int test_get_key(void)
 {
-    struct properties props;
+    struct properties props = prop_init();
     int a = 1, b = 2;
     double c = 1.1;
     prop_insert(&props, "Key1", (void *) "Test", 4);
@@ -172,5 +172,5 @@ int test_get_key(void)
 
 int main(void)
 {
-    return test_get_key();
+    return test_insert() + test_get() + test_remove() + test_count() + test_get_key();
 }

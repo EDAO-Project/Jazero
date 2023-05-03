@@ -9,11 +9,12 @@ struct properties
     uint64_t *bytes_manager;
     uint64_t consumed;
     uint64_t allocated;
-    int8_t freed;
+    int8_t freed, init;
     char **keys;
     void *values;
 };
 
+struct properties prop_init(void);
 int8_t prop_insert(struct properties *restrict properties, const char *key, const void *value, uint64_t bytes);
 int8_t prop_remove(struct properties *restrict properties, const char *key);
 int8_t prop_get(struct properties properties, const char *key, void *buffer);

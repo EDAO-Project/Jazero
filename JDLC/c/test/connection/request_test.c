@@ -4,7 +4,7 @@
 
 int test_init(void)
 {
-    struct properties props;
+    struct properties props = prop_init();
     int a = 1, b = 2;
     prop_insert(&props, "Key1", &a, sizeof(a));
     prop_insert(&props, "Key2", &b, sizeof(b));

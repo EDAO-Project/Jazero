@@ -10,6 +10,21 @@
 
 #define INCREASE_FACTOR 2
 
+struct properties prop_init(void)
+{
+    struct properties props = {.freed = 0, .init = 1, .count = 0, .allocated = 1, .consumed = 0};
+    props.bytes_manager = (uint64_t *) malloc(sizeof(uint64_t));
+    props.keys = (char **) malloc(sizeof(char *));
+    props.values = malloc(1);
+
+    if (props.bytes_manager == NULL || props.keys == NULL || props.values == NULL)
+    {
+        return (struct properties) {.freed = 1, .init = 1};
+    }
+
+    return props;
+}
+
 static inline int8_t insert_value(void **dest, const void *value, uint64_t size, uint64_t consumed, uint64_t *restrict allocated)
 {
     if (consumed + size > *allocated)
@@ -32,39 +47,21 @@ static inline int8_t insert_value(void **dest, const void *value, uint64_t size,
 
 int8_t prop_insert(struct properties *restrict properties, const char *key, const void *value, uint64_t bytes)
 {
-    static int first = 1;
-
-    if (first)
+    if (!properties->init || properties->freed)
     {
-        first = 0;
-        properties->count = 0;
-        properties->allocated = bytes;
-        properties->consumed = 0;
-        properties->freed = 0;
-        properties->bytes_manager = (uint64_t *) malloc(sizeof(uint64_t));
-        properties->keys = (char **) malloc(sizeof(char *));
-        properties->values = malloc(bytes);
-
-        if (properties->bytes_manager == NULL || properties->keys == NULL || properties->values == NULL)
-        {
-            return 0;
-        }
+        return 0;
     }
 
-    else
+    char **copy_keys = (char **) realloc(properties->keys, sizeof(char *) * (properties->count + 1));
+    uint64_t *copy_bytes = (uint64_t *) realloc(properties->bytes_manager, sizeof(uint64_t) * (properties->count + 1));
+
+    if (copy_keys == NULL || copy_bytes == NULL)
     {
-        char **copy_keys = (char **) realloc(properties->keys, sizeof(char *) * (properties->count + 1));
-        uint64_t *copy_bytes = (uint64_t *) realloc(properties->bytes_manager, sizeof(uint64_t) * (properties->count + 1));
-
-        if (copy_keys == NULL || copy_bytes == NULL)
-        {
-            return 0;
-        }
-
-        properties->keys = copy_keys;
-        properties->bytes_manager = copy_bytes;
+        return 0;
     }
 
+    properties->keys = copy_keys;
+    properties->bytes_manager = copy_bytes;
     insert_value(&properties->values, value, bytes, properties->consumed, &properties->allocated);
     properties->keys[properties->count] = (char *) malloc(strlen(key));
 
@@ -107,6 +104,11 @@ static uint64_t consumed_until(const uint64_t *bytes, uint32_t idx)
 
 int8_t prop_get(struct properties properties, const char *key, void *buffer)
 {
+    if (!properties.init || properties.freed)
+    {
+        return 0;
+    }
+
     int32_t idx = idx_of((const char **) properties.keys, key, properties.count);
 
     if (idx == -1)
@@ -121,6 +123,11 @@ int8_t prop_get(struct properties properties, const char *key, void *buffer)
 
 int8_t prop_remove(struct properties *restrict properties, const char *key)
 {
+    if (!properties->init || properties->freed)
+    {
+        return 0;
+    }
+
     int32_t idx = idx_of((const char **) properties->keys, key, properties->count);
 
     if (idx == -1)
@@ -167,14 +174,17 @@ int8_t prop_remove(struct properties *restrict properties, const char *key)
 
 void prop_clear(struct properties *restrict properties)
 {
-    for (unsigned i = 0; i < properties->count; i++)
+    if (properties->init && !properties->freed)
     {
-        free(properties->keys[i]);
-    }
+        for (unsigned i = 0; i < properties->count; i++)
+        {
+            free(properties->keys[i]);
+        }
 
-    free(properties->bytes_manager);
-    free(properties->values);
-    properties->freed = 1;
+        free(properties->bytes_manager);
+        free(properties->values);
+        properties->freed = 1;
+    }
 }
 
 uint32_t prop_count(struct properties props)
@@ -184,7 +194,7 @@ uint32_t prop_count(struct properties props)
 
 const char *prop_key(struct properties props, uint32_t index)
 {
-    if (index >= props.count)
+    if (!props.init || props.freed || index >= props.count)
     {
         return NULL;
     }
