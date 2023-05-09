@@ -117,8 +117,8 @@ The query must be a JSON on the following format:
 ```json
 {
   "queries" [
-    [https://en.dbpedia.org/page/Barack_Obama, https://en.dbpedia.org/page/Joe_Biden, https://en.dbpedia.org/page/White_House],
-    [https://en.dbpedia.org/page/Joe_Biden, https://en.dbpedia.org/page/Kamala_Harris, https://en.dbpedia.org/page/White_House]
+    ["https://en.dbpedia.org/page/Barack_Obama", "https://en.dbpedia.org/page/Joe_Biden", "https://en.dbpedia.org/page/White_House"],
+    ["https://en.dbpedia.org/page/Joe_Biden", "https://en.dbpedia.org/page/Kamala_Harris", "https://en.dbpedia.org/page/White_House"]
    ]
 }
 ```
