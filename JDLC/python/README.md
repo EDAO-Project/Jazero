@@ -80,8 +80,8 @@ query = [
           [https://en.dbpedia.org/page/Barack_Obama, https://en.dbpedia.org/page/Joe_Biden, https://en.dbpedia.org/page/White_House], 
           [https://en.dbpedia.org/page/Joe_Biden, https://en.dbpedia.org/page/Kamala_Harris, https://en.dbpedia.org/page/White_House]
         ]
-conn = Connector('loalhost') # this can now also be a remote IP
-output = conn.search(10, TYPE, query)
+conn = Connector('localhost') # this can now also be a remote IP
+output = conn.search(10, 'TYPE', query)
 ```
 
 The `output` is a JSON string containing all the top-_K_ results including some simple statistics about runtime and search space reduction from LSH pre-filtering.
