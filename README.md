@@ -132,6 +132,13 @@ An example of a table is given below:
 
 Loading a table corpus of 100K tables will take around a full day, depending on the machine.
 
+### Searching Jazero
+Jazero utilizes the _query-by-example_ paradigm.
+You construct a table query of knowledge graph entities, and Jazero will return a top-_K_ ranked list of semantically relevant tables.
+
+The specific format of the query and its construction depends on the connector.
+The following section will describe searching, as well as other operations, in Jazero using the different connectors.
+
 ### Connector
 
 The repository for the connectors to communicate with Jazero can be found <a href="https://github.com/EDAO-Project/Jazero/tree/main/JDLC">here</a>.
