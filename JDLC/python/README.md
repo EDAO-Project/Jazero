@@ -112,7 +112,7 @@ python jdlc.py --host localhost --operation insert --location /home/tables --jaz
 python jdlc.py --host localhost --operation search --query /home/query.json --scoringtype COSINE_NORM --topk 100 --similaritymeasure EUCLIDEAN --prefilter EMBEDDINGS
 ```
 
-The query must be a JSON on the following format:
+The query must be a JSON file on the following format:
 
 ```json
 {
