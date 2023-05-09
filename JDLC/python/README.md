@@ -13,7 +13,7 @@ python3 -m pip install --index-url https://test.pypi.org/simple/ --no-deps examp
 You can import the package in your Python code as follows:
 
 ```python
-from jdlc import Connector as jdlc
+from jdlc import Connector
 ...
 ```
 
