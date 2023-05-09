@@ -96,19 +96,19 @@ Below is a list of examples for performing each operation.
 
 ### Inserting Embeddings Example
 
-```python
+```bash
 python jdlc.py --host localhost --operation loadembeddings --jazerodir /home/Jazero --embeddings /home/embeddings.txt --delimiter ' '
 ```
 
 ### Inserting Tables Example
 
-```python
+```bash
 python jdlc.py --host localhost --operation insert --location /home/tables --jazerodir /home/Jazero --storagetype NATIVE --tableentityprefix ' ' --kgentityprefix "https://en.dbpedia.org" --signaturesize 30 --bandsize 10
 ```
 
 ### Searching Tables Example
 
-```python
+```bash
 python jdlc.py --host localhost --operation search --query /home/query.json --scoringtype COSINE_NORM --topk 100 --similaritymeasure EUCLIDEAN --prefilter EMBEDDINGS
 ```
 
