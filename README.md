@@ -13,6 +13,7 @@ Then, start an instance by running the following command:
 ```
 
 The first time you start an instance, the entity linker will construct its indexes which will take around 1 hour for a 10GB KG dataset.
+Therefore, do not start loading data until the entity linker finishes constructing its own indexes.
 
 The following command will install the necessary plugins.
 This can run in parallel with the index construction in the entity linker.
@@ -60,23 +61,23 @@ mv target/*.jar ../target && \
 cd ..
 ```
 
-Now, all executable .jar files are in the new folder respective `target`.
+Now, all executable .jar files are in the new folder `target`.
 These can be executed with `java -jar <JAR FILE>`.
 
 ## Working with Jazero
-Here we describe working with Jazero, how to load Jazero with tables, load indexes, load embeddings, and search Jazero.
+Here, we describe working with Jazero: how to load Jazero with tables, load indexes, load embeddings, and search Jazero.
 
 ### Loading Jazero
 Tables in Jazero are loaded and stored either natively on disk or in HDFS (HDFS is not yet supported).
-Loading of embeddings must be performed first as the embeddings are used to construct indexes during loading of tables.
+Loading of embeddings must be performed first, as the embeddings are used to construct indexes during loading of tables.
 
 ##### Loading Embeddings
 
-Jazero also uses embeddings to represent entities.
-Consider using <a href="https://github.com/EDAO-Project/DBpediaEmbedding">this</a> repository to generate RDF embeddings.
+One representation model in Jazero is by embeddings.
+Consider using <a href="https://github.com/EDAO-Project/DBpediaEmbedding">this</a> repository to generate RDF2Vec embeddings.
 
 Every entity embedding must be contained in one line in the embeddings file, and each value must be separated by the same delimiter.
-This includes the entity itself. Below is an example of what an embeddings file of three entities could look like where the space character is the delimiter:
+This includes the entity itself. Below is an example of what an embeddings file of three entities would look like where the space character is the delimiter:
 
 ```
 https://dbpedia.org/page/Barack_Obama -3.21 13.2122 53.32 -2.23 0.4353 8.231
@@ -86,8 +87,9 @@ https://dbpedia.org/page/Eiffel_Tower -34.422 -7.231 5.312 -1.435 0.543 12.440
 
 ##### Loading Tables and Indexes
 
-The tables must be in JSON format with the fields __id_, pgTitle, _numDataRows_, _numCols_, numNumericCols, and _rows_, where _rows_ is an array of table rows.
-Each cell must contain a `text` property and a `links` property. The `links` property is an array of the URI of the entity in the cell. If the cell does not contain an entity with a URI, the array is left empty.
+The tables must be in JSON format with the fields __id_, _numDataRows_, _numCols_, numNumericCols, and _rows_, where _rows_ is an array of table rows.
+Each cell must contain a single field `text` which hold the content of the table cell.
+The field _headers_ includes the header information of the table.
 
 An example of a table is given below:
 
@@ -135,77 +137,7 @@ Loading a table corpus of 100K tables will take around a full day, depending on 
 The repository for the connectors to communicate with Jazero can be found <a href="https://github.com/EDAO-Project/Jazero/tree/main/JDLC">here</a>.
 There is both a C, Java connector, and Python connector.
 
-Remember to run the methods to insert tables and embeddings on the machine running Jazero. Only searching can be performed remotely.
-
-To use the Python connector, follow <a href="https://github.com/EDAO-Project/Jazero/blob/main/JDLC/python/README.md">these</a> instructions.
-
-To use the Java connector, build the CDLC library .jar file with Maven and Java 17 running `mvn clean install` in the `CDLC` folder.
-The .jar file can be found in the `target` folder and can now be included in your project.
-This also needs to be done in the folders `data-lake`, `storage`, and `communication`.
-
-For the C connector, follow the instructions <a href="https://github.com/EDAO-Project/Jazero/blob/main/JDLC/c/README.md">here</a>.
-
-##### Loading in Java
-Once the Java CDLC .jar library file has been included in your project, use the class `CDLC` to communicate with Jazero.
-
-Use the methods `insert` and `insertEmbeddings` to insert JSON tables and RDF embedding, respectively. 
-These methods only work on the machine running Jazero.
-The parameters are listed below:
-
-`insert`
-- Directory containing JSON tables on machine running Jazero
-- Type of storage in which to store the JSON tables in Jazero ('native' or 'hdfs')
-- Prefix string of entities in the JSON tables (e.g. 'https://en.wikipedia.org/')
-- Prefix string of entities in the loaded knowledge graph (e.g. 'https://dbpedia.org/')
-
-`insertEmbeddings`
-- File containing embeddings
-- Delimiter separating embedding values
-
-##### Loading in Python
-Initialize the `Connector` class and call the `insert` and `insertEmbeddings` methods to insert JSON tables and RDF embeddings, respectively.
-These methods only work on the machine running Jazero.
-The parameters are listed below:
-
-`insert`
-- Directory containing JSON tables on machine running Jazero
-- Directory of the Jazero directory on the machine running Jazero
-- Type of storage in which to store the JSON tables in Jazero ('native' or 'hdfs')
-- Prefix string of entities in the JSON tables (e.g. 'https://en.wikipedia.org/')
-- Prefix string of entities in the loaded knowledge graph (e.g. 'https://dbpedia.org/')
-
-`insertEmbeddings`
-- Directory of the Jazero directory on the machine running Jazero
-- Embeddings file path on the machine running Jazero
-- Delimiter in embeddings file
-
-### Searching Jazero
-Searching follows the _query-by-example_ paradigm. Since Jazero stores tables, the input queries are exemplar tables.
-These tabular, exemplar queries contain examples of data of interest.
-
-Searching can be performed remotely from the terminal using Python and the `cdlc.py` Python file found <a href="https://github.com/EDAO-Project/Jazero/tree/main/CDLC/python">here</a>.
-Run `python cdlc.py -h` to see how search Jazero.
-
-The search output is pure JSON containing all the relevant top-_K_ tables along some search statistics.
-
-##### Searching in Java
-Include the Java CDLC .jar file in your project and use `search` method with the following parameters to search Jazero:
-
-`search`
-- Top-_K_ most similar tables
-- Type of scoring/comparing entities (by entity RDF types or entity embeddings)
-- The query itself in tabular form
-
-Construct a query instance of exemplar entities using the `QueryFactory` class.
-
-##### Searching in Python
-Import the `Connector` class from the `cdlc.py` Python file. Searching requires the following parameters:
-
-`search`
-- Top-_K_ highest ranking search results
-- Type of scoring pairs of entities
-- Type of similarity measurement between pairs of vectors of entity scores
-- Tabular query
+<u>Remember to run the methods to insert tables and embeddings on the machine running Jazero. Only searching can be performed remotely.</u>
 
 ### Jazero Web
 This repository has a Django web interface to interact with an instance of Jazero.
