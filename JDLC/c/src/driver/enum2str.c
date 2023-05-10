@@ -32,5 +32,10 @@ const char *p2str(enum prefilter filter)
         return "TYPES";
     }
 
+    else if (filter == NONE)
+    {
+        return "";
+    }
+
     return "EMBEDDINGS";
 }

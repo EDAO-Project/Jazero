@@ -1,15 +1,16 @@
 #ifndef JDLC_H
 #define JDLC_H
 
-#include "structures/property.h"
-#include "structures/query.h"
-#include "connection/address.h"
+#include <structures/property.h>
+#include <structures/query.h>
+#include <connection/address.h>
 
 enum operation
 {
     INSERT_EMBEDDINGS,
     LOAD,
-    SEARCH
+    SEARCH,
+    PING
 };
 
 enum response_status
@@ -39,7 +40,8 @@ const char *s2str(enum similarity_measure sim);
 enum prefilter
 {
     TYPES,
-    EMBEDDINGS
+    EMBEDDINGS,
+    NONE
 };
 
 const char *p2str(enum prefilter filter);

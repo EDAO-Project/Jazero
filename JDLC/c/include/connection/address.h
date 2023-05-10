@@ -11,5 +11,6 @@ struct address
 };
 
 struct address init_addr(const char *host, uint32_t port, const char *path);
+void addr_clear(struct address addr);
 
 #endif

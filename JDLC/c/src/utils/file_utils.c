@@ -54,7 +54,7 @@ static int perform_op(const char *op, const char *src, const char *dst)
 uint8_t copy_file(const char *src, const char *dst)
 {
 #ifdef UNIX
-    return perform_op("cp", src, dst);
+    return perform_op("cp -r", src, dst);
 #elif defined(WINDOWS)
     return perform_op("copy", src, dst);
 #endif

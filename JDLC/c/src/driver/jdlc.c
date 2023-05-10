@@ -1,4 +1,5 @@
 #include <driver/jdlc.h>
+#include <connection/request.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -7,14 +8,20 @@ uint8_t init(jdlc *restrict conn, enum operation op, struct address addr, struct
     conn->op = op;
     conn->addr = addr;
     conn->options = headers;
-    conn->body = (char *) malloc(strlen(body));
+    conn->body = NULL;
 
-    if (conn->body == NULL)
+    if (body != NULL)
     {
-        return 0;
+        conn->body = (char *) malloc(strlen(body));
+
+        if (conn->body == NULL)
+        {
+            return 0;
+        }
+
+        strcpy(conn->body, body);
     }
 
-    strcpy(conn->body, body);
     return 1;
 }
 
