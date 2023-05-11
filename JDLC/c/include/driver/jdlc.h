@@ -73,7 +73,7 @@ const char *load_body(char *buffer, const char *table_dir, const char *table_ent
 const char *search_body(char *buffer, uint32_t top_k, uint8_t use_embeddings, enum cosine_function function,
         enum similarity_measure sim, enum prefilter lsh_prefilter, query q);
 uint8_t init(jdlc *restrict conn, enum operation op, struct address addr, struct properties headers, const char *body);
-response perform(jdlc);
+response perform(jdlc conn);
 
 #ifdef __cplusplus
 }

@@ -14,7 +14,7 @@ int test_init(void)
     prop_get(props, "Key1", &a_copy);
     prop_get(props, "Key2", &b_copy);
 
-    if (req.op != POST)
+    if (req.operation != POST)
     {
         prop_clear(&props);
         return 1;

@@ -25,7 +25,21 @@ uint8_t init(jdlc *restrict conn, enum operation op, struct address addr, struct
     return 1;
 }
 
-/*response perform(jdlc)
+response perform(jdlc conn)
 {
+    enum op operation;
 
-}*/
+    switch (conn.op)
+    {
+        case PING:
+            operation = GET;
+            break;
+
+        default:
+            operation = POST;
+    }
+
+    struct request req = make_request(operation, conn.options, conn.body);
+    struct request_response req_res = request_perform(req, conn.addr);
+    return (response) {.msg = req_res.msg, .status = req_res.status == 200 ? OK : REQUEST_ERROR};
+}
