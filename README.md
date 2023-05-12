@@ -151,7 +151,7 @@ This repository has a Django web interface to interact with an instance of Jazer
 Navigate to `CDLC/python/api/` and build the Docker image.
 
 ```bash
-docker build -t jazero_web -f JDLC/python/api/Dockerfile JDLC/python/api
+docker build -t jazero_web -f JDLC/python/api/Dockerfile JDLC/python
 ```
 
 Then, run a container of Jazero web.
