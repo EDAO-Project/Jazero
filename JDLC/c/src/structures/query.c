@@ -69,3 +69,8 @@ void clear_query(query q)
 {
     free(q.rows);
 }
+
+query parse_query_file(const char *file_name)
+{
+
+}

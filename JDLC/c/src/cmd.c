@@ -1,11 +1,10 @@
-#include <driver/jdlc.h>
+#include <jazero.h>
+#include <utils/file_utils.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <argp.h>
 #include <string.h>
 
-#define EMAIL "mpch@cs.aau.dk"
-#define VERSION "Jazero 1.0"
 #define DESC "Jazero C/C++ terminal tool."
 #define ARG_DOC ""
 
@@ -204,34 +203,133 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
     return 0;
 }
 
+static response do_insert_embeddings(const char *ip, const char *jazero_dir, const char *embeddings_file, const char *delimiter)
+{
+    if (!file_exists(jazero_dir))
+    {
+        return (response) {.status = REQUEST_ERROR, .msg = "Jazero directory does not exist"};
+    }
+
+    else if (!file_exists(embeddings_file))
+    {
+        return (response) {.status = REQUEST_ERROR, .msg = "Embeddings file does not exist"};
+    }
+
+    return insert_embeddings(ip, embeddings_file, delimiter, jazero_dir);
+}
+
+static response do_load(const char *ip, const char *jazero_dir, const char *table_dir, const char *storage_type,
+                    const char *table_prefix, const char *kg_prefix, int signature_size, int band_size)
+{
+    if (!file_exists(jazero_dir))
+    {
+        return (response) {.status = REQUEST_ERROR, .msg = "Jazero directory does not exist"};
+    }
+
+    else if (!file_exists(table_dir))
+    {
+        return (response) {.status = REQUEST_ERROR, .msg = "Table directory does not exist"};
+    }
+
+    return load(ip, storage_type, table_prefix, kg_prefix, signature_size, band_size, jazero_dir, table_dir);
+}
+
+static response do_search(const char *ip, const char *query_file, uint8_t use_embeddings, enum cosine_function cos_func, int top_k,
+        enum similarity_measure measure, enum prefilter filter)
+{
+    if (!file_exists(query_file))
+    {
+        return (response) {.status = REQUEST_ERROR, .msg = "Query file does not exist"};
+    }
+
+    query q = parse_query_file(query_file);
+
+    if (q.row_count < 0)
+    {
+        return (response) {.status = REQUEST_ERROR, .msg = "Could not parse JSON query file"};
+    }
+
+    return search(ip, q, top_k, use_embeddings, measure, cos_func, filter);
+}
+
+static response do_ping(const char *ip)
+{
+    return ping(ip);
+}
+
 int main(int argc, char *argv[])
 {
+    response ret;
     struct argp arg_p = {options, parse_opt, ARG_DOC, DESC, 0, 0, 0};
-    struct arguments args = {.error_msg = NULL, .parse_error = 0, .use_embeddings = 0, .top_k = 100,
-            .sim_measure = EUCLIDEAN, .storage_type = "NATIVE", .table_prefix = "", .kg_prefix = "", .delimiter = " ",
+    struct arguments args = {.parse_error = 0, .use_embeddings = 0, .top_k = 100, .sim_measure = EUCLIDEAN,
+            .storage_type = "NATIVE", .table_prefix = "", .kg_prefix = "", .delimiter = " ",
             .signature_size = 30, .band_size = 10, .filter = NONE};
+    args.error_msg = NULL;
+    args.host = NULL;
+    args.jazero_dir = NULL;
+    args.query_file = NULL;
+    args.table_loc = NULL;
+
     argp_parse(&arg_p, argc, argv, 0, 0, &args);
 
     if (args.parse_error)
     {
-        perror(args.error_msg);
+        printf("Error: %s\n", args.error_msg);
+        return EXIT_FAILURE;
+    }
+
+    else if (args.host == NULL)
+    {
+        printf("Error: Missing host name\n");
         return EXIT_FAILURE;
     }
 
     switch (args.op)
     {
         case INSERT_EMBEDDINGS:
+            if (args.jazero_dir == NULL || args.embeddings_file == NULL)
+            {
+                ret = (response) {.status = REQUEST_ERROR, .msg = "Error: Missing either Jazero directory of embeddings file"};
+                break;
+            }
+
+            ret = do_insert_embeddings(args.host, args.jazero_dir, args.embeddings_file, args.delimiter);
             break;
 
         case LOAD:
+            if (args.jazero_dir == NULL || args.embeddings_file == NULL)
+            {
+                ret = (response) {.status = REQUEST_ERROR, .msg = "Error: Missing either Jazero directory of embeddings file"};
+                break;
+            }
+
+            else if (args.signature_size < 1 || args.band_size < 1)
+            {
+                ret = (response) {.status = REQUEST_ERROR, .msg = "Error: Signature size of band size must be greater than 1\n"};
+                break;
+            }
+
+            ret = do_load(args.host, args.jazero_dir, args.table_loc, args.storage_type, args.table_prefix,
+                       args.kg_prefix, args.signature_size, args.band_size);
             break;
 
         case SEARCH:
+            if (args.query_file == NULL)
+            {
+                ret = (response) {.status = REQUEST_ERROR, .msg = "Error: Missing query file\n"};
+                break;
+            }
+            ret = do_search(args.host, args.query_file, args.use_embeddings, args.cos_func, args.top_k, args.sim_measure, args.filter);
             break;
 
         case PING:
+            ret = do_ping(args.host);
             break;
+
+        default:
+            ret = (response) {.status = REQUEST_ERROR, .msg = "Error: Unrecognized operation (%d)\n"};
     }
 
-    return EXIT_SUCCESS;
+    printf("%s\n", ret.msg);
+    return ret.status;
 }

@@ -15,7 +15,7 @@ enum operation
 
 enum response_status
 {
-    OK,
+    OK = 0,
     JAZERO_ERROR,
     REQUEST_ERROR
 };

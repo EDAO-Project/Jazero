@@ -3,6 +3,15 @@
 #include <string.h>
 #include <stdio.h>
 
+#ifdef UNIX
+#include <unistd.h>
+#elif defined(WINDOWS)
+#include <io.h>
+#define F_OK 0
+#define access _access
+#endif
+
+#ifdef WINDOWS
 static inline void replace(char from, char to, char *restrict str)
 {
     size_t length = strlen(str);
@@ -15,6 +24,7 @@ static inline void replace(char from, char to, char *restrict str)
         }
     }
 }
+#endif
 
 static int perform_op(const char *op, const char *src, const char *dst)
 {
@@ -64,7 +74,12 @@ uint8_t move_file(const char *src, const char *dst)
 {
 #ifdef UNIX
     return perform_op("mv", src, dst);
-#elif WINDOWS
+#elif defined(WINDOWS)
     return perform_op("move", src, dst);
 #endif
+}
+
+uint8_t file_exists(const char *path)
+{
+    return access(path, F_OK) == 0;
 }
