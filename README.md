@@ -157,7 +157,7 @@ docker build -t jazero_web -f JDLC/python/api/Dockerfile JDLC/python
 Then, run a container of Jazero web.
 
 ```bash
-docker run --rm --network="host" -d --name jazero -e JAZERO_HOST=<HOST> web
+docker run --rm --network="host" -d --name jazero -e JAZERO_HOST=<HOST> jazero_web
 ```
 
 You can now access the Jazero web interface <a href="http://127.0.0.1:8084/cdlc/">here</a>.
