@@ -87,6 +87,25 @@ int test_make_query(void)
     return 0;
 }
 
+int test_parse_query(void)
+{
+    query q = parse_query_file("query.json");
+
+    if (q.row_count != 1 || q.column_count != 3)
+    {
+        return 1;
+    }
+
+    else if (strcmp(q.rows[0][0], "http://dbpedia.org/resource/Jacob_Levitzki") != 0 ||
+                strcmp(q.rows[0][1], "http://dbpedia.org/resource/Hard_and_soft_science") != 0 ||
+                strcmp(q.rows[0][2], "http://dbpedia.org/resource/Alexander_Levitzki") != 0)
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
 int main(void)
 {
     return test_make_query() + test2str();

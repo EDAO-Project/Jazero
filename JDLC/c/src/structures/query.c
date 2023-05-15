@@ -70,7 +70,58 @@ void clear_query(query q)
     free(q.rows);
 }
 
+static const char *read_file(const char *file_name)
+{
+    size_t allocated = 500, current = 0;
+    char *content = (char *) malloc(allocated);
+    int c;
+    FILE *f = fopen(file_name, "r");
+
+    if (f == NULL)
+    {
+        return NULL;
+    }
+
+    while ((c = fgetc(f)) != -1)
+    {
+        content[current] = (char) c;
+
+        if (current++ == allocated)
+        {
+            allocated *= 2;
+            char *copy = (char *) realloc(content, allocated);
+
+            if (copy == NULL)
+            {
+                free(content);
+                return NULL;
+            }
+
+            content = copy;
+        }
+    }
+
+    content[current] = '\0';
+    return content;
+}
+
 query parse_query_file(const char *file_name)
 {
+    const query error = {.rows = NULL, .row_count = 0, .column_count = 0};
+    uint32_t row_count, column_count, current = 0;
+    char ***rows;
+    const char *content = read_file(file_name);
+    char c;
 
+    if (content == NULL)
+    {
+        return error;
+    }
+
+    while ((c = content[current++]) != '\0')
+    {
+
+    }
+
+    free((char *) content);
 }
