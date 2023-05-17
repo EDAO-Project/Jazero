@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.16)
 project(jdlc C)
 
 include(CTest)
+include(ExternalProject)
+include(FetchContent)
+find_package(Git REQUIRED)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_COMPILER_ID "GNU")
@@ -17,22 +20,28 @@ if(LINUX OR UNIX)
     add_compile_definitions(UNIX)
 endif()
 
-include_directories(include/)
-add_library(jdlc
-            src/driver/jdlc.c
-            src/structures/property.c
-            src/structures/query.c
-            src/connection/address.c
-            src/connection/request.c
-            src/utils/file_utils.c
-            src/driver/params.c
-            src/driver/json_body.c
-            src/driver/enum2str.c
-            src/jazero.c)
+set(CJSON_ROOT ${CMAKE_BINARY_DIR}/cJSON)
 
-target_link_libraries(jdlc -lcurl)
+if(NOT EXISTS ${CJSON_ROOT})
+    execute_process(COMMAND git clone https://github.com/DaveGamble/cJSON.git)
+endif()
+
+include_directories(include/)
+include_directories(${CJSON_ROOT})
+file(GLOB jdlc_src
+        src/connection/*.c
+        src/driver/*.c
+        src/structures/*.c
+        src/utils/*.c
+        src/jazero.c)
+file(GLOB cjson_src ${CJSON_ROOT}/*.c)
+add_library(jdlc-core SHARED ${jdlc_src})
+add_library(cjson-core SHARED ${cjson_src})
+target_link_libraries(jdlc-core cjson-core -lcurl)
 
 add_executable(jdlc_cmd src/cmd.c)
+target_link_libraries(jdlc_cmd jdlc-core)
+
 add_executable(test_address test/connection/address_test.c)
 add_executable(test_request test/connection/request_test.c)
 add_executable(test_property test/structures/property_test.c)
@@ -40,13 +49,13 @@ add_executable(test_params test/params_test.c)
 add_executable(test_json_body test/json_body_test.c)
 add_executable(test_query test/structures/query_test.c)
 add_executable(test_file_utils test/utils/file_utils_test.c)
-target_link_libraries(test_address PRIVATE jdlc)
-target_link_libraries(test_request PRIVATE jdlc)
-target_link_libraries(test_property PRIVATE jdlc)
-target_link_libraries(test_params PRIVATE jdlc)
-target_link_libraries(test_json_body PRIVATE jdlc)
-target_link_libraries(test_query PRIVATE jdlc)
-target_link_libraries(test_file_utils PRIVATE jdlc)
+target_link_libraries(test_address PRIVATE jdlc-core)
+target_link_libraries(test_request PRIVATE jdlc-core)
+target_link_libraries(test_property PRIVATE jdlc-core)
+target_link_libraries(test_params PRIVATE jdlc-core)
+target_link_libraries(test_json_body PRIVATE jdlc-core)
+target_link_libraries(test_query PRIVATE jdlc-core)
+target_link_libraries(test_file_utils PRIVATE jdlc-core)
 enable_testing()
 
 add_test(NAME test_address COMMAND $<TARGET_FILE:test_address>)
