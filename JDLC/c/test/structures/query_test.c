@@ -30,8 +30,8 @@ int test2str(void)
         return 1;
     }
 
-    clear_query(q);
     free((char *) str);
+    clear_query(q);
     return 0;
 }
 
@@ -89,9 +89,14 @@ int test_make_query(void)
 
 int test_parse_query(void)
 {
-    query q = parse_query_file("query.json");
+    query q = parse_query_file("../test/structures/query.json");
 
-    if (q.row_count != 1 || q.column_count != 3)
+    if (q.rows == NULL)
+    {
+        return 1;
+    }
+
+    else if (q.row_count != 1 || q.column_count != 3)
     {
         return 1;
     }
@@ -106,7 +111,30 @@ int test_parse_query(void)
     return 0;
 }
 
+int test_json2str(void)
+{
+    query q = parse_query_file("../test/structures/query.json");
+
+    if (q.rows == NULL)
+    {
+        return 1;
+    }
+
+    const char *str = q2str(q);
+
+    if (str == NULL || strcmp(str, "http://dbpedia.org/resource/Jacob_Levitzki<>http://dbpedia.org/resource/Hard_and_soft_science<>http://dbpedia.org/resource/Alexander_Levitzki") != 0)
+    {
+        clear_query(q);
+        free((char *) str);
+        return 1;
+    }
+
+    free((char *) str);
+    clear_query(q);
+    return 0;
+}
+
 int main(void)
 {
-    return test_make_query() + test2str();
+    return test_make_query() + test2str() + test_parse_query();
 }

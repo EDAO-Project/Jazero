@@ -248,10 +248,10 @@ static response do_search(const char *ip, const char *query_file, uint8_t use_em
 
     query q = parse_query_file(query_file);
 
-    /*if (q.row_count < 0)
+    if (q.rows == NULL)
     {
         return (response) {.status = REQUEST_ERROR, .msg = "Could not parse JSON query file"};
-    }*/
+    }
 
     return search(ip, q, top_k, use_embeddings, measure, cos_func, filter);
 }
@@ -336,4 +336,5 @@ int main(int argc, char *argv[])
 
     printf("%s\n", ret.msg);
     return ret.status;
+    return 0;
 }
