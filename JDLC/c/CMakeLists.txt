@@ -35,8 +35,8 @@ file(GLOB jdlc_src
         src/utils/*.c
         src/jazero.c)
 file(GLOB cjson_src ${CJSON_ROOT}/*.c)
-add_library(jdlc-core SHARED ${jdlc_src})
-add_library(cjson-core SHARED ${cjson_src})
+add_library(jdlc-core STATIC ${jdlc_src})
+add_library(cjson-core STATIC ${cjson_src})
 target_link_libraries(jdlc-core cjson-core -lcurl)
 
 add_executable(jdlc_cmd src/cmd.c)
