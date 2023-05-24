@@ -22,8 +22,9 @@ To build the static library file `libjdlc.a`, run the following commands.
 
 ```bash
 mkdir -p build lib
-cmake -DCMAKE_BUILD_TYPE=Release -B build/
-cmake --build build/ --target jdlc -j 6
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build ./ --target all -- -j 6
 ```
 
 Now, the library file can be found in `lib/libjdlc.a`.

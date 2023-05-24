@@ -13,7 +13,7 @@ struct properties init_params_load(const char *storage_type, uint16_t signature_
     prop_insert(&props, "Content-Type", "application/json", 16);
     prop_insert(&props, "Storage-Type", storage_type, strlen(storage_type));
 
-    char signature[3], band[3];
+    char signature[6], band[6];
     sprintf(signature, "%d", signature_size);
     sprintf(band, "%d", band_size);
     prop_insert(&props, "Signature-Size", signature, strlen(signature));

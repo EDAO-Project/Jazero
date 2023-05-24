@@ -39,12 +39,12 @@ int test_search(void)
     char ***rows = (char ***) malloc(sizeof(char **) * 2);
     rows[0] = (char **) malloc(sizeof(char *) * 3);
     rows[1] = (char **) malloc(sizeof(char *) * 3);
-    rows[0][0] = (char *) malloc(3);
-    rows[0][1] = (char *) malloc(3);
-    rows[0][2] = (char *) malloc(3);
-    rows[1][0] = (char *) malloc(3);
-    rows[1][1] = (char *) malloc(3);
-    rows[1][2] = (char *) malloc(3);
+    rows[0][0] = (char *) malloc(4);
+    rows[0][1] = (char *) malloc(4);
+    rows[0][2] = (char *) malloc(4);
+    rows[1][0] = (char *) malloc(4);
+    rows[1][1] = (char *) malloc(4);
+    rows[1][2] = (char *) malloc(4);
     strcpy(rows[0][0], "e11");
     strcpy(rows[0][1], "e12");
     strcpy(rows[0][2], "e13");
