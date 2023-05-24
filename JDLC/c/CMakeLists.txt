@@ -6,6 +6,7 @@ include(ExternalProject)
 include(FetchContent)
 find_package(Git REQUIRED)
 
+set(CMAKE_C_COMPILER "gcc")
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_COMPILER_ID "GNU")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/)

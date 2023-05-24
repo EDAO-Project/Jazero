@@ -5,7 +5,7 @@
 
 struct request make_request(enum op operation, struct properties props, const char *restrict body)
 {
-    char *copy = (char *) malloc(sizeof(char) * strlen(body));
+    char *copy = (char *) malloc(sizeof(char) * strlen(body) + 1);
 
     if (copy != NULL)
     {
