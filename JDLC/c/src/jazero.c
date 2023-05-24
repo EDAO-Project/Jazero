@@ -83,7 +83,7 @@ response insert_embeddings(const char *ip, const char *embeddings_file, const ch
     struct address addr = init_addr(ip, DL_PORT, "/embeddings");
     struct properties headers = init_params_insert_embeddings();
     char *body = (char *) malloc(100 + strlen(embeddings_file) + strlen(delimiter)),
-        *mount_file = (char *) malloc(strlen(TABLES_MOUNT) + strlen(embeddings_file)),
+        *mount_file = (char *) malloc(strlen(TABLES_MOUNT) + strlen(embeddings_file) + 1),
         *file_name = basename((char *) embeddings_file);
 
     if (body == NULL || mount_file)
