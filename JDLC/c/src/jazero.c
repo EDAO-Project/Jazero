@@ -305,6 +305,13 @@ response search(const char *ip, query q, uint32_t top_k, uint8_t use_embeddings,
 
     search_body(body, top_k, use_embeddings, embeddings_function, sim_measure, filter_type, q);
 
+    char *body_copy = (char *) realloc(body, strlen(body));
+
+    if (body_copy != NULL)
+    {
+        body = body_copy;
+    }
+
     if (!init(&request, SEARCH, addr, headers, body))
     {
         free(body);

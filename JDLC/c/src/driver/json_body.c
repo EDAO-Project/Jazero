@@ -18,7 +18,7 @@ const char *search_body(char *buffer, uint32_t top_k, uint8_t use_embeddings, en
 {
     const char *cos_func_str = c2str(function), *sim_str = s2str(sim), *prefilter_str = p2str(lsh_prefilter);
     const char *query_str = q2str(q);
-    sprintf(buffer, "{\"top-k\": \"%d\", \"use_embeddings\": \"%s\", \"cosine-function\": \"%s\", "
+    sprintf(buffer, "{\"top-k\": \"%d\", \"use-embeddings\": \"%s\", \"cosine-function\": \"%s\", "
                   "\"single-column-per-query-entity\": \"true\", \"weighted-jaccard\": \"false\", "
                   "\"use-max-similarity-per-column\": \"true\", \"similarity-measure\": \"%s\", \"lsh\": \"%s\", "
                   "\"query\": \"%s\"}",

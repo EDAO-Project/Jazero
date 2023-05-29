@@ -5,9 +5,9 @@
 
 struct request make_request(enum op operation, struct properties props, const char *restrict body)
 {
-    char *copy = (char *) malloc(sizeof(char) * strlen(body) + 1);
+    char *copy = (char *) malloc(sizeof(char) * (body == NULL ? 0 : strlen(body)) + 1);
 
-    if (copy != NULL)
+    if (copy != NULL && body != NULL)
     {
         strcpy(copy, body);
     }
@@ -20,7 +20,7 @@ static char *get_url(struct address addr)
     char *url = NULL;
     char *protocol = "";
     int port_length = 6;
-    size_t size = sizeof(char) * (strlen(addr.host) + strlen(addr.path) + port_length);
+    size_t size = sizeof(char) * (strlen(addr.host) + strlen(addr.path) + port_length) + 5;
 
     if (strstr(addr.host, "http") == NULL)
     {
@@ -102,8 +102,8 @@ static struct curl_slist make_headers(struct properties props)
 
 struct request_response request_perform(struct request req, struct address addr)
 {
-    char *url = get_url(addr);
     CURL *handle = curl_easy_init();
+    char *url = get_url(addr);
     struct request_response res;
     struct curl_slist headers = make_headers(req.props);
     prepare(handle, url, &headers, req, &res);
@@ -113,6 +113,7 @@ struct request_response request_perform(struct request req, struct address addr)
     if (code != CURLE_OK)
     {
         res.status = 400;
+        res.msg = "Request failed";
         free(url);
         curl_easy_cleanup(handle);
         curl_global_cleanup();

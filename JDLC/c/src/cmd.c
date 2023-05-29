@@ -5,8 +5,28 @@
 #include <argp.h>
 #include <string.h>
 
-#define DESC "Jazero C/C++ terminal tool."
-#define ARG_DOC ""
+#define USAGE "usage: jdlc [option] ...\n" \
+                "-o, --operation : Jazero operation to perform (search, insert, loadembeddings, ping)\n" \
+                "\nping, search, insert, insertembeddings\n" \
+                "-h, --host : Host of machine on which Jazero is deployed\n" \
+                "\nsearch\n" \
+                "-q, --query : Query file path\n" \
+                "-s, --scoringtype : Type of entity scoring ('TYPE', 'COSINE_NORM', 'COSINE_ABS', 'COSINE_ANG')\n" \
+                "-k, --topk : Top-K value\n" \
+                "-m, --similaritymeasure : Similarity measure between vectors of entity scores ('EUCLIDEAN', 'COSINE')\n" \
+                "-f, --prefilter : Type of LSH pre-filter ('TYPES', 'EMBEDDINGS')\n" \
+                "\ninsert, insertembeddings\n" \
+                "-j, --jazerodir : Absolute path to Jazero directory on the machine running Jazero\n" \
+                "\ninsert\n" \
+                "-l, --location : Absolute path to table corpus directory on machine running Jazero\n" \
+                "-t, --storagetype : Type of storage for inserted table corpus ('NATIVE', 'HDFS' (recommended))\n" \
+                "-p, --tableentityprefix : Prefix of table entity URIs\n" \
+                "-i, --kgentityprefix : Prefix of KG entity IRIs\n" \
+                "-g, --signaturesize : Size of signature or number of permutation/projection vectors\n" \
+                "-b, --bandsize : Size of signature bands\n" \
+                "\ninsertembeddings\n" \
+                "-e, --embeddings : Absolute path to embeddings file on the machine running Jazero\n" \
+                "-d, --delimiter : Delimiter in embeddings file (see README)\n" \
 
 struct arguments
 {
@@ -18,194 +38,6 @@ struct arguments
     enum prefilter filter;
     int use_embeddings, top_k, signature_size, band_size, parse_error;
 };
-
-static struct argp_option options[] = {
-        {"host", 'h', "address", 0, "Host of machine on which Jazero is deployed", 0},
-        {"operation", 'o', "Jazero operation", 0, "Jazero operation to perform (search, insert, loadembeddings, ping)", 0},
-        {"query", 'q', "Table query",  0, "Query file path", 0},
-        {"scoringtype", 's', "Scoring function", 0, "Type of entity scoring (\'TYPE\', \'COSINE_NORM\', \'COSINE_ABS\', \'COSINE_ANG\')", 0},
-        {"topk", 'k', "Top-K", 0, "Top-K value", 0},
-        {"similaritymeasure", 'm', "Similarity function", 0, "Similarity measure between vectors of entity scores (\'EUCLIDEAN\', \'COSINE\')", 0},
-        {"location", 'l', "Corpus location", 0, "Absolute path to table corpus directory on machine running Jazero", 0},
-        {"jazerodir", 'j', "Jazero directory", 0, "Absolute path to Jazero directory on the machine running Jazero", 0},
-        {"storagetype", 't', "Table storage", 0, "Type of storage for inserted table corpus (\'NATIVE\', \'HDFS\' (recommended))", 0},
-        {"tableentityprefix", 'p', "Table entity prefix", 0, "Prefix of table entity URIs", 0},
-        {"kgentityprefix", 'i', "KG IRI prefix", 0, "Prefix of KG entity IRIs", 0},
-        {"embeddings", 'e', "Embeddings file", 0, "Absolute path to embeddings file on the machine running Jazero", 0},
-        {"delimiter", 'd', "Embeddings delimiter", 0, "Delimiter in embeddings file (see README)", 0},
-        {"signaturesize", 'g', "LSH signature size", 0, "Size of signature or number of permutation/projection vectors", 0},
-        {"bandsize", 'b', "LSH signature band size", 0, "Size of signature bands", 0},
-        {"prefilter", 'f', "LSH pre-filter", 0, "Type of LSH pre-filter (\'TYPES\', \'EMBEDDINGS\')", 0}
-};
-
-static error_t parse_opt(int key, char *arg, struct argp_state *state)
-{
-    struct arguments *args = state->input;
-
-    switch (key)
-    {
-        case 'h':
-            args->host = arg;
-            break;
-
-        case 'o':
-            if (strcmp(arg, "search") == 0)
-            {
-                args->op = SEARCH;
-            }
-
-            else if (strcmp(arg, "insert") == 0)
-            {
-                args->op = LOAD;
-            }
-
-            else if (strcmp(arg, "loadembeddings") == 0)
-            {
-                args->op = INSERT_EMBEDDINGS;
-            }
-
-            else if (strcmp(arg, "ping") == 0)
-            {
-                args->op = PING;
-            }
-
-            else
-            {
-                args->parse_error = 1;
-                args->error_msg = "Could not parse passed value for 'operation'";
-            }
-
-            break;
-
-        case 'q':
-            args->query_file = arg;
-            break;
-
-        case 's':
-            if (strcmp(arg, "TYPE") == 0)
-            {
-                args->use_embeddings = 0;
-                args->cos_func = NORM_COS;
-            }
-
-            else if (strcmp(arg, "COSINE_NORM") == 0)
-            {
-                args->cos_func = NORM_COS;
-            }
-
-            else if (strcmp(arg, "COSINE_ABS") == 0)
-            {
-                args->cos_func = ABS_COS;
-            }
-
-            else if (strcmp(arg, "COSINE_ANG") == 0)
-            {
-                args->cos_func = ANG_COS;
-            }
-
-            else
-            {
-                args->parse_error = 1;
-                args->error_msg = "Could not parse passed value for 'scoringtype'";
-            }
-
-            break;
-
-        case 'k':
-            args->top_k = strtol(arg, NULL, 10);
-            break;
-
-        case 'm':
-            if (strcmp(arg, "EUCLIDEAN") == 0)
-            {
-                args->sim_measure = EUCLIDEAN;
-            }
-
-            else if (strcmp(arg, "COSINE") == 0)
-            {
-                args->sim_measure = COSINE;
-            }
-
-            else
-            {
-                args->parse_error = 1;
-                args->error_msg = "Could not parse passed value for 'similaritymeasure'";
-            }
-
-            break;
-
-        case 'l':
-            args->table_loc = arg;
-            break;
-
-        case 'j':
-            args->jazero_dir = arg;
-            break;
-
-        case 't':
-            if (strcmp(arg, "NATIVE") != 0 && strcmp(arg, "HDFS") != 0)
-            {
-                args->parse_error = 1;
-                args->error_msg = "Could not parse passed value for 'storagetype'";
-            }
-
-            else
-            {
-                args->storage_type = arg;
-            }
-
-            break;
-
-        case 'p':
-            args->table_prefix = arg;
-            break;
-
-        case 'i':
-            args->kg_prefix = arg;
-            break;
-
-        case 'e':
-            args->embeddings_file = arg;
-            break;
-
-        case 'd':
-            args->delimiter = arg;
-            break;
-
-        case 'g':
-            args->signature_size = strtol(arg, NULL, 10);
-            break;
-
-        case 'b':
-            args->band_size = strtol(arg, NULL, 10);
-            break;
-
-        case 'f':
-            if (strcmp(arg, "TYPES") == 0)
-            {
-                args->filter = TYPES;
-            }
-
-            else if (strcmp(arg, "EMBEDDINGS") == 0)
-            {
-                args->filter = EMBEDDINGS;
-            }
-
-            else
-            {
-                args->parse_error = 1;
-                args->error_msg = "Could not parse passed value for 'prefilter'";
-            }
-
-            break;
-
-        default:
-            args->parse_error = 1;
-            args->error_msg = "Unrecognized option";
-    }
-
-    return 0;
-}
 
 static response do_insert_embeddings(const char *ip, const char *jazero_dir, const char *embeddings_file, const char *delimiter)
 {
@@ -261,10 +93,192 @@ static response do_ping(const char *ip)
     return ping(ip);
 }
 
+static inline uint8_t check_key(const char *key, const char *short_check, const char *long_check)
+{
+    return strcmp(key, short_check) == 0 || strcmp(key, long_check) == 0;
+}
+
+error_t parse(const char *key, const char *arg, struct arguments *args)
+{
+    if (check_key(key, "-h", "--host"))
+    {
+        args->host = (char *) arg;
+    }
+
+    else if (check_key(key, "-o", "--operation"))
+    {
+        if (strcmp(arg, "search") == 0)
+        {
+            args->op = SEARCH;
+        }
+
+        else if (strcmp(arg, "insert") == 0)
+        {
+            args->op = LOAD;
+        }
+
+        else if (strcmp(arg, "loadembeddings") == 0)
+        {
+            args->op = INSERT_EMBEDDINGS;
+        }
+
+        else if (strcmp(arg, "ping") == 0)
+        {
+            args->op = PING;
+        }
+
+        else
+        {
+            args->parse_error = 1;
+            args->error_msg = "Could not parse passed value for 'operation'";
+        }
+    }
+
+    else if (check_key(key, "-q", "--query"))
+    {
+        args->query_file = (char *) arg;
+    }
+
+    else if (check_key(key, "-s", "--scoringtype"))
+    {
+        if (strcmp(arg, "TYPE") == 0)
+        {
+            args->use_embeddings = 0;
+            args->cos_func = NORM_COS;
+        }
+
+        else if (strcmp(arg, "COSINE_NORM") == 0)
+        {
+            args->cos_func = NORM_COS;
+        }
+
+        else if (strcmp(arg, "COSINE_ABS") == 0)
+        {
+            args->cos_func = ABS_COS;
+        }
+
+        else if (strcmp(arg, "COSINE_ANG") == 0)
+        {
+            args->cos_func = ANG_COS;
+        }
+
+        else
+        {
+            args->parse_error = 1;
+            args->error_msg = "Could not parse passed value for 'scoringtype'";
+        }
+    }
+
+    else if (check_key(key, "-k", "--topk"))
+    {
+        args->top_k = strtol(arg, NULL, 10);
+    }
+
+    else if (check_key(key, "-m", "--similaritymeasure"))
+    {
+        if (strcmp(arg, "EUCLIDEAN") == 0)
+        {
+            args->sim_measure = EUCLIDEAN;
+        }
+
+        else if (strcmp(arg, "COSINE") == 0)
+        {
+            args->sim_measure = COSINE;
+        }
+
+        else
+        {
+            args->parse_error = 1;
+            args->error_msg = "Could not parse passed value for 'similaritymeasure'";
+        }
+    }
+
+    else if (check_key(key, "-l", "--location"))
+    {
+        args->table_loc = (char *) arg;
+    }
+
+    else if (check_key(key, "-j", "--jazerodir"))
+    {
+        args->jazero_dir = (char *) arg;
+    }
+
+    else if (check_key(key, "-t", "--storagetype"))
+    {
+        if (strcmp(arg, "NATIVE") != 0 && strcmp(arg, "HDFS") != 0)
+        {
+            args->parse_error = 1;
+            args->error_msg = "Could not parse passed value for 'storagetype'";
+        }
+
+        else
+        {
+            args->storage_type = (char *) arg;
+        }
+    }
+
+    else if (check_key(key, "-p", "----tableentityprefix"))
+    {
+        args->table_prefix = (char *) arg;
+    }
+
+    else if (check_key(key, "-i", "--kgentityprefix"))
+    {
+        args->kg_prefix = (char *) arg;
+    }
+
+    else if (check_key(key, "-e", "--embeddings"))
+    {
+        args->embeddings_file = (char *) arg;
+    }
+
+    else if (check_key(key, "-d", "--delimiter"))
+    {
+        args->delimiter = (char *) arg;
+    }
+
+    else if (check_key(key, "-g", "--signaturesize"))
+    {
+        args->signature_size = strtol(arg, NULL, 10);
+    }
+
+    else if (check_key(key, "-b", "--bandsize"))
+    {
+        args->band_size = strtol(arg, NULL, 10);
+    }
+
+    else if (check_key(key, "-f", "--prefilter"))
+    {
+        if (strcmp(arg, "TYPES") == 0)
+        {
+            args->filter = TYPES;
+        }
+
+        else if (strcmp(arg, "EMBEDDINGS") == 0)
+        {
+            args->filter = EMBEDDINGS;
+        }
+
+        else
+        {
+            args->parse_error = 1;
+            args->error_msg = "Could not parse passed value for 'prefilter'";
+        }
+    }
+
+    else
+    {
+        args->parse_error = 1;
+        args->error_msg = "Unrecognized option";
+        return 0;
+    }
+
+    return 1;
+}
+
 int main(int argc, char *argv[])
 {
     response ret;
-    struct argp arg_p = {options, parse_opt, ARG_DOC, DESC, 0, 0, 0};
     struct arguments args = {.parse_error = 0, .use_embeddings = 0, .top_k = 100, .sim_measure = EUCLIDEAN,
             .storage_type = "NATIVE", .table_prefix = "", .kg_prefix = "", .delimiter = " ",
             .signature_size = 30, .band_size = 10, .filter = NONE};
@@ -274,7 +288,19 @@ int main(int argc, char *argv[])
     args.query_file = NULL;
     args.table_loc = NULL;
 
-    argp_parse(&arg_p, argc, argv, 0, 0, &args);
+    for (int arg = 1; arg < argc; arg += 2)
+    {
+        if (strcmp(argv[arg], "--help") == 0)
+        {
+            printf("%s\n", USAGE);
+            return EXIT_SUCCESS;
+        }
+
+        if (!parse(argv[arg], argv[arg + 1], &args))
+        {
+            break;
+        }
+    }
 
     if (args.parse_error)
     {
@@ -293,7 +319,7 @@ int main(int argc, char *argv[])
         case INSERT_EMBEDDINGS:
             if (args.jazero_dir == NULL || args.embeddings_file == NULL)
             {
-                ret = (response) {.status = REQUEST_ERROR, .msg = "Error: Missing either Jazero directory of embeddings file"};
+                ret = (response) {.status = REQUEST_ERROR, .msg = "Error: Missing either Jazero directory or embeddings file"};
                 break;
             }
 
@@ -301,9 +327,9 @@ int main(int argc, char *argv[])
             break;
 
         case LOAD:
-            if (args.jazero_dir == NULL || args.embeddings_file == NULL)
+            if (args.jazero_dir == NULL)
             {
-                ret = (response) {.status = REQUEST_ERROR, .msg = "Error: Missing either Jazero directory of embeddings file"};
+                ret = (response) {.status = REQUEST_ERROR, .msg = "Error: Missing Jazero directory"};
                 break;
             }
 
@@ -323,7 +349,8 @@ int main(int argc, char *argv[])
                 ret = (response) {.status = REQUEST_ERROR, .msg = "Error: Missing query file\n"};
                 break;
             }
-            ret = do_search(args.host, args.query_file, args.use_embeddings, args.cos_func, args.top_k, args.sim_measure, args.filter);
+            ret = do_search(args.host, args.query_file, args.use_embeddings, args.cos_func, args.top_k,
+                            args.sim_measure, args.filter);
             break;
 
         case PING:
@@ -331,10 +358,9 @@ int main(int argc, char *argv[])
             break;
 
         default:
-            ret = (response) {.status = REQUEST_ERROR, .msg = "Error: Unrecognized operation (%d)\n"};
+            ret = (response) {.status = REQUEST_ERROR, .msg = "Error: Unrecognized operation\n"};
     }
 
     printf("%s\n", ret.msg);
     return ret.status;
-    return 0;
 }
