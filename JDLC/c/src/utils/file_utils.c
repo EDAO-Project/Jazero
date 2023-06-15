@@ -83,3 +83,12 @@ uint8_t file_exists(const char *path)
 {
     return access(path, F_OK) == 0;
 }
+
+uint8_t remove_file(const char *path)
+{
+#ifdef UNIX
+    return perform_op("rm", path, "");
+#elif defined(WINDOWS)
+    return perorm_op("del", path, "");
+#endif
+}

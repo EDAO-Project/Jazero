@@ -51,7 +51,7 @@ static response do_insert_embeddings(const char *ip, const char *jazero_dir, con
         return (response) {.status = REQUEST_ERROR, .msg = "Embeddings file does not exist"};
     }
 
-    return insert_embeddings(ip, embeddings_file, delimiter, jazero_dir);
+    return insert_embeddings(ip, embeddings_file, delimiter, jazero_dir, 1);
 }
 
 static response do_load(const char *ip, const char *jazero_dir, const char *table_dir, const char *storage_type,
@@ -67,7 +67,7 @@ static response do_load(const char *ip, const char *jazero_dir, const char *tabl
         return (response) {.status = REQUEST_ERROR, .msg = "Table directory does not exist"};
     }
 
-    return load(ip, storage_type, table_prefix, kg_prefix, signature_size, band_size, jazero_dir, table_dir);
+    return load(ip, storage_type, table_prefix, kg_prefix, signature_size, band_size, jazero_dir, table_dir, 1);
 }
 
 static response do_search(const char *ip, const char *query_file, uint8_t use_embeddings, enum cosine_function cos_func, int top_k,

@@ -13,6 +13,14 @@ const uint16_t DL_PORT = 8081;
 const uint16_t ENTITY_LINKER_PORT = 8082;
 const uint16_t EKG_PORT = 8083;
 
+static inline void print(uint8_t verbose, const char *message)
+{
+    if (verbose)
+    {
+        printf("%s", message);
+    }
+}
+
 response ping(const char *ip)
 {
     struct address dl_addr = init_addr(ip, DL_PORT, "/ping"),
@@ -69,15 +77,39 @@ static inline uint8_t prepare_embeddings(const char *embeddings_file, const char
     }
 
     sprintf(mount, "%s/%s", jazero_dir, RELATIVE_TABLES);
-    return copy_file(embeddings_file, mount);
+
+    uint8_t ret = copy_file(embeddings_file, mount);
+    free(mount);
+    return ret;
 }
 
-response insert_embeddings(const char *ip, const char *embeddings_file, const char *delimiter, const char *jazero_dir)
+static inline uint8_t remove_embeddings_file(const char *embeddings_file, const char *jazero_dir)
 {
+    char *path = (char *) malloc(strlen(jazero_dir) + strlen(RELATIVE_TABLES) + strlen(embeddings_file) + 5);
+
+    if (path == NULL)
+    {
+        return 0;
+    }
+
+    sprintf(path, "%s/%s/%s", jazero_dir, RELATIVE_TABLES, embeddings_file);
+
+    uint8_t ret = remove_file(path);
+    free(path);
+    return ret;
+}
+
+response insert_embeddings(const char *ip, const char *embeddings_file, const char *delimiter, const char *jazero_dir,
+                                uint8_t verbose)
+{
+    print(verbose, "Copying embeddings file...\n");
+
     if (!prepare_embeddings(embeddings_file, jazero_dir))
     {
         return (response) {.status = JAZERO_ERROR, .msg = "Could not prepare embeddings file: File not copied to mount"};
     }
+
+    print(verbose, "Copy done\n");
 
     jdlc request;
     struct address addr = init_addr(ip, DL_PORT, "/embeddings");
@@ -86,7 +118,7 @@ response insert_embeddings(const char *ip, const char *embeddings_file, const ch
         *mount_file = (char *) malloc(strlen(TABLES_MOUNT) + strlen(embeddings_file) + 1),
         *file_name = basename((char *) embeddings_file);
 
-    if (body == NULL || mount_file)
+    if (body == NULL || mount_file == NULL)
     {
         free(mount_file);
         free(body);
@@ -108,10 +140,14 @@ response insert_embeddings(const char *ip, const char *embeddings_file, const ch
         return (response) {.status = JAZERO_ERROR, .msg = "Could not initialize Jazero INSERT_EMBEDDINGS request"};
     }
 
+    print(verbose, "Loading embeddings...\n");
+
     response res = perform(request);
     free(mount_file);
     free(body);
     addr_clear(addr);
+    remove_embeddings_file(embeddings_file, jazero_dir);
+    print(verbose, "Loading complete\n");
 
     return res;
 }
@@ -196,7 +232,7 @@ static inline uint8_t prepare_tables(const char *jazero_table_dir, const char *t
 }
 
 response load(const char *ip, const char *storage_type, const char *table_entity_prefix, const char *kg_entity_prefix,
-              uint16_t signature_size, uint16_t band_size, const char *jazero_dir, const char *table_dir)
+              uint16_t signature_size, uint16_t band_size, const char *jazero_dir, const char *table_dir, uint8_t verbose)
 {
     char *table_storage = (char *) malloc(strlen(jazero_dir) + strlen(RELATIVE_TABLES) + 5);
     response mem_error = {.status = JAZERO_ERROR, .msg = "Ran out of memory"};
@@ -238,6 +274,7 @@ response load(const char *ip, const char *storage_type, const char *table_entity
     free(old_table_files);
 
     const char **new_table_files = (const char **) files(table_dir, &table_count);
+    print(verbose, "Copying tables...\n");
 
     if (new_table_files == NULL)
     {
@@ -251,6 +288,8 @@ response load(const char *ip, const char *storage_type, const char *table_entity
         free(new_table_files);
         return (response) {.status = JAZERO_ERROR, .msg = "Could not prepare table files: Files not copied to mount"};
     }
+
+    print(verbose, "Copy done\n");
 
     struct properties headers = init_params_load(storage_type, signature_size, band_size);
     jdlc request;
@@ -278,12 +317,15 @@ response load(const char *ip, const char *storage_type, const char *table_entity
         return (response) {.status = JAZERO_ERROR, .msg = "Could not initialize Jazero INSERT request"};
     }
 
+    print(verbose, "Loading tables\n");
+
     response res = perform(request);
     free(table_storage);
     free(new_table_files);
     free(body);
     prop_clear(&headers);
     addr_clear(addr);
+    print(verbose, "Loading complete\n");
 
     return res;
 }
