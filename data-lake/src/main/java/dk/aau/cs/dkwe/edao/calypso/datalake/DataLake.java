@@ -120,6 +120,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     public ResponseEntity<String> ping()
     {
         analysis.record("ping", 1);
+        Logger.log(Logger.Level.INFO, "PING");
         return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body("pong");
     }
 
@@ -563,7 +564,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         {
             this.embeddingsLoadingInProgress = false;
             Configuration.setEmbeddingsLoaded(false);
-            return ResponseEntity.badRequest().body("Embeddings file does not exist");
+            return ResponseEntity.badRequest().body("Embeddings file error: " + e.getMessage());
         }
 
         catch (IllegalArgumentException e)
