@@ -92,3 +92,31 @@ uint8_t remove_file(const char *path)
     return perorm_op("del", path, "");
 #endif
 }
+
+uint32_t file_count(const char *path)
+{
+#ifdef WINDOWS
+    return -1;
+#else
+    char *command = (char *) malloc(strlen(path) + 10);
+
+    if (command == NULL)
+    {
+        return -1;
+    }
+
+    sprintf(command, "ls %s | wc -l", path);
+
+    FILE *p = popen(command, "r");
+    char buffer[20];
+
+    if (p == NULL)
+    {
+        return -1;
+    }
+
+    fgets(buffer, 20, p);
+    fclose(p);
+    return strtol(buffer, (char **) NULL, 10);
+#endif
+}

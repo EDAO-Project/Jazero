@@ -152,80 +152,25 @@ response insert_embeddings(const char *ip, const char *embeddings_file, const ch
     return res;
 }
 
-static char **files(const char *dir, uint32_t *count)
+static inline uint8_t prepare_tables(const char *jazero_table_dir, const char *table_folder)
 {
-    DIR *dirp = opendir(dir);
+    uint8_t has_postfix = table_folder[strlen(table_folder) - 1] == '/';
+    DIR *dirp = opendir(table_folder);
     struct dirent *entry;
-    uint32_t i = 0, alloc = 1000;
-    char **files_arr = (char **) malloc(alloc * sizeof(char *));
+    char *abs_path = (char *) malloc(strlen(table_folder) + 100);
 
-    if (files_arr == NULL)
+    if (abs_path == NULL)
     {
-        return NULL;
+        return 0;
     }
 
     while ((entry = readdir(dirp)) != NULL)
     {
         if (entry->d_type == DT_REG)
         {
-            if (i == alloc)
-            {
-                alloc *= 2;
-                char **files_copy = (char **) realloc(files_arr, alloc);
-
-                if (files_copy != NULL)
-                {
-                    files_arr = files_copy;
-                }
-            }
-
-            files_arr[i] = (char *) malloc(strlen(entry->d_name));
-
-            if (files_arr[i] == NULL)
-            {
-                free(files_arr);
-                return NULL;
-            }
-
-            strcpy(files_arr[i], entry->d_name);
-            i++;
+            sprintf(abs_path, "%s%s%s", table_folder, has_postfix ? "" : "/", entry->d_name);
+            copy_file(abs_path, jazero_table_dir);
         }
-    }
-
-    *count = i;
-    return files_arr;
-}
-
-static inline uint8_t prepare_tables(const char *jazero_table_dir, const char *table_folder, const char **table_files, uint32_t table_count)
-{
-    uint8_t has_postfix = table_folder[strlen(table_folder) - 1] == '/';
-    size_t pos = strlen(table_folder) + has_postfix ? 1 : 0;
-
-    for (uint32_t i = 0; i < table_count; i++)
-    {
-        char *absolute = (char *) malloc(strlen(table_folder) + strlen(table_files[i]) + 5);
-
-        if (absolute == NULL)
-        {
-            return 0;
-        }
-
-        strcpy(absolute, table_folder);
-
-        if (has_postfix)
-        {
-            strcpy(absolute + pos - 1, "/");
-        }
-
-        strcpy(absolute + pos, table_files[i]);
-
-        if (!copy_file(absolute, jazero_table_dir))
-        {
-            free(absolute);
-            return 0;
-        }
-
-        free(absolute);
     }
 
     return 1;
@@ -255,37 +200,17 @@ response load(const char *ip, const char *storage_type, const char *table_entity
         strcpy(table_storage + strlen(jazero_dir) + 1, RELATIVE_TABLES);
     }
 
-    uint32_t table_count;
-    char **old_table_files = files(table_storage, &table_count);
-
-    if (old_table_files == NULL)
+    if (file_count(table_storage) > 0)
     {
         free(table_storage);
-        return mem_error;
-    }
-
-    else if (table_count > 0)
-    {
-        free(table_storage);
-        free(old_table_files);
         return (response) {.status = REQUEST_ERROR, .msg = "There are already tables stored in '"RELATIVE_TABLES"'"};
     }
 
-    free(old_table_files);
-
-    const char **new_table_files = (const char **) files(table_dir, &table_count);
     print(verbose, "Copying tables...\n");
 
-    if (new_table_files == NULL)
+    if (!prepare_tables(table_storage, table_dir))
     {
         free(table_storage);
-        return mem_error;
-    }
-
-    else if (!prepare_tables(table_storage, table_dir, new_table_files, table_count))
-    {
-        free(table_storage);
-        free(new_table_files);
         return (response) {.status = JAZERO_ERROR, .msg = "Could not prepare table files: Files not copied to mount"};
     }
 
@@ -299,7 +224,6 @@ response load(const char *ip, const char *storage_type, const char *table_entity
     if (body == NULL)
     {
         free(table_storage);
-        free(new_table_files);
         prop_clear(&headers);
         addr_clear(addr);
         return mem_error;
@@ -310,7 +234,6 @@ response load(const char *ip, const char *storage_type, const char *table_entity
     if (!init(&request, LOAD, addr, headers, body))
     {
         free(table_storage);
-        free(new_table_files);
         free(body);
         prop_clear(&headers);
         addr_clear(addr);
@@ -321,7 +244,7 @@ response load(const char *ip, const char *storage_type, const char *table_entity
 
     response res = perform(request);
     free(table_storage);
-    free(new_table_files);
+
     free(body);
     prop_clear(&headers);
     addr_clear(addr);

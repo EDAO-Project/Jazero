@@ -79,7 +79,7 @@ static struct curl_slist make_headers(struct properties props)
     for (uint32_t i = 0; i < count; i++)
     {
         const char *key = prop_key(props, i);
-        char *buffer = (char *) malloc(1000);
+        char *buffer = (char *) calloc(1000, sizeof(char));
 
         if (key != NULL && buffer != NULL)
         {
