@@ -11,7 +11,7 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.parser.ParsingException;
 import dk.aau.cs.dkwe.edao.calypso.datalake.parser.TableParser;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.*;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh.HashFunction;
-import dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh.TypesLSHIndex;
+import dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh.SetLSHIndex;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh.VectorLSHIndex;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Pair;
@@ -52,7 +52,7 @@ public class IndexWriter implements IndexIO
     private final  SynchronizedIndex<Id, Entity> entityTable;
     private final SynchronizedIndex<Id, List<String>> entityTableLink;
     private final SynchronizedIndex<Id, List<Double>> embeddingsIdx;
-    private TypesLSHIndex typesLSH;
+    private SetLSHIndex typesLSH, predicatesLSH;
     private VectorLSHIndex embeddingsLSH;
     private final DBDriverBatch<List<Double>, String> embeddingsDB;
     private final BloomFilter<String> filter = BloomFilter.create(
@@ -160,16 +160,20 @@ public class IndexWriter implements IndexIO
             throw new IllegalArgumentException("Number of permutation/projection vectors is not divisible by band size");
         }
 
-        Logger.log(Logger.Level.INFO, "Loaded LSH index 0/2");
-        this.typesLSH = new TypesLSHIndex(permutations, bandSize, 2,
+        Logger.log(Logger.Level.INFO, "Loaded LSH index 0/3");
+        this.typesLSH = new SetLSHIndex(permutations, SetLSHIndex.EntitySet.TYPES, bandSize, 2,
                 this.tableEntities, HASH_FUNCTION_NUMERIC, bucketGroups, bucketsPerGroup, this.threads, getEntityLinker(),
                 getEntityTable(), false);
 
-        Logger.log(Logger.Level.INFO, "Loaded LSH index 1/2");
+        Logger.log(Logger.Level.INFO, "Loaded LSH index 1/3");
+        this.predicatesLSH = new SetLSHIndex(permutations, SetLSHIndex.EntitySet.PREDICATES, bandSize, 2,
+                this.tableEntities, HASH_FUNCTION_NUMERIC, bucketGroups, bucketsPerGroup, this.threads, getEntityLinker(),
+                getEntityTable(), false);
 
+        Logger.log(Logger.Level.INFO, "Loaded LSH index 2/3");
         this.embeddingsLSH = new VectorLSHIndex(bucketGroups, bucketsPerGroup, permutations, bandSize, this.tableEntities,
                 this.threads, getEntityLinker(), getEmbeddingsIndex(), HASH_FUNCTION_BOOLEAN, false);
-        Logger.log(Logger.Level.INFO, "Loaded LSH index 2/2");
+        Logger.log(Logger.Level.INFO, "Loaded LSH index 3/3");
     }
 
     private boolean load(Path tablePath)
@@ -461,6 +465,12 @@ public class IndexWriter implements IndexIO
         outputStream.flush();
         outputStream.close();
 
+        // LSH of entity predicates
+        outputStream = new ObjectOutputStream(new FileOutputStream(this.indexDir + "/" + Configuration.getPredicatesLSHIndexFile()));
+        outputStream.writeObject(this.predicatesLSH);
+        outputStream.flush();
+        outputStream.close();
+
         // LSH of entity embeddings
         outputStream = new ObjectOutputStream(new FileOutputStream(this.indexDir + "/" + Configuration.getEmbeddingsLSHFile()));
         outputStream.writeObject(this.embeddingsLSH);
@@ -578,9 +588,18 @@ public class IndexWriter implements IndexIO
      * Getter to LSH index of entity types
      * @return Entity types-based LSH index
      */
-    public TypesLSHIndex getTypesLSH()
+    public SetLSHIndex getTypesLSH()
     {
         return this.typesLSH;
+    }
+
+    /**
+     * Getter to LSH index of entity predicates
+     * @return Entity predicates-based LSH index
+     */
+    public SetLSHIndex getPredicatesLSH()
+    {
+        return this.predicatesLSH;
     }
 
     /**

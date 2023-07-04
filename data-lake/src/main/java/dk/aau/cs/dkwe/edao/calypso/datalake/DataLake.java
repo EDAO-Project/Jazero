@@ -20,7 +20,7 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.store.EmbeddingsIndex;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTableLink;
-import dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh.TypesLSHIndex;
+import dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh.SetLSHIndex;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh.VectorLSHIndex;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Pair;
@@ -32,7 +32,6 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.EndpointAnalysis;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.FileLogger;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Logger;
-import dk.aau.cs.dkwe.edao.calypso.datalake.tables.JsonTable;
 import dk.aau.cs.dkwe.edao.calypso.storagelayer.StorageHandler;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -58,7 +57,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     private static EntityTable entityTable;
     private static EntityTableLink tableLink;
     private static EmbeddingsIndex<String> embeddingsIndex;
-    private static TypesLSHIndex typesLSH;
+    private static SetLSHIndex typesLSH, predicatesLSH;
     private static VectorLSHIndex embeddingLSH;
     private static EndpointAnalysis analysis;
     private static final int THREADS = 4;
@@ -97,10 +96,13 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 tableLink = indexReader.getEntityTableLink();
                 embeddingsIndex = indexReader.getEmbeddingsIndex();
                 typesLSH = indexReader.getTypesLSH();
+                predicatesLSH = indexReader.getPredicatesLSH();
                 embeddingLSH = indexReader.getVectorsLSH();
 
                 typesLSH.useEntityLinker(linker);
                 typesLSH.useEntityTable(entityTable);
+                predicatesLSH.useEntityLinker(linker);
+                predicatesLSH.useEntityTable(entityTable);
                 embeddingLSH.useEntityLinker(linker);
                 embeddingLSH.useEmbeddingIndex(embeddingsIndex);
             }
@@ -136,7 +138,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      *                  "use-max-similarity-per-column": "<BOOLEAN VALUE>",
      *                  ["weighted-jaccard": "<BOOLEAN VALUE>,]
      *                  ["cosine-function": "NORM_COS|ABS_COS|ANG_COS"]
-     *                  ["lsh": "TYPES|EMBEDDINGS",]
+     *                  ["lsh": "TYPES|PREDICATES|EMBEDDINGS",]
      *                  "query": "<QUERY STRING>"
      *             }
      * <p>
@@ -257,14 +259,14 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 prefilter = new Prefilter(linker, entityTable, tableLink, embeddingsIndex, typesLSH);
             }
 
+            else if (lshType.equals("PREDICATES"))
+            {
+                prefilter = new Prefilter(linker, entityTable, tableLink, embeddingsIndex, predicatesLSH);
+            }
+
             else if (lshType.equals("EMBEDDINGS"))
             {
                 prefilter = new Prefilter(linker, entityTable, tableLink, embeddingsIndex, embeddingLSH);
-            }
-
-            else if (lshType.equals("PREDICATES"))
-            {
-                prefilter = null;   // TODO: Is not yet supported
             }
         }
 

@@ -4,7 +4,7 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.store.EmbeddingsIndex;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTableLink;
-import dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh.TypesLSHIndex;
+import dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh.SetLSHIndex;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh.VectorLSHIndex;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Logger;
@@ -25,7 +25,7 @@ public class IndexReader implements IndexIO
     private EntityTable entityTable;
     private EntityTableLink entityTableLink;
     private EmbeddingsIndex<String> embeddingsIdx;
-    private TypesLSHIndex typesLSH;
+    private SetLSHIndex typesLSH, predicatesLSH;
     private VectorLSHIndex vectorsLSH;
     private static final int INDEX_COUNT = 5;
 
@@ -110,7 +110,8 @@ public class IndexReader implements IndexIO
 
     private void loadLSHIndexes()
     {
-        this.typesLSH = (TypesLSHIndex) readIndex(this.indexDir + "/" + Configuration.getTypesLSHIndexFile());
+        this.typesLSH = (SetLSHIndex) readIndex(this.indexDir + "/" + Configuration.getTypesLSHIndexFile());
+        this.predicatesLSH = (SetLSHIndex) readIndex(this.indexDir + "/" + Configuration.getPredicatesLSHIndexFile());
         this.vectorsLSH = (VectorLSHIndex) readIndex(this.indexDir + "/" + Configuration.getEmbeddingsLSHFile());
     }
 
@@ -159,9 +160,14 @@ public class IndexReader implements IndexIO
         return this.embeddingsIdx;
     }
 
-    public TypesLSHIndex getTypesLSH()
+    public SetLSHIndex getTypesLSH()
     {
         return this.typesLSH;
+    }
+
+    public SetLSHIndex getPredicatesLSH()
+    {
+        return this.predicatesLSH;
     }
 
     public VectorLSHIndex getVectorsLSH()

@@ -149,6 +149,9 @@ public class Configuration
         if (!props.contains("TypesLSH"))
             props.setProperty("TypesLSH", "types_lsh.ser");
 
+        if (!props.contains("PredicatesLSH"))
+            props.setProperty("PredicatesLSH", "predicates_lsh.ser");
+
         if (!props.contains("EmbeddingsLSH"))
             props.setProperty("EmbeddingsLSH", "embeddings_lsh.ser");
 
@@ -413,6 +416,11 @@ public class Configuration
     public static String getTypesLSHIndexFile()
     {
         return readProperties().getProperty("TypesLSH");
+    }
+
+    public static String getPredicatesLSHIndexFile()
+    {
+        return readProperties().getProperty("PredicatesLSH");
     }
 
     public static String getEmbeddingsLSHFile()

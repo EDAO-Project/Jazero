@@ -22,12 +22,18 @@ import java.util.stream.Collectors;
 /**
  * BucketIndex key is RDF type and value is table ID
  */
-public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<String, String>, Serializable
+public class SetLSHIndex extends BucketIndex<Id, String> implements LSHIndex<String, String>, Serializable
 {
+    public enum EntitySet
+    {
+        TYPES, PREDICATES
+    }
+
+    private EntitySet setType;
     private final int shingles, permutationVectors, bandSize;
     private List<List<Integer>> permutations;
     private final List<PairNonComparable<Id, List<Integer>>> signature;
-    private Map<String, Integer> universeTypes;
+    private Map<String, Integer> universeElements;
     private final HashFunction hash;
     private final transient int threads;
     private transient final Object lock = new Object();
@@ -35,7 +41,7 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
     private transient EntityTable entityTable;
     private final Map<Id, Integer> entityToSigIndex = new HashMap<>();
     private final boolean aggregateColumns;
-    private Set<String> unimportantTypes;
+    private Set<String> unimportantElements;
     private static final double UNIMPORTANT_TABLE_PERCENTAGE = 0.5;
 
     /**
@@ -44,10 +50,10 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
      * @param hash A hash function to be applied on min-hash signature to compute bucket index
      * @param bucketCount Number of LSH buckets (this determines runtime and accuracy!)
      */
-    public TypesLSHIndex(int permutationVectors, int bandSize, int shingleSize,
-                         Set<PairNonComparable<String, Table<String>>> tables, HashFunction hash, int bucketGroups,
-                         int bucketCount, int threads, EntityLinking linker, EntityTable entityTable,
-                         boolean aggregateColumns)
+    public SetLSHIndex(int permutationVectors, EntitySet set, int bandSize, int shingleSize,
+                       Set<PairNonComparable<String, Table<String>>> tables, HashFunction hash, int bucketGroups,
+                       int bucketCount, int threads, EntityLinking linker, EntityTable entityTable,
+                       boolean aggregateColumns)
     {
         super(bucketGroups, bucketCount);
 
@@ -61,6 +67,7 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
             throw new IllegalArgumentException("Shingle size must be greater than 0");
         }
 
+        this.setType = set;
         this.shingles = shingleSize;
         this.permutationVectors = permutationVectors;
         this.signature = new ArrayList<>();
@@ -72,7 +79,7 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
         this.aggregateColumns = aggregateColumns;
 
         Set<Table<String>> linkedTables = tables.stream().map(PairNonComparable::second).collect(Collectors.toSet());
-        loadTypes(linkedTables, linker);
+        loadElements(linkedTables, linker);
 
         try
         {
@@ -95,23 +102,23 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
         this.entityTable = entityTable;
     }
 
-    private void loadTypes(Set<Table<String>> linkedTables, EntityLinking linker)
+    private void loadElements(Set<Table<String>> linkedTables, EntityLinking linker)
     {
         int counter = 0;
-        this.universeTypes = new HashMap<>();
-        Iterator<Type> types = this.entityTable.allTypes();
+        this.universeElements = new HashMap<>();
+        Iterator<?> elements = this.setType == EntitySet.TYPES ? entityTable.allTypes() : entityTable.allPredicates();
 
-        while (types.hasNext())
+        while (elements.hasNext())
         {
-            String type = types.next().getType();
+            String element = this.setType == EntitySet.TYPES ? ((Type) elements.next()).getType() : elements.next().toString();
 
-            if (!this.universeTypes.containsKey(type))
+            if (!this.universeElements.containsKey(element))
             {
-                this.universeTypes.put(type, counter++);
+                this.universeElements.put(element, counter++);
             }
         }
 
-        this.unimportantTypes = new TypeStats(this.entityTable).popularByTable(UNIMPORTANT_TABLE_PERCENTAGE,
+        this.unimportantElements = new ElementStats(this.entityTable, this.setType).popularByTable(UNIMPORTANT_TABLE_PERCENTAGE,
                 linkedTables, linker);
     }
 
@@ -128,14 +135,14 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
 
         ExecutorService executor = Executors.newFixedThreadPool(this.threads);
         List<Future<?>> futures = new ArrayList<>(tables.size());
-        int typesDimension = this.universeTypes.size();
+        int elementsDimension = this.universeElements.size();
 
         for (int i = 1; i < this.shingles; i++)
         {
-            typesDimension = concat(typesDimension, this.universeTypes.size());
+            elementsDimension = concat(elementsDimension, this.universeElements.size());
         }
 
-        this.permutations = createPermutations(this.permutationVectors, ++typesDimension);
+        this.permutations = createPermutations(this.permutationVectors, ++elementsDimension);
 
         for (PairNonComparable<String, Table<String>> table : tables)
         {
@@ -205,11 +212,11 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
         List<PairNonComparable<Id, Set<Integer>>> matrix = new ArrayList<>();
         Aggregator<String> aggregator = new ColumnAggregator<>(table);
         List<Set<String>> aggregatedColumns =
-                aggregator.aggregate(cell -> types(cell),
+                aggregator.aggregate(this::elements,
                         coll -> {
-                            Set<String> types = new HashSet<>();
-                            coll.forEach(types::addAll);
-                            return types;
+                            Set<String> elements = new HashSet<>();
+                            coll.forEach(elements::addAll);
+                            return elements;
                         });
 
         for (Set<String> column : aggregatedColumns)
@@ -256,20 +263,20 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
 
     private Set<Integer> bitVector(String entity)
     {
-        Set<String> types = types(entity);
-        return bitVector(types);
+        Set<String> elements = elements(entity);
+        return bitVector(elements);
     }
 
-    private Set<Integer> bitVector(Set<String> types)
+    private Set<Integer> bitVector(Set<String> elements)
     {
-        types = types.stream().filter(t -> !this.unimportantTypes.contains(t) &&
-                    this.universeTypes.containsKey(t)).collect(Collectors.toSet());
-        Set<List<String>> shingles = TypeShingles.shingles(types, this.shingles);
+        elements = elements.stream().filter(e -> !this.unimportantElements.contains(e) &&
+                    this.universeElements.containsKey(e)).collect(Collectors.toSet());
+        Set<List<String>> shingles = ElementShingles.shingles(elements, this.shingles);
         Set<Integer> indices = new HashSet<>();
 
         for (List<String> shingle : shingles)
         {
-            List<Integer> shingleIds = new ArrayList<>(shingle.stream().map(s -> this.universeTypes.get(s)).toList());
+            List<Integer> shingleIds = new ArrayList<>(shingle.stream().map(s -> this.universeElements.get(s)).toList());
             shingleIds.sort(Comparator.comparingInt(v -> v));
 
             int concatenated = shingleIds.get(0);
@@ -285,7 +292,7 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
         return indices;
     }
 
-    private Set<String> types(String entity)
+    private Set<String> elements(String entity)
     {
         Id id = this.linker.uriLookup(entity);
 
@@ -301,7 +308,8 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
             return new HashSet<>();
         }
 
-        return e.getTypes().stream().map(Type::getType).collect(Collectors.toSet());
+        return this.setType == EntitySet.TYPES ? e.getTypes().stream().map(Type::getType).collect(Collectors.toSet())
+                : new HashSet<>(e.getPredicates());
     }
 
     private static List<List<Integer>> createPermutations(int vectors, int dimension)
@@ -535,14 +543,14 @@ public class TypesLSHIndex extends BucketIndex<Id, String> implements LSHIndex<S
             throw new RuntimeException("No EntityTable object has been specified");
         }
 
-        Set<String> mergedTypes = new HashSet<>();
+        Set<String> mergedElements = new HashSet<>();
 
         for (String key : keys)
         {
-            mergedTypes.addAll(types(key));
+            mergedElements.addAll(elements(key));
         }
 
-        Set<Integer> aggregatedBitVector = bitVector(mergedTypes);
+        Set<Integer> aggregatedBitVector = bitVector(mergedElements);
         int signatureIdx = createOrGetSignature(Id.alloc(), aggregatedBitVector);
 
         if (signatureIdx != -1)

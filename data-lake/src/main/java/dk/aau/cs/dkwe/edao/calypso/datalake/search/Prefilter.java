@@ -4,7 +4,7 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.store.EmbeddingsIndex;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTableLink;
-import dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh.TypesLSHIndex;
+import dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh.SetLSHIndex;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh.VectorLSHIndex;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Pair;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.*;
@@ -19,7 +19,7 @@ import java.util.*;
 public class Prefilter extends AbstractSearch
 {
     private long elapsed = -1;
-    private TypesLSHIndex typesLSH;
+    private SetLSHIndex setLSH;
     private VectorLSHIndex vectorsLSH;
     private static final int SIZE_THRESHOLD = 8;
     private static final int SPLITS_SIZE = 3;
@@ -31,10 +31,10 @@ public class Prefilter extends AbstractSearch
     }
 
     public Prefilter(EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
-                     EmbeddingsIndex<String> embeddingsIndex, TypesLSHIndex typesLSHIndex)
+                     EmbeddingsIndex<String> embeddingsIndex, SetLSHIndex setLSHIndex)
     {
         this(linker, entityTable, entityTableLink, embeddingsIndex);
-        this.typesLSH = typesLSHIndex;
+        this.setLSH = setLSHIndex;
         this.vectorsLSH = null;
     }
 
@@ -43,7 +43,7 @@ public class Prefilter extends AbstractSearch
     {
         this(linker, entityTable, entityTableLink, embeddingsIndex);
         this.vectorsLSH = vectorLSHIndex;
-        this.typesLSH = null;
+        this.setLSH = null;
     }
 
     @Override
@@ -143,9 +143,9 @@ public class Prefilter extends AbstractSearch
             entityArr[i++] = entity;
         }
 
-        if (this.typesLSH != null)
+        if (this.setLSH != null)
         {
-            return this.typesLSH.agggregatedSearch(entityArr);
+            return this.setLSH.agggregatedSearch(entityArr);
         }
 
         return this.vectorsLSH.agggregatedSearch(entityArr);
