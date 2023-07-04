@@ -22,67 +22,97 @@ public class KGService extends Service
         super(host, port);
     }
 
-    public List<String> searchTypes(String entity)
+    private Response performSend(String content, String mapping, String malformedUrlMsg, String ioExceptionMsg, boolean throwExceptions)
     {
         try
         {
-            Communicator comm = ServiceCommunicator.init(getHost(), getPort(), "types");
+            Communicator comm = ServiceCommunicator.init(getHost(), getPort(), mapping);
             Map<String, String> headers = new HashMap<>();
             headers.put("Content-Type", MediaType.APPLICATION_JSON_VALUE);
 
-            JsonObject content = new JsonObject();
-            content.add("entity", new JsonPrimitive(entity));
-
-            Response response = comm.send(content.toString(), headers);
+            Response response = comm.send(content, headers);
 
             if (response.getResponseCode() != HttpStatus.OK.value())
             {
-                throw new RuntimeException("Received response code " + response.getResponseCode() +
-                        " when requesting entity types from EKG Manager");
+                throw new RuntimeException("Received response code " + response.getResponseCode());
             }
 
-            JsonElement parsed = JsonParser.parseString((String) response.getResponse());
-            JsonArray array = parsed.getAsJsonObject().getAsJsonArray("types").getAsJsonArray();
-            List<String> types = new ArrayList<>();
-
-            for (JsonElement element : array)
-            {
-                types.add(element.getAsString());
-            }
-
-            return types;
+            return response;
         }
 
         catch (MalformedURLException e)
         {
-            throw new RuntimeException("URL for KG service to retrieve entity types is malformed: " + e.getMessage());
+            if (throwExceptions)
+            {
+                throw new RuntimeException(malformedUrlMsg + ": " + e.getMessage());
+            }
+
+            return null;
         }
 
         catch (IOException e)
         {
-            throw new RuntimeException("IOException when sending POST request for entity types: " + e.getMessage());
+            if (throwExceptions)
+            {
+                throw new RuntimeException(ioExceptionMsg + ": " + e.getMessage());
+            }
+
+            return null;
         }
+    }
+
+    public List<String> searchTypes(String entity)
+    {
+        JsonObject content = new JsonObject();
+        content.add("entity", new JsonPrimitive(entity));
+        Response response = performSend(content.toString(), "types",
+                "URL for KG service to retrieve entity types is malformed",
+                "IOException when sending POST request for entity types", true);
+        JsonElement parsed = JsonParser.parseString((String) response.getResponse());
+        JsonArray array = parsed.getAsJsonObject().getAsJsonArray("types").getAsJsonArray();
+        List<String> types = new ArrayList<>();
+
+        for (JsonElement element : array)
+        {
+            types.add(element.getAsString());
+        }
+
+        return types;
+    }
+
+    public List<String> searchPredicates(String entity)
+    {
+        JsonObject content = new JsonObject();
+        content.add("entity", new JsonPrimitive(entity));
+        Response response = performSend(content.toString(), "predicates",
+                "URL for KG service to retrieve entity types is malformed",
+                "IOException when sending POST request for entity types", true);
+        JsonElement parsed = JsonParser.parseString((String) response.getResponse());
+        JsonArray array = parsed.getAsJsonObject().getAsJsonArray("predicates").getAsJsonArray();
+        List<String> predicates = new ArrayList<>();
+
+        for (JsonElement element : array)
+        {
+            predicates.add(element.getAsString());
+        }
+
+        return predicates;
     }
 
     public boolean insertLinks(File dir)
     {
-        try
-        {
-            Communicator comm = ServiceCommunicator.init(getHost(), getPort(), "insert-links");
-            Map<String, String> headers = new HashMap<>();
-            headers.put("Content-Type", MediaType.APPLICATION_JSON_VALUE);
+        JsonObject folder = new JsonObject();
+        folder.add("folder", new JsonPrimitive(dir.getAbsolutePath()));
+        Response response = performSend(folder.toString(), "insert-links",
+                "Malformed URL when inserting links",
+                "IOException when inserting links", false);
 
-            JsonObject folder = new JsonObject();
-            folder.add("folder", new JsonPrimitive(dir.getAbsolutePath()));
-
-            Response response = comm.send(folder.toString(), headers);
-            return response.getResponseCode() == HttpStatus.OK.value();
-        }
-
-        catch (IOException e)
+        if (response == null)
         {
             return false;
         }
+
+        return response.getResponseCode() == HttpStatus.OK.value();
     }
 
     public long size()
@@ -106,35 +136,19 @@ public class KGService extends Service
 
     public String getFromWikiLink(String wikiLink)
     {
-        try
+        JsonObject wikiURL = new JsonObject();
+        wikiURL.add("wiki", new JsonPrimitive(wikiLink));
+        Response response = performSend(wikiURL.toString(), "from-wiki-link",
+                "URL for EKG Manager to retrieve entity link is malformed",
+                "IOException when sending POST request to get entity link", true);
+        String entity = (String) response.getResponse();
+
+        if (response.getResponseCode() != HttpStatus.OK.value())
         {
-            Communicator comm = ServiceCommunicator.init(getHost(), getPort(), "from-wiki-link");
-            Map<String, String> headers = new HashMap<>();
-            headers.put("Content-Type", MediaType.APPLICATION_JSON_VALUE);
-
-            JsonObject wikiURL = new JsonObject();
-            wikiURL.add("wiki", new JsonPrimitive(wikiLink));
-
-            Response response = comm.send(wikiURL.toString(), headers);
-            String entity = (String) response.getResponse();
-
-            if (response.getResponseCode() != HttpStatus.OK.value())
-            {
-                return null;
-            }
-
-            return !entity.equals("None") ? entity : null;
+            return null;
         }
 
-        catch (MalformedURLException e)
-        {
-            throw new RuntimeException("URL for EKG Manager to retrieve entity link is malformed: " + e.getMessage());
-        }
-
-        catch (IOException e)
-        {
-            throw new RuntimeException("IOException when sending POST request to get entity link: " + e.getMessage());
-        }
+        return !entity.equals("None") ? entity : null;
     }
 
     public Map<String, Set<String>> getSubGraph()

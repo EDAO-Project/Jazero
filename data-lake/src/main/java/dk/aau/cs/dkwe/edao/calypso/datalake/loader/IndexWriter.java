@@ -203,7 +203,8 @@ public class IndexWriter implements IndexIO
 
                     if (uri != null)
                     {
-                        List<String> entityTypes = this.kg.searchTypes(uri);
+                        List<String> entityTypes = this.kg.searchTypes(uri),
+                                entityPredicates = this.kg.searchPredicates(uri);
                         matchesUris.add(uri);
                         this.linker.addMapping(cellText, uri);
 
@@ -215,7 +216,7 @@ public class IndexWriter implements IndexIO
                         Id entityId = ((EntityLinking) this.linker.linker()).uriLookup(uri);
                         List<Double> embeddings = this.embeddingsDB.select(uri.replace("'", "''"));
                         this.entityTable.insert(entityId,
-                                new Entity(uri, entityTypes.stream().map(Type::new).collect(Collectors.toList())));
+                                new Entity(uri, entityTypes.stream().map(Type::new).collect(Collectors.toList()), entityPredicates));
 
                         if (embeddings != null)
                         {

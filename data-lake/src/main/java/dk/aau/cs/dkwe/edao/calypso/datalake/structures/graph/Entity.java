@@ -1,6 +1,7 @@
 package dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -8,28 +9,24 @@ public class Entity implements Comparable<Entity>, Serializable
 {
     private final String uri;
     private final List<Type> types;
+    private List<String> predicates;
     private double idf = -1;
 
-    public Entity(String uri, Type ... types)
+    public Entity(String uri)
     {
-        this(uri, Arrays.asList(types));
+        this(uri, List.of(), List.of());
     }
 
-    public Entity(String uri, List<Type> types)
+    public Entity(String uri, List<Type> types, List<String> predicates)
     {
         this.uri = uri;
         this.types = types;
+        this.predicates = predicates;
     }
 
-    public Entity(String uri, double idf, Type ... types)
+    public Entity(String uri, double idf, List<Type> types, List<String> predicates)
     {
-        this(uri, types);
-        this.idf = idf;
-    }
-
-    public Entity(String uri, double idf, List<Type> types)
-    {
-        this(uri, types);
+        this(uri, types, predicates);
         this.idf = idf;
     }
 
@@ -41,6 +38,11 @@ public class Entity implements Comparable<Entity>, Serializable
     public List<Type> getTypes()
     {
         return this.types;
+    }
+
+    public List<String> getPredicates()
+    {
+        return this.predicates;
     }
 
     public double getIDF()

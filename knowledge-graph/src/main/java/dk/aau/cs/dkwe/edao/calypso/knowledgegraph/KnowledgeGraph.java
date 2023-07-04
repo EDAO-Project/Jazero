@@ -179,13 +179,57 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
 
             if (types == null)
             {
-                return ResponseEntity.badRequest().body("An IOException was encountered when querying Neo4J");
+                return ResponseEntity.badRequest().body("An IOException was encountered when querying Neo4J for entity types");
             }
 
             JsonObject object = new JsonObject();
             JsonArray array = new JsonArray(types.size());
             types.forEach(t -> array.add(t.getType()));
             object.add("types", array);
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(object.toString());
+        }
+
+        catch (RuntimeException e)
+        {
+            return ResponseEntity.internalServerError().body("Neo4J error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Returns JSON array of predicates of a given entity
+     * Body must contain a single JSON entry with entity URI
+     *      {
+     *          "entity": "<URI>"
+     *      }
+     * @return JSON array pf entity predicates of format {"predicates": ["<PREDICATE_1>", "<PREDICATE_2>", ..., "<PREDICATE_N>"]}
+     */
+    @PostMapping("/predicates")
+    public synchronized ResponseEntity<String> entityPredicates(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
+    {
+        final String entry = "entity";
+
+        if (!body.containsKey(entry))
+        {
+            return ResponseEntity.badRequest().body("Missing entry \"" + entry + "\" to specify entity to find predicates of");
+        }
+
+        try
+        {
+            Neo4JReader reader = new Neo4JReader(endpoint);
+            List<String> entityPredicates = reader.entityPredicates(new Entity(body.get(entry)));
+
+            if (entityPredicates == null)
+            {
+                return ResponseEntity.badRequest().body("An IOException was encountered when querying Neo4J for entity predicates");
+            }
+
+            JsonObject object = new JsonObject();
+            JsonArray array = new JsonArray(entityPredicates.size());
+            entityPredicates.forEach(array::add);
+            object.add("predicates", array);
 
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_JSON)

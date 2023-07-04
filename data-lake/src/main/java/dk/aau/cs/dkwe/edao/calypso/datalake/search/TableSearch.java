@@ -16,7 +16,6 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.DynamicTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.Table;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.FileLogger;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Logger;
-import dk.aau.cs.dkwe.edao.calypso.datalake.tables.JsonTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.utilities.HungarianAlgorithm;
 import dk.aau.cs.dkwe.edao.calypso.datalake.utilities.Utils;
 import dk.aau.cs.dkwe.edao.calypso.storagelayer.StorageHandler;
@@ -52,6 +51,12 @@ public class TableSearch extends AbstractSearch
         }
     }
 
+    public enum EntitySimilarity
+    {
+        JACCARD_TYPES, JACCARD_PREDICATES,
+        EMBEDDINGS_NORM, EMBEDDINGS_ABS, EMBEDDINGS_ANG;
+    }
+
     public enum CosineSimilarityFunction {NORM_COS, ABS_COS, ANG_COS}
 
     private final int topK, threads;
@@ -60,26 +65,24 @@ public class TableSearch extends AbstractSearch
     Set<String> queryEntitiesMissingCoverage = new HashSet<>();
     private long elapsed = -1, parsedTables;
     private double reduction = 0.0;
-    private final boolean useEmbeddings, singleColumnPerQueryEntity, weightedJaccard,
+    private final boolean singleColumnPerQueryEntity, weightedJaccard,
             useMaxSimilarityPerColumn, hungarianAlgorithmSameAlignmentAcrossTuples;
-    private final CosineSimilarityFunction embeddingSimFunction;
     private final SimilarityMeasure measure;
+    private final EntitySimilarity simProp;
     private final Map<String, Stats> tableStats = new TreeMap<>();
     private final Object lock = new Object();
     private final StorageHandler storage;
     private Prefilter prefilter;
 
     public TableSearch(StorageHandler tableStorage, EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
-                       EmbeddingsIndex<String> embeddingIdx, int topK, int threads, boolean useEmbeddings,
-                       CosineSimilarityFunction cosineFunction, boolean singleColumnPerQueryEntity, boolean weightedJaccard,
-                       boolean useMaxSimilarityPerColumn, boolean hungarianAlgorithmSameAlignmentAcrossTuples,
-                       SimilarityMeasure similarityMeasure)
+                       EmbeddingsIndex<String> embeddingIdx, int topK, int threads, EntitySimilarity entitySim,
+                       boolean singleColumnPerQueryEntity, boolean weightedJaccard, boolean useMaxSimilarityPerColumn,
+                       boolean hungarianAlgorithmSameAlignmentAcrossTuples, SimilarityMeasure similarityMeasure)
     {
         super(linker, entityTable, entityTableLink, embeddingIdx);
         this.topK = topK;
         this.threads = threads;
-        this.useEmbeddings = useEmbeddings;
-        this.embeddingSimFunction = cosineFunction;
+        this.simProp = entitySim;
         this.singleColumnPerQueryEntity = singleColumnPerQueryEntity;
         this.weightedJaccard = weightedJaccard;
         this.hungarianAlgorithmSameAlignmentAcrossTuples = hungarianAlgorithmSameAlignmentAcrossTuples;
@@ -89,12 +92,11 @@ public class TableSearch extends AbstractSearch
     }
 
     public TableSearch(StorageHandler tableStorage, EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
-                       EmbeddingsIndex<String> embeddingIdx, int topK, int threads, boolean useEmbeddings,
-                       CosineSimilarityFunction cosineFunction, boolean singleColumnPerQueryEntity, boolean weightedJaccard,
-                       boolean useMaxSimilarityPerColumn, boolean hungarianAlgorithmSameAlignmentAcrossTuples,
-                       SimilarityMeasure similarityMeasure, Prefilter prefilter)
+                       EmbeddingsIndex<String> embeddingIdx, int topK, int threads, EntitySimilarity entitySim,
+                       boolean singleColumnPerQueryEntity, boolean weightedJaccard, boolean useMaxSimilarityPerColumn,
+                       boolean hungarianAlgorithmSameAlignmentAcrossTuples, SimilarityMeasure similarityMeasure, Prefilter prefilter)
     {
-        this(tableStorage, linker, entityTable, entityTableLink, embeddingIdx, topK, threads, useEmbeddings, cosineFunction, singleColumnPerQueryEntity,
+        this(tableStorage, linker, entityTable, entityTableLink, embeddingIdx, topK, threads, entitySim, singleColumnPerQueryEntity,
                 weightedJaccard, useMaxSimilarityPerColumn, hungarianAlgorithmSameAlignmentAcrossTuples,
                 similarityMeasure);
         this.prefilter = prefilter;
@@ -113,6 +115,12 @@ public class TableSearch extends AbstractSearch
 
         this.reduction = initialSize > 0 ? (1 - ((double) tableNames.size() / initialSize)) : 0;
         return this.storage.elements(f -> tableNames.contains(f.getName()));    // We have to iterate like this because we don't know how the storage type refers to a file absolutely
+    }
+
+    private static boolean useEmbeddings(EntitySimilarity sim)
+    {
+        return sim == EntitySimilarity.EMBEDDINGS_ABS || sim == EntitySimilarity.EMBEDDINGS_NORM ||
+                sim == EntitySimilarity.EMBEDDINGS_ANG;
     }
 
     /**
@@ -183,7 +191,7 @@ public class TableSearch extends AbstractSearch
             Logger.log(Logger.Level.INFO, "A total of " + parsedTables + " tables were parsed.");
             Logger.log(Logger.Level.INFO, "Elapsed time: " + this.elapsed / 1e9 + " seconds\n");
 
-            if (this.useEmbeddings)
+            if (useEmbeddings(this.simProp))
             {
                 Logger.log(Logger.Level.INFO, "A total of " + this.embeddingComparisons + " entity comparisons were made using embeddings.");
                 Logger.log(Logger.Level.INFO, "A total of " + this.nonEmbeddingComparisons + " entity comparisons cannot be made due to lack of embeddings.");
@@ -275,7 +283,7 @@ public class TableSearch extends AbstractSearch
 
                 numEntityMappedRows++;
 
-                if (!this.useEmbeddings || hasEmbeddingCoverage(query.getRow(queryRowCounter), columnToEntity, queryRowToColumnMappings, queryRowCounter))
+                if (!useEmbeddings(simProp) || hasEmbeddingCoverage(query.getRow(queryRowCounter), columnToEntity, queryRowToColumnMappings, queryRowCounter))
                 {
                     for (int queryColumn = 0; queryColumn < queryRowSize; queryColumn++)
                     {
@@ -417,7 +425,7 @@ public class TableSearch extends AbstractSearch
     {
         double sim = 0.0;
 
-        if (!this.useEmbeddings)
+        if (this.simProp == EntitySimilarity.JACCARD_TYPES || this.simProp == EntitySimilarity.JACCARD_PREDICATES)
             sim = Math.min(jaccardSimilarity(ent1, ent2), 0.95);
 
         else if (entityExists(ent1) && entityExists(ent2))
@@ -433,17 +441,25 @@ public class TableSearch extends AbstractSearch
 
     private double jaccardSimilarity(String ent1, String ent2)
     {
-        Set<Type> entTypes1 = new HashSet<>();
-        Set<Type> entTypes2 = new HashSet<>();
+        Set<Type> entTypes1 = new HashSet<>(), entTypes2 = new HashSet<>();
+        Set<String> entPredicates1 = new HashSet<>(), entPredicates2 = new HashSet<>();
         Id ent1Id = getLinker().uriLookup(ent1), ent2Id = getLinker().uriLookup(ent2);
 
         if (getEntityTable().contains(ent1Id))
-            entTypes1 = new HashSet<>(getEntityTable().find(ent1Id).getTypes());
+        {
+            Entity entity = getEntityTable().find(ent1Id);
+            entTypes1 = new HashSet<>(entity.getTypes());
+            entPredicates1 = new HashSet<>(getEntityTable().find(ent1Id).getPredicates());
+        }
 
         if (getEntityTable().contains(ent2Id))
-            entTypes2 = new HashSet<>(getEntityTable().find(ent2Id).getTypes());
+        {
+            Entity entity = getEntityTable().find(ent2Id);
+            entTypes2 = new HashSet<>(entity.getTypes());
+            entPredicates2 = new HashSet<>(entity.getPredicates());
+        }
 
-        if (this.weightedJaccard)   // Run weighted Jaccard Similarity
+        if (this.simProp == EntitySimilarity.JACCARD_TYPES && this.weightedJaccard)   // Run weighted Jaccard Similarity
         {
             Set<Pair<Type, Double>> weights = entTypes1.stream().map(t -> new Pair<>(t, t.getIdf())).collect(Collectors.toSet());
             weights.addAll(entTypes2.stream().map(t -> new Pair<>(t, t.getIdf())).collect(Collectors.toSet()));
@@ -452,7 +468,12 @@ public class TableSearch extends AbstractSearch
         }
 
         else
+        {
+            if (this.simProp == EntitySimilarity.JACCARD_PREDICATES)
+                return JaccardSimilarity.make(entPredicates1, entPredicates2).similarity();
+
             return JaccardSimilarity.make(entTypes1, entTypes2).similarity();
+        }
     }
 
     private double cosineSimilarity(String ent1, String ent2)
@@ -475,13 +496,13 @@ public class TableSearch extends AbstractSearch
         double cosineSim = Utils.cosineSimilarity(ent1Embeddings, ent2Embeddings),
                 simScore = 0.0;
 
-        if (this.embeddingSimFunction == CosineSimilarityFunction.NORM_COS)
+        if (this.simProp == EntitySimilarity.EMBEDDINGS_NORM)
             simScore = (cosineSim + 1.0) / 2.0;
 
-        else if (this.embeddingSimFunction == CosineSimilarityFunction.ABS_COS)
+        else if (this.simProp == EntitySimilarity.EMBEDDINGS_ABS)
             simScore = Math.abs(cosineSim);
 
-        else if (this.embeddingSimFunction == CosineSimilarityFunction.ANG_COS)
+        else if (this.simProp == EntitySimilarity.EMBEDDINGS_ANG)
             simScore = 1 - Math.acos(cosineSim) / Math.PI;
 
         synchronized (this.lock)
