@@ -9,6 +9,7 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Type;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.Aggregator;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.ColumnAggregator;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.Table;
+import org.joda.time.Interval;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -19,6 +20,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * BucketIndex key is RDF type and value is table ID
@@ -318,29 +320,19 @@ public class SetLSHIndex extends BucketIndex<Id, String> implements LSHIndex<Str
     private static List<List<Integer>> createPermutations(int vectors, int dimension, RandomGenerator random)
     {
         List<List<Integer>> permutations = new ArrayList<>();
-        List<Integer> indicesFull = new ArrayList<>(dimension), indicesEmpty = new ArrayList<>(dimension);
-
-        for (int i = 0; i < dimension; i++)
-        {
-            indicesFull.add(i);
-        }
 
         for (int i = 0; i < vectors; i++)
         {
             List<Integer> permutation = new ArrayList<>(dimension);
+            List<Integer> indices = IntStream.range(0, dimension).boxed().collect(Collectors.toList());
 
-            while (!indicesFull.isEmpty())
+            while (!indices.isEmpty())
             {
-                int idx = random.nextInt(indicesFull.size());
-                int remove = indicesFull.remove(idx);
-                permutation.add(remove);
-                indicesEmpty.add(remove);
+                int idx = random.nextInt(indices.size());
+                permutation.add(indices.remove(idx));
             }
 
             permutations.add(permutation);
-            List<Integer> tmp = new ArrayList<>(indicesEmpty);
-            indicesEmpty = indicesFull;
-            indicesFull = tmp;
         }
 
         return permutations;
