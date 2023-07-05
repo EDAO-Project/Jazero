@@ -21,6 +21,7 @@ import java.util.concurrent.Future;
 import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * BucketIndex key is RDF type and value is table ID
@@ -324,7 +325,7 @@ public class SetLSHIndex extends BucketIndex<Id, String> implements LSHIndex<Str
         for (int i = 0; i < vectors; i++)
         {
             List<Integer> permutation = new ArrayList<>(dimension);
-            List<Integer> indices = IntStream.range(0, dimension).boxed().collect(Collectors.toList());
+            List<Integer> indices = IntStream.range(0, dimension).boxed().collect(Collectors.toCollection(LinkedList::new));
 
             while (!indices.isEmpty())
             {
