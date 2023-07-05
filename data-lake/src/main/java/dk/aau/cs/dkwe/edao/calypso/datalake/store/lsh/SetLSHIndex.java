@@ -9,7 +9,6 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Type;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.Aggregator;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.ColumnAggregator;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.Table;
-import org.joda.time.Interval;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -18,10 +17,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 /**
  * BucketIndex key is RDF type and value is table ID
@@ -40,7 +37,7 @@ public class SetLSHIndex extends BucketIndex<Id, String> implements LSHIndex<Str
     private Map<String, Integer> universeElements;
     private final HashFunction hash;
     private final transient int threads;
-    private RandomGenerator randomGen;
+    private Random randomGen;
     private transient final Object lock = new Object();
     private transient EntityLinking linker;
     private transient EntityTable entityTable;
@@ -57,7 +54,7 @@ public class SetLSHIndex extends BucketIndex<Id, String> implements LSHIndex<Str
      */
     public SetLSHIndex(int permutationVectors, EntitySet set, int bandSize, int shingleSize,
                        Set<PairNonComparable<String, Table<String>>> tables, HashFunction hash, int bucketGroups,
-                       int bucketCount, int threads, RandomGenerator randomGenerator, EntityLinking linker,
+                       int bucketCount, int threads, Random randomGenerator, EntityLinking linker,
                        EntityTable entityTable, boolean aggregateColumns)
     {
         super(bucketGroups, bucketCount);
@@ -318,21 +315,14 @@ public class SetLSHIndex extends BucketIndex<Id, String> implements LSHIndex<Str
                 : new HashSet<>(e.getPredicates());
     }
 
-    private static List<List<Integer>> createPermutations(int vectors, int dimension, RandomGenerator random)
+    private static List<List<Integer>> createPermutations(int vectors, int dimension, Random random)
     {
         List<List<Integer>> permutations = new ArrayList<>();
 
         for (int i = 0; i < vectors; i++)
         {
-            List<Integer> permutation = new ArrayList<>(dimension);
-            List<Integer> indices = IntStream.range(0, dimension).boxed().collect(Collectors.toCollection(LinkedList::new));
-
-            while (!indices.isEmpty())
-            {
-                int idx = random.nextInt(indices.size());
-                permutation.add(indices.remove(idx));
-            }
-
+            List<Integer> permutation = IntStream.range(0, dimension).boxed().collect(Collectors.toCollection(LinkedList::new));
+            Collections.shuffle(permutation, random);
             permutations.add(permutation);
         }
 
