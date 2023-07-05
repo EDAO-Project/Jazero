@@ -17,6 +17,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 
 /**
@@ -36,6 +37,7 @@ public class SetLSHIndex extends BucketIndex<Id, String> implements LSHIndex<Str
     private Map<String, Integer> universeElements;
     private final HashFunction hash;
     private final transient int threads;
+    private RandomGenerator randomGen;
     private transient final Object lock = new Object();
     private transient EntityLinking linker;
     private transient EntityTable entityTable;
@@ -52,8 +54,8 @@ public class SetLSHIndex extends BucketIndex<Id, String> implements LSHIndex<Str
      */
     public SetLSHIndex(int permutationVectors, EntitySet set, int bandSize, int shingleSize,
                        Set<PairNonComparable<String, Table<String>>> tables, HashFunction hash, int bucketGroups,
-                       int bucketCount, int threads, EntityLinking linker, EntityTable entityTable,
-                       boolean aggregateColumns)
+                       int bucketCount, int threads, RandomGenerator randomGenerator, EntityLinking linker,
+                       EntityTable entityTable, boolean aggregateColumns)
     {
         super(bucketGroups, bucketCount);
 
@@ -74,6 +76,7 @@ public class SetLSHIndex extends BucketIndex<Id, String> implements LSHIndex<Str
         this.bandSize = bandSize;
         this.hash = hash;
         this.threads = threads;
+        this.randomGen = randomGenerator;
         this.linker = linker;
         this.entityTable = entityTable;
         this.aggregateColumns = aggregateColumns;
@@ -142,7 +145,7 @@ public class SetLSHIndex extends BucketIndex<Id, String> implements LSHIndex<Str
             elementsDimension = concat(elementsDimension, this.universeElements.size());
         }
 
-        this.permutations = createPermutations(this.permutationVectors, ++elementsDimension);
+        this.permutations = createPermutations(this.permutationVectors, ++elementsDimension, this.randomGen);
 
         for (PairNonComparable<String, Table<String>> table : tables)
         {
@@ -312,28 +315,32 @@ public class SetLSHIndex extends BucketIndex<Id, String> implements LSHIndex<Str
                 : new HashSet<>(e.getPredicates());
     }
 
-    private static List<List<Integer>> createPermutations(int vectors, int dimension)
+    private static List<List<Integer>> createPermutations(int vectors, int dimension, RandomGenerator random)
     {
         List<List<Integer>> permutations = new ArrayList<>();
-        Set<Integer> indices = new HashSet<>(dimension);
+        List<Integer> indicesFull = new ArrayList<>(dimension), indicesEmpty = new ArrayList<>(dimension);
 
         for (int i = 0; i < dimension; i++)
         {
-            indices.add(i);
+            indicesFull.add(i);
         }
 
         for (int i = 0; i < vectors; i++)
         {
             List<Integer> permutation = new ArrayList<>(dimension);
-            List<Integer> indicesCopy = new ArrayList<>(indices);
 
-            while (!indicesCopy.isEmpty())
+            while (!indicesFull.isEmpty())
             {
-                int idx = new Random().nextInt(indicesCopy.size());
-                permutation.add(indicesCopy.remove(idx));
+                int idx = random.nextInt(indicesFull.size());
+                int remove = indicesFull.remove(idx);
+                permutation.add(remove);
+                indicesEmpty.add(remove);
             }
 
             permutations.add(permutation);
+            List<Integer> tmp = new ArrayList<>(indicesEmpty);
+            indicesEmpty = indicesFull;
+            indicesFull = tmp;
         }
 
         return permutations;

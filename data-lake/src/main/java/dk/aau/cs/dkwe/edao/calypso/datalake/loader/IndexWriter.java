@@ -162,17 +162,17 @@ public class IndexWriter implements IndexIO
 
         Logger.log(Logger.Level.INFO, "Loaded LSH index 0/3");
         this.typesLSH = new SetLSHIndex(permutations, SetLSHIndex.EntitySet.TYPES, bandSize, 2,
-                this.tableEntities, HASH_FUNCTION_NUMERIC, bucketGroups, bucketsPerGroup, this.threads, getEntityLinker(),
-                getEntityTable(), false);
+                this.tableEntities, HASH_FUNCTION_NUMERIC, bucketGroups, bucketsPerGroup, this.threads, new Random(0),
+                getEntityLinker(), getEntityTable(), false);
 
         Logger.log(Logger.Level.INFO, "Loaded LSH index 1/3");
         this.predicatesLSH = new SetLSHIndex(permutations, SetLSHIndex.EntitySet.PREDICATES, bandSize, 2,
-                this.tableEntities, HASH_FUNCTION_NUMERIC, bucketGroups, bucketsPerGroup, this.threads, getEntityLinker(),
-                getEntityTable(), false);
+                this.tableEntities, HASH_FUNCTION_NUMERIC, bucketGroups, bucketsPerGroup, this.threads, new Random(0),
+                getEntityLinker(), getEntityTable(), false);
 
         Logger.log(Logger.Level.INFO, "Loaded LSH index 2/3");
         this.embeddingsLSH = new VectorLSHIndex(bucketGroups, bucketsPerGroup, permutations, bandSize, this.tableEntities,
-                this.threads, getEntityLinker(), getEmbeddingsIndex(), HASH_FUNCTION_BOOLEAN, false);
+                this.threads, new Random(0), getEntityLinker(), getEmbeddingsIndex(), HASH_FUNCTION_BOOLEAN, false);
         Logger.log(Logger.Level.INFO, "Loaded LSH index 3/3");
     }
 

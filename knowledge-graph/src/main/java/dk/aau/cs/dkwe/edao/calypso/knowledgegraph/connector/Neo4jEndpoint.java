@@ -201,7 +201,7 @@ public class Neo4jEndpoint implements AutoCloseable
                 Set<String> entityPredicates = new HashSet<>();
                 Result result = tx.run("MATCH (a:Resource) -[l]-> (b)" + "\n" +
                         "WHERE a.uri in [$entity]" + "\n" +
-                        "RETURN l as predicate", params);
+                        "RETURN DISTINCT TYPE(l) as predicate", params);
 
                 for (Record r : result.list())
                 {
