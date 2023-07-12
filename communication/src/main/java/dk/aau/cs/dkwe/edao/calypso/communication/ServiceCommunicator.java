@@ -63,7 +63,7 @@ public class ServiceCommunicator implements Communicator
      * @throws IOException when an error is encountered
      */
     @Override
-    public Response send(Object content, Map<String, String> headers) throws IOException
+    public synchronized Response send(Object content, Map<String, String> headers) throws IOException
     {
         HttpURLConnection connection = (HttpURLConnection) this.url.openConnection();
         connection.setRequestMethod("POST");
@@ -84,13 +84,13 @@ public class ServiceCommunicator implements Communicator
     }
 
     @Override
-    public Object receive() throws IOException
+    public synchronized Object receive() throws IOException
     {
         return receive(new HashMap<>());
     }
 
     @Override
-    public Object receive(Map<String, String> headers) throws IOException
+    public synchronized Object receive(Map<String, String> headers) throws IOException
     {
         HttpURLConnection connection = (HttpURLConnection) this.url.openConnection();
 

@@ -57,7 +57,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     private static EntityTable entityTable;
     private static EntityTableLink tableLink;
     private static EmbeddingsIndex<String> embeddingsIndex;
-    private static SetLSHIndex typesLSH, predicatesLSH;
+    private static SetLSHIndex typesLSH;
     private static VectorLSHIndex embeddingLSH;
     private static EndpointAnalysis analysis;
     private static final int THREADS = 4;
@@ -96,13 +96,10 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 tableLink = indexReader.getEntityTableLink();
                 embeddingsIndex = indexReader.getEmbeddingsIndex();
                 typesLSH = indexReader.getTypesLSH();
-                predicatesLSH = indexReader.getPredicatesLSH();
                 embeddingLSH = indexReader.getVectorsLSH();
 
                 typesLSH.useEntityLinker(linker);
                 typesLSH.useEntityTable(entityTable);
-                predicatesLSH.useEntityLinker(linker);
-                predicatesLSH.useEntityTable(entityTable);
                 embeddingLSH.useEntityLinker(linker);
                 embeddingLSH.useEmbeddingIndex(embeddingsIndex);
             }
@@ -138,7 +135,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      *                  "use-max-similarity-per-column": "<BOOLEAN VALUE>",
      *                  ["weighted-jaccard": "<BOOLEAN VALUE>,]
      *                  ["cosine-function": "NORM_COS|ABS_COS|ANG_COS"]
-     *                  ["lsh": "TYPES|PREDICATES|EMBEDDINGS",]
+     *                  ["lsh": "TYPES|EMBEDDINGS",]
      *                  "query": "<QUERY STRING>"
      *             }
      * <p>
@@ -257,11 +254,6 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             if (lshType.equals("TYPES"))
             {
                 prefilter = new Prefilter(linker, entityTable, tableLink, embeddingsIndex, typesLSH);
-            }
-
-            else if (lshType.equals("PREDICATES"))
-            {
-                prefilter = new Prefilter(linker, entityTable, tableLink, embeddingsIndex, predicatesLSH);
             }
 
             else if (lshType.equals("EMBEDDINGS"))

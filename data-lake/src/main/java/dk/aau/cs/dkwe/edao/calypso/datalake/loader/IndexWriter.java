@@ -32,7 +32,12 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 public class IndexWriter implements IndexIO
@@ -41,9 +46,9 @@ public class IndexWriter implements IndexIO
     private final File indexDir, dataDir;
     private final StorageHandler storage;
     private final int threads;
-    private final AtomicInteger loadedTables = new AtomicInteger(0),
-            cellsWithLinks = new AtomicInteger(0), tableStatsCollected = new AtomicInteger(0);
-    private final Object lock = new Object();
+    AtomicLong loadedTables = new AtomicLong(0);
+    private final AtomicInteger  cellsWithLinks = new AtomicInteger(0), tableStatsCollected = new AtomicInteger(0);
+    private final Object lock = new Object(), incrementLock = new Object();
     private long elapsed = -1;
     private final Map<Integer, Integer> cellToNumLinksFrequency = Collections.synchronizedMap(new HashMap<>());
     private final KGService kg;
@@ -52,7 +57,7 @@ public class IndexWriter implements IndexIO
     private final  SynchronizedIndex<Id, Entity> entityTable;
     private final SynchronizedIndex<Id, List<String>> entityTableLink;
     private final SynchronizedIndex<Id, List<Double>> embeddingsIdx;
-    private SetLSHIndex typesLSH, predicatesLSH;
+    private SetLSHIndex typesLSH;
     private VectorLSHIndex embeddingsLSH;
     private final DBDriverBatch<List<Double>, String> embeddingsDB;
     private final BloomFilter<String> filter = BloomFilter.create(
@@ -121,10 +126,16 @@ public class IndexWriter implements IndexIO
             throw new RuntimeException("Loading has already complete");
 
         int size = this.files.size();
+        ExecutorService threadPool = Executors.newFixedThreadPool(this.threads);
+        List<Future<Boolean>> tasks = new ArrayList<>(size);
         long startTime = System.nanoTime();
 
         for (int i = 0; i < size; i++)
         {
+            final int index = i;
+            Future<Boolean> task = threadPool.submit(() -> load(this.files.get(index)));
+            tasks.add(task);
+
             if (load(this.files.get(i)))
                 this.loadedTables.incrementAndGet();
 
@@ -132,6 +143,31 @@ public class IndexWriter implements IndexIO
                 Logger.log(Logger.Level.INFO, "Processed " + (i + 1) + "/" + size + " files...");
         }
 
+        long prev = 0;
+
+        while (this.loadedTables.get() < size)
+        {
+            synchronized (this.incrementLock)
+            {
+                this.loadedTables.set(tasks.stream().filter(Future::isDone).count());
+            }
+
+            if (this.loadedTables.get() - prev >= 100)
+            {
+                Logger.log(Logger.Level.INFO, "Processed " + this.loadedTables.get() + "/" + size + " files...");
+                prev = this.loadedTables.get();
+            }
+        }
+
+        tasks.forEach(t ->
+        {
+            try
+            {
+                t.get();
+            }
+
+            catch (InterruptedException | ExecutionException ignored) {}
+        });
         Logger.log(Logger.Level.INFO, "Collecting IDF weights...");
         loadIDFs();
 
@@ -160,20 +196,15 @@ public class IndexWriter implements IndexIO
             throw new IllegalArgumentException("Number of permutation/projection vectors is not divisible by band size");
         }
 
-        Logger.log(Logger.Level.INFO, "Loaded LSH index 0/3");
+        Logger.log(Logger.Level.INFO, "Loaded LSH index 0/2");
         this.typesLSH = new SetLSHIndex(permutations, SetLSHIndex.EntitySet.TYPES, bandSize, 2,
                 this.tableEntities, HASH_FUNCTION_NUMERIC, bucketGroups, bucketsPerGroup, this.threads, new Random(0),
                 getEntityLinker(), getEntityTable(), false);
 
-        Logger.log(Logger.Level.INFO, "Loaded LSH index 1/3");
-        this.predicatesLSH = new SetLSHIndex(permutations, SetLSHIndex.EntitySet.PREDICATES, bandSize, 2,
-                this.tableEntities, HASH_FUNCTION_NUMERIC, bucketGroups, bucketsPerGroup, this.threads, new Random(0),
-                getEntityLinker(), getEntityTable(), false);
-
-        Logger.log(Logger.Level.INFO, "Loaded LSH index 2/3");
+        Logger.log(Logger.Level.INFO, "Loaded LSH index 1/2");
         this.embeddingsLSH = new VectorLSHIndex(bucketGroups, bucketsPerGroup, permutations, bandSize, this.tableEntities,
                 this.threads, new Random(0), getEntityLinker(), getEmbeddingsIndex(), HASH_FUNCTION_BOOLEAN, false);
-        Logger.log(Logger.Level.INFO, "Loaded LSH index 3/3");
+        Logger.log(Logger.Level.INFO, "Loaded LSH index 2/2");
     }
 
     private boolean load(Path tablePath)
@@ -207,24 +238,27 @@ public class IndexWriter implements IndexIO
 
                     if (uri != null)
                     {
-                        List<String> entityTypes = this.kg.searchTypes(uri),
-                                entityPredicates = this.kg.searchPredicates(uri);
-                        matchesUris.add(uri);
-                        this.linker.addMapping(cellText, uri);
-
-                        for (String type : DISALLOWED_ENTITY_TYPES)
+                        synchronized (this.lock)
                         {
-                            entityTypes.remove(type);
-                        }
+                            List<String> entityTypes = this.kg.searchTypes(uri),
+                                    entityPredicates = this.kg.searchPredicates(uri);
+                            matchesUris.add(uri);
+                            this.linker.addMapping(cellText, uri);
 
-                        Id entityId = ((EntityLinking) this.linker.linker()).uriLookup(uri);
-                        List<Double> embeddings = this.embeddingsDB.select(uri.replace("'", "''"));
-                        this.entityTable.insert(entityId,
-                                new Entity(uri, entityTypes.stream().map(Type::new).collect(Collectors.toList()), entityPredicates));
+                            for (String type : DISALLOWED_ENTITY_TYPES)
+                            {
+                                entityTypes.remove(type);
+                            }
 
-                        if (embeddings != null)
-                        {
-                            this.embeddingsIdx.insert(entityId, embeddings);
+                            Id entityId = ((EntityLinking) this.linker.linker()).uriLookup(uri);
+                            List<Double> embeddings = this.embeddingsDB.select(uri.replace("'", "''"));
+                            this.entityTable.insert(entityId,
+                                    new Entity(uri, entityTypes.stream().map(Type::new).collect(Collectors.toList()), entityPredicates));
+
+                            if (embeddings != null)
+                            {
+                                this.embeddingsIdx.insert(entityId, embeddings);
+                            }
                         }
                     }
                 }
@@ -235,16 +269,23 @@ public class IndexWriter implements IndexIO
                 {
                     Id entityId = ((EntityLinking) this.linker.linker()).uriLookup(uri);
                     Pair<Integer, Integer> location = new Pair<>(row, column);
-                    ((EntityTableLink) this.entityTableLink.index()).
-                            addLocation(entityId, tableName, List.of(location));
+
+                    synchronized (this.lock)
+                    {
+                        ((EntityTableLink) this.entityTableLink.index()).
+                                addLocation(entityId, tableName, List.of(location));
+                    }
                 }
 
                 if (!matchesUris.isEmpty())
                 {
                     for (String entity : matchesUris)
                     {
-                        this.filter.put(entity);
-                        entities.add(entity);
+                        synchronized (this.lock)
+                        {
+                            this.filter.put(entity);
+                            entities.add(entity);
+                        }
                     }
 
                     entityMatches.put(new Pair<>(row, column), matchesUris);
@@ -257,9 +298,13 @@ public class IndexWriter implements IndexIO
             row++;
         }
 
-        this.tableEntities.add(new PairNonComparable<>(tableName, inputEntities));
-        saveStats(table, FilenameUtils.removeExtension(tableName), entities.iterator(), entityMatches);
-        this.storage.insert(tablePath.toFile());
+        synchronized (this.lock)
+        {
+            this.tableEntities.add(new PairNonComparable<>(tableName, inputEntities));
+            saveStats(table, FilenameUtils.removeExtension(tableName), entities.iterator(), entityMatches);
+            this.storage.insert(tablePath.toFile());
+        }
+
         return true;
     }
 
@@ -281,11 +326,7 @@ public class IndexWriter implements IndexIO
     private void saveStats(JsonTable jTable, String tableFileName, Iterator<String> entities, Map<Pair<Integer, Integer>, List<String>> entityMatches)
     {
         Stats stats = collectStats(jTable, tableFileName, entities, entityMatches);
-
-        synchronized (this.lock)
-        {
-            this.tableStats.put(tableFileName, stats);
-        }
+        this.tableStats.put(tableFileName, stats);
     }
 
     private Stats collectStats(JsonTable jTable, String tableFileName, Iterator<String> entities, Map<Pair<Integer, Integer>, List<String>> entityMatches)
@@ -465,12 +506,6 @@ public class IndexWriter implements IndexIO
         outputStream.flush();
         outputStream.close();
 
-        // LSH of entity predicates
-        outputStream = new ObjectOutputStream(new FileOutputStream(this.indexDir + "/" + Configuration.getPredicatesLSHIndexFile()));
-        outputStream.writeObject(this.predicatesLSH);
-        outputStream.flush();
-        outputStream.close();
-
         // LSH of entity embeddings
         outputStream = new ObjectOutputStream(new FileOutputStream(this.indexDir + "/" + Configuration.getEmbeddingsLSHFile()));
         outputStream.writeObject(this.embeddingsLSH);
@@ -540,7 +575,7 @@ public class IndexWriter implements IndexIO
      */
     public int loadedTables()
     {
-        return this.loadedTables.get();
+        return (int) this.loadedTables.get();
     }
 
     public int cellsWithLinks()
@@ -591,15 +626,6 @@ public class IndexWriter implements IndexIO
     public SetLSHIndex getTypesLSH()
     {
         return this.typesLSH;
-    }
-
-    /**
-     * Getter to LSH index of entity predicates
-     * @return Entity predicates-based LSH index
-     */
-    public SetLSHIndex getPredicatesLSH()
-    {
-        return this.predicatesLSH;
     }
 
     /**

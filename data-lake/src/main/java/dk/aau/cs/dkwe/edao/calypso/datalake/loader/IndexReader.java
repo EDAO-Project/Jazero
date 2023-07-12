@@ -25,7 +25,7 @@ public class IndexReader implements IndexIO
     private EntityTable entityTable;
     private EntityTableLink entityTableLink;
     private EmbeddingsIndex<String> embeddingsIdx;
-    private SetLSHIndex typesLSH, predicatesLSH;
+    private SetLSHIndex typesLSH;
     private VectorLSHIndex vectorsLSH;
     private static final int INDEX_COUNT = 5;
 
@@ -111,7 +111,6 @@ public class IndexReader implements IndexIO
     private void loadLSHIndexes()
     {
         this.typesLSH = (SetLSHIndex) readIndex(this.indexDir + "/" + Configuration.getTypesLSHIndexFile());
-        this.predicatesLSH = (SetLSHIndex) readIndex(this.indexDir + "/" + Configuration.getPredicatesLSHIndexFile());
         this.vectorsLSH = (VectorLSHIndex) readIndex(this.indexDir + "/" + Configuration.getEmbeddingsLSHFile());
     }
 
@@ -163,11 +162,6 @@ public class IndexReader implements IndexIO
     public SetLSHIndex getTypesLSH()
     {
         return this.typesLSH;
-    }
-
-    public SetLSHIndex getPredicatesLSH()
-    {
-        return this.predicatesLSH;
     }
 
     public VectorLSHIndex getVectorsLSH()
