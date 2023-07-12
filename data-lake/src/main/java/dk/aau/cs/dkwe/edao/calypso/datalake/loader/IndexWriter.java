@@ -128,22 +128,14 @@ public class IndexWriter implements IndexIO
         int size = this.files.size();
         ExecutorService threadPool = Executors.newFixedThreadPool(this.threads);
         List<Future<Boolean>> tasks = new ArrayList<>(size);
-        long startTime = System.nanoTime();
+        long startTime = System.nanoTime(), prev = 0;
 
         for (int i = 0; i < size; i++)
         {
             final int index = i;
             Future<Boolean> task = threadPool.submit(() -> load(this.files.get(index)));
             tasks.add(task);
-
-            if (load(this.files.get(i)))
-                this.loadedTables.incrementAndGet();
-
-            if (this.loadedTables.get() % 100 == 0)
-                Logger.log(Logger.Level.INFO, "Processed " + (i + 1) + "/" + size + " files...");
         }
-
-        long prev = 0;
 
         while (this.loadedTables.get() < size)
         {
