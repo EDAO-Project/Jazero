@@ -68,17 +68,12 @@ class Connector:
         return req.text
 
     # topK: Top-K ranking results
-    # scoringType: Type of scoring pairs of tables (must be one of 'TYPE', 'COSINE_NORM', 'COSINE_ABS', 'COSINE_ANG')
+    # scoringType: Entity similarity KG property (must be one of 'TYPE', 'PREDICATE', 'COSINE_NORM', 'COSINE_ABS', 'COSINE_ANG')
     # similarityMeasure: Type of similarity measurement of between vectors of entity scores using a scoring type (must be one of 'EUCLIDEAN', 'COSINE')
     # query: A table query of entity string representations
     def search(self, topK, scoringType, query, similarityMeasure = 'EUCLIDEAN', prefilter = ''):
-        useEmbeddings = 'true'
         cosFunction = scoringType.split('_')[-1] + '_COS'
-
-        if (scoringType == 'TYPE'):
-            useEmbeddings = 'false'
-
-        content = '{"top-k": "' + str(topK) + '", "use-embeddings": "' + useEmbeddings + '", "cosine-function": "' + cosFunction + \
+        content = '{"top-k": "' + str(topK) + '", "entity-similarity": "' + scoringType + '", "cosine-function": "' + cosFunction + \
                   '", "single-column-per-query-entity": "true", "weighted-jaccard": "false", ' + \
                   '"use-max-similarity-per-column": "true", "similarity-measure": "' + similarityMeasure + '", "lsh": "' + \
                   prefilter + '", "query": "' + self.__toString(query) + '"}'
