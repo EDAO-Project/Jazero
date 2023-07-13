@@ -253,7 +253,7 @@ response load(const char *ip, const char *storage_type, const char *table_entity
     return res;
 }
 
-response search(const char *ip, query q, uint32_t top_k, uint8_t use_embeddings, enum similarity_measure sim_measure,
+response search(const char *ip, query q, uint32_t top_k, enum entity_similarity entity_sim, enum similarity_measure sim_measure,
                 enum cosine_function embeddings_function, enum prefilter filter_type)
 {
     jdlc request;
@@ -268,7 +268,7 @@ response search(const char *ip, query q, uint32_t top_k, uint8_t use_embeddings,
         return (response) {.status = JAZERO_ERROR, .msg = "Ran out of memory"};
     }
 
-    search_body(body, top_k, use_embeddings, embeddings_function, sim_measure, filter_type, q);
+    search_body(body, top_k, entity_sim, embeddings_function, sim_measure, filter_type, q);
 
     char *body_copy = (char *) realloc(body, strlen(body));
 

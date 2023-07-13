@@ -25,6 +25,21 @@ const char *s2str(enum similarity_measure sim)
     return "EUCLIDEAN";
 }
 
+const char *e2str(enum entity_similarity sim)
+{
+    if (sim == TYPE)
+    {
+        return "TYPES";
+    }
+
+    else if (sim == PREDICATE)
+    {
+        return "PREDICATES";
+    }
+
+    return "EMBEDDINGS";
+}
+
 const char *p2str(enum prefilter filter)
 {
     if (filter == TYPES)

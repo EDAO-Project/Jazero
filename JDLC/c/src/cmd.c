@@ -11,7 +11,7 @@
                 "-h, --host : Host of machine on which Jazero is deployed\n" \
                 "\nsearch\n" \
                 "-q, --query : Query file path\n" \
-                "-s, --scoringtype : Type of entity scoring ('TYPE', 'COSINE_NORM', 'COSINE_ABS', 'COSINE_ANG')\n" \
+                "-s, --scoringtype : Type of entity scoring ('TYPE', 'PREDICATE', 'COSINE_NORM', 'COSINE_ABS', 'COSINE_ANG')\n" \
                 "-k, --topk : Top-K value\n" \
                 "-m, --similaritymeasure : Similarity measure between vectors of entity scores ('EUCLIDEAN', 'COSINE')\n" \
                 "-f, --prefilter : Type of LSH pre-filter ('TYPES', 'EMBEDDINGS')\n" \
@@ -36,7 +36,8 @@ struct arguments
     enum cosine_function cos_func;
     enum similarity_measure sim_measure;
     enum prefilter filter;
-    int use_embeddings, top_k, signature_size, band_size, parse_error;
+    int top_k, signature_size, band_size, parse_error;
+    enum entity_similarity entity_sim;
 };
 
 static response do_insert_embeddings(const char *ip, const char *jazero_dir, const char *embeddings_file, const char *delimiter)
@@ -70,7 +71,7 @@ static response do_load(const char *ip, const char *jazero_dir, const char *tabl
     return load(ip, storage_type, table_prefix, kg_prefix, signature_size, band_size, jazero_dir, table_dir, 1);
 }
 
-static response do_search(const char *ip, const char *query_file, uint8_t use_embeddings, enum cosine_function cos_func, int top_k,
+static response do_search(const char *ip, const char *query_file, enum entity_similarity entity_sim, enum cosine_function cos_func, int top_k,
         enum similarity_measure measure, enum prefilter filter)
 {
     if (!file_exists(query_file))
@@ -85,7 +86,7 @@ static response do_search(const char *ip, const char *query_file, uint8_t use_em
         return (response) {.status = REQUEST_ERROR, .msg = "Could not parse JSON query file"};
     }
 
-    return search(ip, q, top_k, use_embeddings, measure, cos_func, filter);
+    return search(ip, q, top_k, entity_sim, measure, cos_func, filter);
 }
 
 static response do_ping(const char *ip)
@@ -143,22 +144,31 @@ error_t parse(const char *key, const char *arg, struct arguments *args)
     {
         if (strcmp(arg, "TYPE") == 0)
         {
-            args->use_embeddings = 0;
+            args->entity_sim = TYPE;
+            args->cos_func = NORM_COS;
+        }
+
+        else if (strcmp(arg, "PREDICATE") == 0)
+        {
+            args->entity_sim = PREDICATE;
             args->cos_func = NORM_COS;
         }
 
         else if (strcmp(arg, "COSINE_NORM") == 0)
         {
+            args->entity_sim = EMBEDDING;
             args->cos_func = NORM_COS;
         }
 
         else if (strcmp(arg, "COSINE_ABS") == 0)
         {
+            args->entity_sim = EMBEDDING;
             args->cos_func = ABS_COS;
         }
 
         else if (strcmp(arg, "COSINE_ANG") == 0)
         {
+            args->entity_sim = EMBEDDING;
             args->cos_func = ANG_COS;
         }
 
@@ -279,7 +289,7 @@ error_t parse(const char *key, const char *arg, struct arguments *args)
 int main(int argc, char *argv[])
 {
     response ret;
-    struct arguments args = {.parse_error = 0, .use_embeddings = 0, .top_k = 100, .sim_measure = EUCLIDEAN,
+    struct arguments args = {.parse_error = 0, .entity_sim = TYPE, .top_k = 100, .sim_measure = EUCLIDEAN,
             .storage_type = "NATIVE", .table_prefix = "", .kg_prefix = "", .delimiter = " ",
             .signature_size = 30, .band_size = 10, .filter = NONE};
     args.error_msg = NULL;
@@ -349,7 +359,7 @@ int main(int argc, char *argv[])
                 ret = (response) {.status = REQUEST_ERROR, .msg = "Error: Missing query file\n"};
                 break;
             }
-            ret = do_search(args.host, args.query_file, args.use_embeddings, args.cos_func, args.top_k,
+            ret = do_search(args.host, args.query_file, args.entity_sim, args.cos_func, args.top_k,
                             args.sim_measure, args.filter);
             break;
 

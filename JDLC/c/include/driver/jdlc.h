@@ -37,6 +37,15 @@ enum similarity_measure
 
 const char *s2str(enum similarity_measure sim);
 
+enum entity_similarity
+{
+    TYPE,
+    PREDICATE,
+    EMBEDDING
+};
+
+const char *e2str(enum entity_similarity sim);
+
 enum prefilter
 {
     TYPES,
@@ -70,7 +79,7 @@ struct properties init_params_load(const char *storage_type, uint16_t signature_
 struct properties init_params_search(void);
 const char *load_embeddings_body(char *buffer, const char *file, const char *delimiter);
 const char *load_body(char *buffer, const char *table_dir, const char *table_entity_prefix, const char *kg_prefix);
-const char *search_body(char *buffer, uint32_t top_k, uint8_t use_embeddings, enum cosine_function function,
+const char *search_body(char *buffer, uint32_t top_k, enum entity_similarity entity_sim, enum cosine_function function,
         enum similarity_measure sim, enum prefilter lsh_prefilter, query q);
 uint8_t init(jdlc *restrict conn, enum operation op, struct address addr, struct properties headers, const char *body);
 response perform(jdlc conn);
