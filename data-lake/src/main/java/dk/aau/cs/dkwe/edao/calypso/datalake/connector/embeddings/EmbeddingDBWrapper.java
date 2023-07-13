@@ -69,7 +69,7 @@ public class EmbeddingDBWrapper implements DBDriverBatch<List<Double>, String>, 
 
         try
         {
-            if (!rs.next())
+            if (rs == null || !rs.next())
                 return null;
 
             return Arrays.asList((Double[]) rs.getArray(1).getArray());
