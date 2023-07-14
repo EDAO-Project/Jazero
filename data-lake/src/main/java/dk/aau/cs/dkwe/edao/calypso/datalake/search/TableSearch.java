@@ -75,7 +75,7 @@ public class TableSearch extends AbstractSearch
     private Prefilter prefilter;
 
     public TableSearch(StorageHandler tableStorage, EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
-                       EmbeddingsIndex<String> embeddingIdx, int topK, int threads, EntitySimilarity entitySim,
+                       EmbeddingsIndex<Id> embeddingIdx, int topK, int threads, EntitySimilarity entitySim,
                        boolean singleColumnPerQueryEntity, boolean weightedJaccard, boolean useMaxSimilarityPerColumn,
                        boolean hungarianAlgorithmSameAlignmentAcrossTuples, SimilarityMeasure similarityMeasure)
     {
@@ -92,7 +92,7 @@ public class TableSearch extends AbstractSearch
     }
 
     public TableSearch(StorageHandler tableStorage, EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
-                       EmbeddingsIndex<String> embeddingIdx, int topK, int threads, EntitySimilarity entitySim,
+                       EmbeddingsIndex<Id> embeddingIdx, int topK, int threads, EntitySimilarity entitySim,
                        boolean singleColumnPerQueryEntity, boolean weightedJaccard, boolean useMaxSimilarityPerColumn,
                        boolean hungarianAlgorithmSameAlignmentAcrossTuples, SimilarityMeasure similarityMeasure, Prefilter prefilter)
     {

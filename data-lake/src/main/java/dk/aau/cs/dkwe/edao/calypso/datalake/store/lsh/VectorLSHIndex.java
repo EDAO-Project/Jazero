@@ -34,7 +34,7 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
     private transient EntityLinking linker;
     private final HashFunction hash;
     private final transient Cache<Id, List<Integer>> cache;
-    private transient EmbeddingsIndex<String> embeddingsIdx;
+    private transient EmbeddingsIndex<Id> embeddingsIdx;
 
     /**
      * @param bucketCount Number of LSH index buckets
@@ -44,7 +44,7 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
      */
     public VectorLSHIndex(int bucketGroups, int bucketCount, int projections, int bandSize,
                           Set<PairNonComparable<String, Table<String>>> tables, int threads, RandomGenerator randomGenerator,
-                          EntityLinking linker, EmbeddingsIndex<String> embeddings, HashFunction hash, boolean aggregateColumns)
+                          EntityLinking linker, EmbeddingsIndex<Id> embeddings, HashFunction hash, boolean aggregateColumns)
     {
         super(bucketGroups, bucketCount);
         this.bandSize = bandSize;
@@ -63,7 +63,7 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
         this.linker = linker;
     }
 
-    public void useEmbeddingIndex(EmbeddingsIndex<String> embeddingsIdx)
+    public void useEmbeddingIndex(EmbeddingsIndex<Id> embeddingsIdx)
     {
         this.embeddingsIdx = embeddingsIdx;
     }

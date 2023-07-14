@@ -56,7 +56,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     private static EntityLinking linker;
     private static EntityTable entityTable;
     private static EntityTableLink tableLink;
-    private static EmbeddingsIndex<String> embeddingsIndex;
+    private static EmbeddingsIndex<Id> embeddingsIndex;
     private static SetLSHIndex typesLSH;
     private static VectorLSHIndex embeddingLSH;
     private static EndpointAnalysis analysis;

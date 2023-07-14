@@ -6,6 +6,7 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.EntityTableLink;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh.SetLSHIndex;
 import dk.aau.cs.dkwe.edao.calypso.datalake.store.lsh.VectorLSHIndex;
+import dk.aau.cs.dkwe.edao.calypso.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.calypso.datalake.system.Logger;
 
@@ -24,7 +25,7 @@ public class IndexReader implements IndexIO
     private EntityLinking linker;
     private EntityTable entityTable;
     private EntityTableLink entityTableLink;
-    private EmbeddingsIndex<String> embeddingsIdx;
+    private EmbeddingsIndex<Id> embeddingsIdx;
     private SetLSHIndex typesLSH;
     private VectorLSHIndex vectorsLSH;
     private static final int INDEX_COUNT = 5;
@@ -105,7 +106,7 @@ public class IndexReader implements IndexIO
 
     private void loadEmbeddingsIndex()
     {
-        this.embeddingsIdx = (EmbeddingsIndex<String>) readIndex(this.indexDir + "/" + Configuration.getEmbeddingsIndexFile());
+        this.embeddingsIdx = (EmbeddingsIndex<Id>) readIndex(this.indexDir + "/" + Configuration.getEmbeddingsIndexFile());
     }
 
     private void loadLSHIndexes()
@@ -154,7 +155,7 @@ public class IndexReader implements IndexIO
         return this.entityTableLink;
     }
 
-    public EmbeddingsIndex<String> getEmbeddingsIndex()
+    public EmbeddingsIndex<Id> getEmbeddingsIndex()
     {
         return this.embeddingsIdx;
     }
