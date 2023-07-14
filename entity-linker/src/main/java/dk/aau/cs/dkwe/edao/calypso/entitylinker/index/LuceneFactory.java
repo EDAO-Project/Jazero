@@ -23,7 +23,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 public class LuceneFactory
 {
@@ -41,6 +43,7 @@ public class LuceneFactory
         IndexWriterConfig config = new IndexWriterConfig(analyzer);
         IndexWriter writer = new IndexWriter(directory, config);
         double prog = 0.0, filesCount = kgDir.listFiles() == null ? 0 : kgDir.listFiles().length;
+        Set<String> entities = new HashSet<>();
 
         if (verbose)
         {
@@ -57,21 +60,10 @@ public class LuceneFactory
 
             try
             {
-                Model m = ModelFactory.createDefaultModel();
-                m.read(new FileInputStream(kgFile), null, "TTL");
-                ExtendedIterator<Triple> iter = m.getGraph().find();
-
-                while (iter.hasNext())
-                {
-                    Triple triple = iter.next();
-                    Document doc = new Document();
-                    doc.add(new Field(LuceneIndex.URI_FIELD, triple.getSubject().getURI(), TextField.TYPE_STORED));
-                    doc.add(new Field(LuceneIndex.TEXT_FIELD, uriPostfix(triple.getSubject().getURI()).replace('_', ' '), TextField.TYPE_STORED));
-                    writer.addDocument(doc);
-                }
+                entities.addAll(loadEntities(kgFile));
             }
 
-            catch (FileNotFoundException e)
+            catch (IOException e)
             {
                 if (verbose)
                 {
@@ -80,7 +72,36 @@ public class LuceneFactory
             }
         }
 
+        entities.forEach(uri -> {
+            try
+            {
+                Document doc = new Document();
+                doc.add(new Field(LuceneIndex.URI_FIELD, uri, TextField.TYPE_STORED));
+                doc.add(new Field(LuceneIndex.TEXT_FIELD, uriPostfix(uri), TextField.TYPE_STORED));
+                writer.addDocument(doc);
+            }
+
+            catch (IOException ignored) {}
+        });
         writer.close();
+        directory.close();
+        analyzer.close();
+    }
+
+    private static Set<String> loadEntities(File kgFile) throws IOException
+    {
+        Set<String> entities = new HashSet<>();
+        Model m = ModelFactory.createDefaultModel();
+        m.read(Files.newInputStream(kgFile.toPath()), null, "TTL");
+        ExtendedIterator<Triple> iter = m.getGraph().find();
+
+        while (iter.hasNext())
+        {
+            Triple triple = iter.next();
+            entities.add(triple.getSubject().getURI());
+        }
+
+        return entities;
     }
 
     private static String uriPostfix(String uri)
