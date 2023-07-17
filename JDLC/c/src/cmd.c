@@ -359,6 +359,7 @@ int main(int argc, char *argv[])
                 ret = (response) {.status = REQUEST_ERROR, .msg = "Error: Missing query file\n"};
                 break;
             }
+
             ret = do_search(args.host, args.query_file, args.entity_sim, args.cos_func, args.top_k,
                             args.sim_measure, args.filter);
             break;

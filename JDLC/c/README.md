@@ -18,7 +18,7 @@ apt install cmake curl libcurl4-gnutls-dev -y
 ```
 
 ## Building Static Library
-To build the static library file `libjdlc.a`, run the following commands.
+To build the static library file `jdlc-core.a`, run the following commands.
 
 ```bash
 mkdir -p build lib
