@@ -303,7 +303,7 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
 
         List<Double> embedding = this.embeddingsIdx.find(entityId);
 
-        if (embedding == null)
+        if (embedding == null || embedding.isEmpty())
         {
             return new HashSet<>();
         }
