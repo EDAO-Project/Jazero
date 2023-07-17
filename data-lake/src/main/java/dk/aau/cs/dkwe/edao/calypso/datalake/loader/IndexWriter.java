@@ -200,12 +200,49 @@ public class IndexWriter implements IndexIO
     }
 
     /**
+     * Quick linking of entity
+     * @param entity Entity to be linked
+     * @param linker Entity linking index
+     * @param entityTable EntityTable index
+     * @param el Entity linker service
+     * @param kg KG service
+     */
+    public static synchronized String linkEntity(String entity, EntityLinking linker, EntityTable entityTable, ELService el,
+                                  KGService kg, EmbeddingsIndex<?> embeddingsIndex, DBDriverBatch<List<Double>, String> embeddingsDB)
+    {
+        String uri = linker.mapTo(entity);
+
+        if (uri == null)
+        {
+            uri = el.link(entity);
+
+            if (uri != null)
+            {
+                List<String> entityTypes = kg.searchTypes(uri), entityPredicates = kg.searchPredicates(uri);
+                linker.addMapping(entity, uri);
+                entityTypes.removeAll(DISALLOWED_ENTITY_TYPES);
+
+                Id entityId = linker.uriLookup(uri);
+                List<Double> embeddings = embeddingsDB.select(uri.replace("'", "''"));
+                entityTable.insert(entityId,
+                        new Entity(uri, entityTypes.stream().map(Type::new).collect(Collectors.toList()), entityPredicates));
+
+                if (embeddings != null)
+                {
+                    embeddingsIndex.insert(entityId, embeddings);
+                }
+            }
+        }
+
+        return uri;
+    }
+
+    /**
      * Updates indexes with new entities
      * @param entities Set of entities and their table location
-     * @param save Whether to save the indexes with the new indexes on disk
      * @return Mapping from location to KG URI
      */
-    public synchronized Map<Pair<Integer, Integer>, List<String>> update(Set<PairNonComparable<String, Pair<Integer, Integer>>> entities, String tableName, boolean save)
+    private Map<Pair<Integer, Integer>, List<String>> update(Set<PairNonComparable<String, Pair<Integer, Integer>>> entities, String tableName)
     {
         Map<Pair<Integer, Integer>, List<String>> entityMatches = new HashMap<>();
 
@@ -213,41 +250,15 @@ public class IndexWriter implements IndexIO
         {
             String mention = entity.first();
             Pair<Integer, Integer> location = entity.second();
-            String uri = this.linker.mapTo(mention);
+            String uri = linkEntity(mention, ((EntityLinking) this.linker.linker()), ((EntityTable) this.entityTable.index()), this.el,
+                    this.kg, ((EmbeddingsIndex<?>) this.embeddingsIdx.index()), this.embeddingsDB);
             List<String> matchesUris = new ArrayList<>();
             this.cellsWithLinks.incrementAndGet();
-
-            if (uri == null)
-            {
-                uri = this.el.link(mention);
-
-                if (uri != null)
-                {
-                    List<String> entityTypes = this.kg.searchTypes(uri),
-                            entityPredicates = this.kg.searchPredicates(uri);
-                    this.linker.addMapping(mention, uri);
-                    matchesUris.add(uri);
-
-                    for (String type : DISALLOWED_ENTITY_TYPES)
-                    {
-                        entityTypes.remove(type);
-                    }
-
-                    Id entityId = ((EntityLinking) this.linker.linker()).uriLookup(uri);
-                    List<Double> embeddings = this.embeddingsDB.select(uri.replace("'", "''"));
-                    this.entityTable.insert(entityId,
-                            new Entity(uri, entityTypes.stream().map(Type::new).collect(Collectors.toList()), entityPredicates));
-
-                    if (embeddings != null)
-                    {
-                        this.embeddingsIdx.insert(entityId, embeddings);
-                    }
-                }
-            }
 
             if (uri != null)
             {
                 Id entityId = ((EntityLinking) this.linker.linker()).uriLookup(uri);
+                matchesUris.add(uri);
 
                 synchronized (this.lock)
                 {
@@ -297,7 +308,7 @@ public class IndexWriter implements IndexIO
                 column++;
             }
 
-            Map<Pair<Integer, Integer>, List<String>> linking = update(rowEntities, tableName, false);
+            Map<Pair<Integer, Integer>, List<String>> linking = update(rowEntities, tableName);
             List<Map.Entry<Pair<Integer, Integer>, List<String>>> linkedRow = new ArrayList<>(linking.entrySet());
             linkedRow.sort(Comparator.comparingInt(e -> e.getKey().second()));
             inputEntities.addRow(new Table.Row<>(linkedRow.stream().map(e -> e.getValue().get(0)).collect(Collectors.toList())));
