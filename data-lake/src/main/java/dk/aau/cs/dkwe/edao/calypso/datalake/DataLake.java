@@ -262,8 +262,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             }
         }
 
-        Table<String> query = new DynamicTable<>();
-        String[] queryStrTuples = body.get("query").split("#");
+        Table<String> query = parseQuery(body.get("query"));
         StorageHandler storageHandler = new StorageHandler(Configuration.getStorageType());
         TableSearch search = new TableSearch(storageHandler, linker, entityTable, tableLink, embeddingsIndex, topK, THREADS,
                 entitySimilarity, singleColumnPerEntity, weightedJaccard, useMaxSimilarityPerColumn,
@@ -274,12 +273,6 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             search = new TableSearch(storageHandler, linker, entityTable, tableLink, embeddingsIndex, topK, THREADS,
                     entitySimilarity, singleColumnPerEntity, weightedJaccard, useMaxSimilarityPerColumn,
                     false, similarityMeasure, prefilter);
-        }
-
-        for (String tuple : queryStrTuples)
-        {
-            String[] entities = tuple.split("<>");
-            query.addRow(new Table.Row<>(entities));
         }
 
         Result result = search.search(query);
@@ -296,6 +289,20 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 .ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(jsonResult.toString());
+    }
+
+    private static Table<String> parseQuery(String queryStr)
+    {
+        Table<String> query = new DynamicTable<>();
+        String[] queryStrTuples = queryStr.split("#");
+
+        for (String tuple : queryStrTuples)
+        {
+            String[] entities = tuple.split("<>");
+            query.addRow(new Table.Row<>(entities));
+        }
+
+        return query;
     }
 
     private static JsonObject resultToJson(Result res, long runtime, double reduction)

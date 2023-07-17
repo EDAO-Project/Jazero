@@ -199,6 +199,80 @@ public class IndexWriter implements IndexIO
         Logger.log(Logger.Level.INFO, "Loaded LSH index 2/2");
     }
 
+    /**
+     * Updates indexes with new entities
+     * @param entities Set of entities and their table location
+     * @param save Whether to save the indexes with the new indexes on disk
+     * @return Mapping from location to KG URI
+     */
+    public synchronized Map<Pair<Integer, Integer>, List<String>> update(Set<PairNonComparable<String, Pair<Integer, Integer>>> entities, String tableName, boolean save)
+    {
+        Map<Pair<Integer, Integer>, List<String>> entityMatches = new HashMap<>();
+
+        for (PairNonComparable<String, Pair<Integer, Integer>> entity : entities)
+        {
+            String mention = entity.first();
+            Pair<Integer, Integer> location = entity.second();
+            String uri = this.linker.mapTo(mention);
+            List<String> matchesUris = new ArrayList<>();
+            this.cellsWithLinks.incrementAndGet();
+
+            if (uri == null)
+            {
+                uri = this.el.link(mention);
+
+                if (uri != null)
+                {
+                    List<String> entityTypes = this.kg.searchTypes(uri),
+                            entityPredicates = this.kg.searchPredicates(uri);
+                    this.linker.addMapping(mention, uri);
+                    matchesUris.add(uri);
+
+                    for (String type : DISALLOWED_ENTITY_TYPES)
+                    {
+                        entityTypes.remove(type);
+                    }
+
+                    Id entityId = ((EntityLinking) this.linker.linker()).uriLookup(uri);
+                    List<Double> embeddings = this.embeddingsDB.select(uri.replace("'", "''"));
+                    this.entityTable.insert(entityId,
+                            new Entity(uri, entityTypes.stream().map(Type::new).collect(Collectors.toList()), entityPredicates));
+
+                    if (embeddings != null)
+                    {
+                        this.embeddingsIdx.insert(entityId, embeddings);
+                    }
+                }
+            }
+
+            if (uri != null)
+            {
+                Id entityId = ((EntityLinking) this.linker.linker()).uriLookup(uri);
+
+                synchronized (this.lock)
+                {
+                    ((EntityTableLink) this.entityTableLink.index()).
+                            addLocation(entityId, tableName, List.of(location));
+                }
+            }
+
+            if (!matchesUris.isEmpty())
+            {
+                for (String match : matchesUris)
+                {
+                    synchronized (this.lock)
+                    {
+                        this.filter.put(match);
+                    }
+                }
+
+                entityMatches.put(location, matchesUris);
+            }
+        }
+
+        return entityMatches;
+    }
+
     private boolean load(Path tablePath)
     {
         JsonTable table = parseTable(tablePath);
@@ -209,91 +283,32 @@ public class IndexWriter implements IndexIO
         String tableName = tablePath.getFileName().toString();
         Map<Pair<Integer, Integer>, List<String>> entityMatches = new HashMap<>();  // Maps a cell specified by RowNumber, ColumnNumber to the list of entities it matches to
         Table<String> inputEntities = new DynamicTable<>();
-        Set<String> entities = new HashSet<>(); // The set of entities corresponding to this filename/table
         int row = 0;
 
         for (List<JsonTable.TableCell> tableRow : table.rows)
         {
             int column = 0;
-            List<String> inputRow = new ArrayList<>(tableRow.size());
+            Set<PairNonComparable<String, Pair<Integer, Integer>>> rowEntities = new HashSet<>();
 
             for (JsonTable.TableCell cell : tableRow)
             {
-                this.cellsWithLinks.incrementAndGet();
-                List<String> matchesUris = new ArrayList<>();
                 String cellText = cell.text;
-                String uri = this.linker.mapTo(cellText);
-
-                if (uri == null)
-                {
-                    uri = this.el.link(cellText);
-
-                    if (uri != null)
-                    {
-                        synchronized (this.lock)
-                        {
-                            List<String> entityTypes = this.kg.searchTypes(uri),
-                                    entityPredicates = this.kg.searchPredicates(uri);
-                            matchesUris.add(uri);
-                            this.linker.addMapping(cellText, uri);
-
-                            for (String type : DISALLOWED_ENTITY_TYPES)
-                            {
-                                entityTypes.remove(type);
-                            }
-
-                            Id entityId = ((EntityLinking) this.linker.linker()).uriLookup(uri);
-                            List<Double> embeddings = this.embeddingsDB.select(uri.replace("'", "''"));
-                            this.entityTable.insert(entityId,
-                                    new Entity(uri, entityTypes.stream().map(Type::new).collect(Collectors.toList()), entityPredicates));
-
-                            if (embeddings != null)
-                            {
-                                this.embeddingsIdx.insert(entityId, embeddings);
-                            }
-                        }
-                    }
-                }
-
-                inputRow.add(uri);
-
-                if (uri != null)
-                {
-                    Id entityId = ((EntityLinking) this.linker.linker()).uriLookup(uri);
-                    Pair<Integer, Integer> location = new Pair<>(row, column);
-
-                    synchronized (this.lock)
-                    {
-                        ((EntityTableLink) this.entityTableLink.index()).
-                                addLocation(entityId, tableName, List.of(location));
-                    }
-                }
-
-                if (!matchesUris.isEmpty())
-                {
-                    for (String entity : matchesUris)
-                    {
-                        synchronized (this.lock)
-                        {
-                            this.filter.put(entity);
-                            entities.add(entity);
-                        }
-                    }
-
-                    entityMatches.put(new Pair<>(row, column), matchesUris);
-                }
-
+                rowEntities.add(new PairNonComparable<>(cellText, new Pair<>(row, column)));
                 column++;
             }
 
-            inputEntities.addRow(new Table.Row<>(inputRow));
+            Map<Pair<Integer, Integer>, List<String>> linking = update(rowEntities, tableName, false);
+            List<Map.Entry<Pair<Integer, Integer>, List<String>>> linkedRow = new ArrayList<>(linking.entrySet());
+            linkedRow.sort(Comparator.comparingInt(e -> e.getKey().second()));
+            inputEntities.addRow(new Table.Row<>(linkedRow.stream().map(e -> e.getValue().get(0)).collect(Collectors.toList())));
+            entityMatches.putAll(linking);
             row++;
         }
 
         synchronized (this.lock)
         {
             this.tableEntities.add(new PairNonComparable<>(tableName, inputEntities));
-            saveStats(table, FilenameUtils.removeExtension(tableName), entities.iterator(), entityMatches);
+            saveStats(table, FilenameUtils.removeExtension(tableName), inputEntities.iterator(), entityMatches);
             this.storage.insert(tablePath.toFile());
         }
 

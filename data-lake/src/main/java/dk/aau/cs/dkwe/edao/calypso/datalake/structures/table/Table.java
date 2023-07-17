@@ -1,9 +1,10 @@
 package dk.aau.cs.dkwe.edao.calypso.datalake.structures.table;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public interface Table<T>
+public interface Table<T> extends Iterable<T>
 {
     Row<T> getRow(int index);
     Column<T> getColumn(int index);
@@ -25,6 +26,20 @@ public interface Table<T>
 
         builder.deleteCharAt(builder.length() - 1).deleteCharAt(builder.length() - 1).append("]");
         return builder.toString();
+    }
+
+    @Override
+    default Iterator<T> iterator()
+    {
+        int rowCount = rowCount();
+        List<Iterator<T>> iterators = new ArrayList<>();
+
+        for (int i = 0; i < rowCount; i++)
+        {
+            iterators.add(getRow(i).iterator());
+        }
+
+        return new MultiIterator<>(iterators);
     }
 
     record Row<E>(List<E> row) implements Iterable<E>
