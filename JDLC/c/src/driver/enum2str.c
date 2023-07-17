@@ -4,15 +4,15 @@ const char *c2str(enum cosine_function function)
 {
     if (function == NORM_COS)
     {
-        return "COSINE_NORM";
+        return "NORM_COS";
     }
 
     else if (function == ABS_COS)
     {
-        return "COSINE_ABS";
+        return "ABS_COS";
     }
 
-    return "COSINE_ANG";
+    return "ANG_COS";
 }
 
 const char *s2str(enum similarity_measure sim)
