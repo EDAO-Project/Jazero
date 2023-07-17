@@ -209,17 +209,17 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
             String cosFunction = body.get("cosine-function");
 
-            if (cosFunction.equals("NORM_COS"))
+            if (cosFunction.contains("NORM_COS"))
             {
                 entitySimilarity = TableSearch.EntitySimilarity.EMBEDDINGS_NORM;
             }
 
-            else if (cosFunction.equals("ABS_COS"))
+            else if (cosFunction.contains("ABS_COS"))
             {
                 entitySimilarity = TableSearch.EntitySimilarity.EMBEDDINGS_ABS;
             }
 
-            else if (cosFunction.equals("ANG_COS"))
+            else if (cosFunction.contains("ANG_COS"))
             {
                 entitySimilarity = TableSearch.EntitySimilarity.EMBEDDINGS_ANG;
             }
