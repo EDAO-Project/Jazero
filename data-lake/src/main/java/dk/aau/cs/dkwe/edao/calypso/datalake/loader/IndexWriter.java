@@ -238,9 +238,23 @@ public class IndexWriter implements IndexIO
         return uri;
     }
 
+    /**
+     * Indexing of query entity of KG entities
+     * @param uri KG entity
+     * @param linker Entity linking indes
+     * @param entityTable Entity index
+     * @param kg KG service
+     * @param embeddingsIndex Embeddings index
+     * @param embeddingsDB Embeddings database
+     */
     public static void indexKGEntity(String uri, EntityLinking linker, EntityTable entityTable, KGService kg,
                                      EmbeddingsIndex<?> embeddingsIndex, DBDriverBatch<List<Double>, String> embeddingsDB)
     {
+        if (linker.uriLookup(uri) != null)
+        {
+            return;
+        }
+
         List<String> types = kg.searchTypes(uri), predicates = kg.searchPredicates(uri);
         types.removeAll(DISALLOWED_ENTITY_TYPES);
 
