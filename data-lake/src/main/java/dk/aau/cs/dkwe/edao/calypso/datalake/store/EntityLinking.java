@@ -148,4 +148,14 @@ public class EntityLinking implements Linker<String, String>, Serializable
         this.uriDict.clear();
         this.tableCellDict.clear();
     }
+
+    public String getKgEntityPrefix()
+    {
+        return this.kgEntityPrefix;
+    }
+
+    public String getTableEntityPrefix()
+    {
+        return this.tableEntityPrefix;
+    }
 }

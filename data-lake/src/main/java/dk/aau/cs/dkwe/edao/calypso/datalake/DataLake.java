@@ -275,7 +275,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         while (queryIterator.hasNext())
         {
             String entity = queryIterator.next();
-            IndexWriter.linkEntity(entity, linker, entityTable, elService, kgService, embeddingsIndex, embeddingsDB);
+            IndexWriter.indexKGEntity(entity, linker, entityTable, kgService, embeddingsIndex, embeddingsDB);
         }
 
         if (prefilter != null)

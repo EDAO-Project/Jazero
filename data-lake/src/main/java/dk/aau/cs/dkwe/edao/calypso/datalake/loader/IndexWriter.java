@@ -207,8 +207,9 @@ public class IndexWriter implements IndexIO
      * @param el Entity linker service
      * @param kg KG service
      */
-    public static synchronized String linkEntity(String entity, EntityLinking linker, EntityTable entityTable, ELService el,
-                                  KGService kg, EmbeddingsIndex<?> embeddingsIndex, DBDriverBatch<List<Double>, String> embeddingsDB)
+    public static synchronized String indexEntity(String entity, EntityLinking linker, EntityTable entityTable,
+                                                  ELService el, KGService kg, EmbeddingsIndex<?> embeddingsIndex,
+                                                  DBDriverBatch<List<Double>, String> embeddingsDB)
     {
         String uri = linker.mapTo(entity);
 
@@ -237,6 +238,25 @@ public class IndexWriter implements IndexIO
         return uri;
     }
 
+    public static void indexKGEntity(String uri, EntityLinking linker, EntityTable entityTable, KGService kg,
+                                     EmbeddingsIndex<?> embeddingsIndex, DBDriverBatch<List<Double>, String> embeddingsDB)
+    {
+        List<String> types = kg.searchTypes(uri), predicates = kg.searchPredicates(uri);
+        types.removeAll(DISALLOWED_ENTITY_TYPES);
+
+        Entity entity = new Entity(uri, types.stream().map(Type::new).collect(Collectors.toList()), predicates);
+        linker.addMapping(linker.getTableEntityPrefix(), uri);
+
+        Id entityId = linker.uriLookup(uri);
+        List<Double> embeddings = embeddingsDB.select(uri.replace("'", "''"));
+        entityTable.insert(entityId, entity);
+
+        if (embeddings != null)
+        {
+            embeddingsIndex.insert(entityId, embeddings);
+        }
+    }
+
     /**
      * Updates indexes with new entities
      * @param entities Set of entities and their table location
@@ -250,8 +270,8 @@ public class IndexWriter implements IndexIO
         {
             String mention = entity.first();
             Pair<Integer, Integer> location = entity.second();
-            String uri = linkEntity(mention, ((EntityLinking) this.linker.linker()), ((EntityTable) this.entityTable.index()), this.el,
-                    this.kg, ((EmbeddingsIndex<?>) this.embeddingsIdx.index()), this.embeddingsDB);
+            String uri = indexEntity(mention, ((EntityLinking) this.linker.linker()), ((EntityTable) this.entityTable.index()),
+                    this.el, this.kg, ((EmbeddingsIndex<?>) this.embeddingsIdx.index()), this.embeddingsDB);
             List<String> matchesUris = new ArrayList<>();
             this.cellsWithLinks.incrementAndGet();
 
