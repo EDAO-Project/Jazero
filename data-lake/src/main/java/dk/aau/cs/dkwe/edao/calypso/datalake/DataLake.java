@@ -266,11 +266,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         Iterator<String> queryIterator = query.iterator();
         StorageHandler storageHandler = new StorageHandler(Configuration.getStorageType());
         KGService kgService = new KGService(Configuration.getEKGManagerHost(), Configuration.getEKGManagerPort());
-        ELService elService = new ELService(Configuration.getEntityLinkerHost(), Configuration.getEntityLinkerPort());
         DBDriverBatch<List<Double>, String> embeddingsDB = EmbeddingsFactory.fromConfig(false);
-        TableSearch search = new TableSearch(storageHandler, linker, entityTable, tableLink, embeddingsIndex, topK, THREADS,
-                entitySimilarity, singleColumnPerEntity, weightedJaccard, useMaxSimilarityPerColumn,
-                false, similarityMeasure);
+        TableSearch search;
 
         while (queryIterator.hasNext())
         {
@@ -283,6 +280,13 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             search = new TableSearch(storageHandler, linker, entityTable, tableLink, embeddingsIndex, topK, THREADS,
                     entitySimilarity, singleColumnPerEntity, weightedJaccard, useMaxSimilarityPerColumn,
                     false, similarityMeasure, prefilter);
+        }
+
+        else
+        {
+            search = new TableSearch(storageHandler, linker, entityTable, tableLink, embeddingsIndex, topK, THREADS,
+                    entitySimilarity, singleColumnPerEntity, weightedJaccard, useMaxSimilarityPerColumn,
+                    false, similarityMeasure);
         }
 
         Result result = search.search(query);
