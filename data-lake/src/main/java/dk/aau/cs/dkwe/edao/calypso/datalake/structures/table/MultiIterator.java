@@ -5,7 +5,7 @@ import java.util.List;
 
 public class MultiIterator<E> implements Iterator<E>
 {
-    private List<Iterator<E>> iterators;
+    private final List<Iterator<E>> iterators;
     private int pointer = 0;
 
     public MultiIterator(List<Iterator<E>> iterators)
@@ -21,7 +21,12 @@ public class MultiIterator<E> implements Iterator<E>
             return false;
         }
 
-        return this.iterators.get(this.pointer).hasNext();
+        else if (this.pointer == this.iterators.size() - 1)
+        {
+            return this.iterators.get(this.pointer).hasNext();
+        }
+
+        return true;
     }
 
     @Override
@@ -32,6 +37,15 @@ public class MultiIterator<E> implements Iterator<E>
             return null;
         }
 
-        return this.iterators.get(this.pointer++).next();
+        else if (!this.iterators.get(this.pointer).hasNext())
+        {
+            this.pointer++;
+            return next();
+        }
+
+        else
+        {
+            return this.iterators.get(this.pointer).next();
+        }
     }
 }

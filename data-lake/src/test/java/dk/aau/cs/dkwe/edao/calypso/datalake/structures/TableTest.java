@@ -3,6 +3,9 @@ package dk.aau.cs.dkwe.edao.calypso.datalake.structures;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.table.Table;
 import org.junit.jupiter.api.Test;
 
+import java.util.Iterator;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public abstract class TableTest
@@ -89,5 +92,36 @@ public abstract class TableTest
         assertEquals(r1[r1.length - 1], c.get(0));
         assertEquals(r2[r2.length - 1], c.get(1));
         assertEquals(r3[r3.length - 1], c.get(2));
+    }
+
+    @Test
+    public void testIterator()
+    {
+        Table<Integer> table = setup();
+        String[] attributes = attributes();
+        Integer[] elements = new Integer[attributes.length * 3];
+        Integer[] r1 = new Integer[attributes.length], r2 = new Integer[attributes.length], r3 = new Integer[attributes.length];
+
+        for (int i = 0; i < attributes.length; i++)
+        {
+            r1[i] = i + 1;
+            r2[i] = i + 4;
+            r3[i] = i + 7;
+            elements[i] = r1[i];
+            elements[i + 3] = r2[i];
+            elements[i + 6] = r3[i];
+        }
+
+        table.addRow(new Table.Row<>(r1));
+        table.addRow(new Table.Row<>(r2));
+        table.addRow(new Table.Row<>(r3));
+
+        Iterator<Integer> iter = table.iterator();
+        int counter = 0;
+
+        while (iter.hasNext())
+        {
+            assertEquals(elements[counter++], iter.next());
+        }
     }
 }
