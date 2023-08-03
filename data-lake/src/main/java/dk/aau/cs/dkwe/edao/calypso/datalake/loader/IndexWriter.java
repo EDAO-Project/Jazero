@@ -50,7 +50,6 @@ public class IndexWriter implements IndexIO
     private final AtomicInteger  cellsWithLinks = new AtomicInteger(0), tableStatsCollected = new AtomicInteger(0);
     private final Object lock = new Object(), incrementLock = new Object();
     private long elapsed = -1;
-    private final Map<Integer, Integer> cellToNumLinksFrequency = Collections.synchronizedMap(new HashMap<>());
     private final KGService kg;
     private final ELService el;
     private final SynchronizedLinker<String, String> linker;
@@ -169,7 +168,9 @@ public class IndexWriter implements IndexIO
         Logger.log(Logger.Level.INFO, "Writing indexes and stats on disk...");
         writeStats();
         this.tableStats.clear();    // Save memory before writing index objects to disk
-        flushToDisk();
+        synchronizeIndexes(this.indexDir, this.linker.linker(), this.entityTable.index(), this.entityTableLink.index(),
+                this.embeddingsIdx.index(), this.typesLSH, this.embeddingsLSH);
+        genNeo4jTableMappings();
 
         this.elapsed = System.nanoTime() - startTime;
         Logger.log(Logger.Level.INFO, "Done");
@@ -525,46 +526,47 @@ public class IndexWriter implements IndexIO
         }
     }
 
-    private void flushToDisk() throws IOException
+    public synchronized static void synchronizeIndexes(File indexDir, Linker<String, String> linker,
+                                                       Index<Id, Entity> entityTable, Index<Id, List<String>> entityTableLink,
+                                                       Index<Id, List<Double>> embeddingsIdx, SetLSHIndex typesLSH,
+                                                       VectorLSHIndex embeddingsLSH) throws IOException
     {
         // Entity linker
         ObjectOutputStream outputStream =
-                new ObjectOutputStream(new FileOutputStream(this.indexDir + "/" + Configuration.getEntityLinkerFile()));
-        outputStream.writeObject(this.linker.linker());
+                new ObjectOutputStream(new FileOutputStream(indexDir + "/" + Configuration.getEntityLinkerFile()));
+        outputStream.writeObject(linker);
         outputStream.flush();
         outputStream.close();
 
         // Entity table
-        outputStream = new ObjectOutputStream(new FileOutputStream(this.indexDir + "/" + Configuration.getEntityTableFile()));
-        outputStream.writeObject(this.entityTable.index());
+        outputStream = new ObjectOutputStream(new FileOutputStream(indexDir + "/" + Configuration.getEntityTableFile()));
+        outputStream.writeObject(entityTable);
         outputStream.flush();
         outputStream.close();
 
         // Entity to tables inverted index
-        outputStream = new ObjectOutputStream(new FileOutputStream(this.indexDir + "/" + Configuration.getEntityToTablesFile()));
-        outputStream.writeObject(this.entityTableLink.index());
+        outputStream = new ObjectOutputStream(new FileOutputStream(indexDir + "/" + Configuration.getEntityToTablesFile()));
+        outputStream.writeObject(entityTableLink);
         outputStream.flush();
         outputStream.close();
 
         // Embeddings index
-        outputStream = new ObjectOutputStream(new FileOutputStream(this.indexDir + "/" + Configuration.getEmbeddingsIndexFile()));
-        outputStream.writeObject(this.embeddingsIdx.index());
+        outputStream = new ObjectOutputStream(new FileOutputStream(indexDir + "/" + Configuration.getEmbeddingsIndexFile()));
+        outputStream.writeObject(embeddingsIdx);
         outputStream.flush();
         outputStream.close();
 
         // LSH of entity types
-        outputStream = new ObjectOutputStream(new FileOutputStream(this.indexDir + "/" + Configuration.getTypesLSHIndexFile()));
-        outputStream.writeObject(this.typesLSH);
+        outputStream = new ObjectOutputStream(new FileOutputStream(indexDir + "/" + Configuration.getTypesLSHIndexFile()));
+        outputStream.writeObject(typesLSH);
         outputStream.flush();
         outputStream.close();
 
         // LSH of entity embeddings
-        outputStream = new ObjectOutputStream(new FileOutputStream(this.indexDir + "/" + Configuration.getEmbeddingsLSHFile()));
-        outputStream.writeObject(this.embeddingsLSH);
+        outputStream = new ObjectOutputStream(new FileOutputStream(indexDir + "/" + Configuration.getEmbeddingsLSHFile()));
+        outputStream.writeObject(embeddingsLSH);
         outputStream.flush();
         outputStream.close();
-
-        genNeo4jTableMappings();
     }
 
     private void genNeo4jTableMappings() throws IOException

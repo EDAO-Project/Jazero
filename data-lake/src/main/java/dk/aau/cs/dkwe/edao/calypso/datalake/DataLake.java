@@ -672,16 +672,11 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      * KG, embeddings, and indexes remain untouched.
      */
     @GetMapping("/clear")
-    public synchronized ResponseEntity<String> size(@RequestHeader Map<String, String> headers)
+    public synchronized ResponseEntity<String> clear(@RequestHeader Map<String, String> headers)
     {
-        if (this.indexLoadingInProgress )
+        if (this.indexLoadingInProgress)
         {
             return ResponseEntity.badRequest().body("Indexes are currently being loaded");
-        }
-
-        else if (!Configuration.areIndexesLoaded())
-        {
-            return ResponseEntity.badRequest().body("No tables to remove");
         }
 
         StorageHandler storage = new StorageHandler(Configuration.getStorageType());
@@ -692,5 +687,37 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         }
 
         return ResponseEntity.ok("Removed all tables successfully");
+    }
+
+    @GetMapping("/clear-embeddings")
+    public synchronized ResponseEntity<String> clearEmbeddings(@RequestHeader Map<String, String> headers)
+    {
+        if (this.indexLoadingInProgress)
+        {
+            return ResponseEntity.badRequest().body("Indexes are currently being loaded");
+        }
+
+        try
+        {
+            DBDriverBatch<List<Double>, String> db = EmbeddingsFactory.fromConfig(false);
+
+            if (!db.clear())
+            {
+                throw new IOException("Could not clear embeddings from DB");
+            }
+
+            embeddingsIndex.clear();
+            IndexWriter.synchronizeIndexes(new File(Configuration.getIndexDir()), linker, entityTable, tableLink,
+                    embeddingsIndex, typesLSH, embeddingLSH);
+            Configuration.setIndexesLoaded(false);
+            Configuration.setEmbeddingsLoaded(false);
+
+            return ResponseEntity.ok("Embeddings have been cleared");
+        }
+
+        catch (IOException e)
+        {
+            return ResponseEntity.internalServerError().body("Failed updating indexes to disk: " + e.getMessage());
+        }
     }
 }

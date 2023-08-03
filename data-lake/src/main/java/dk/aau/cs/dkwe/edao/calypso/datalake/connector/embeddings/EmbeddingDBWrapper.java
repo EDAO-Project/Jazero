@@ -204,6 +204,18 @@ public class EmbeddingDBWrapper implements DBDriverBatch<List<Double>, String>, 
     }
 
     @Override
+    public boolean clear()
+    {
+        if (this.driver instanceof Postgres)
+        {
+            DBDriver<ResultSet, String> db = (DBDriver<ResultSet, String>) this.driver;
+            return db.update("DELETE FROM " + COLLECTION_NAME);
+        }
+
+        throw new UnsupportedOperationException("Batch select is not supported for this database");
+    }
+
+    @Override
     public String getError()
     {
         if (this.driver instanceof ExplainableCause)
