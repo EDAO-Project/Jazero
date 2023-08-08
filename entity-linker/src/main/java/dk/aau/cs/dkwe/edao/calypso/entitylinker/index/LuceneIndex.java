@@ -9,12 +9,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 
-import java.beans.XMLEncoder;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 public class LuceneIndex implements Index<String, String>, Serializable
 {
@@ -22,16 +18,6 @@ public class LuceneIndex implements Index<String, String>, Serializable
     private final QueryParser parser = new QueryParser(TEXT_FIELD, new StandardAnalyzer());
     public static final String URI_FIELD = "uri";
     public static final String TEXT_FIELD = "text";
-    private static final int CACHE_MAX = 5000;
-
-    private final Map<String, String> cache =
-            Collections.synchronizedMap(new LinkedHashMap<String, String>(CACHE_MAX, 0.75f, true) {
-                @Override
-                public boolean removeEldestEntry(Map.Entry eldest)
-                {
-                    return size() > CACHE_MAX;
-                }
-            });
 
     public LuceneIndex(IndexSearcher searcher)
     {
@@ -53,13 +39,6 @@ public class LuceneIndex implements Index<String, String>, Serializable
     @Override
     public String find(String key)
     {
-        String link = this.cache.get(key);
-
-        if (link != null)
-        {
-            return link;
-        }
-
         try
         {
             Query query = this.parser.parse(key);
@@ -71,8 +50,6 @@ public class LuceneIndex implements Index<String, String>, Serializable
             }
 
             Document doc = this.searcher.doc(hits[0].doc);
-            link = doc.get(URI_FIELD);
-            this.cache.put(key, link);
             return doc.get(URI_FIELD);
         }
 

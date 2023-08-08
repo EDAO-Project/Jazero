@@ -304,12 +304,9 @@ public class IndexWriter implements IndexIO
 
             if (!matchesUris.isEmpty())
             {
-                for (String match : matchesUris)
+                synchronized (this.lock)
                 {
-                    synchronized (this.lock)
-                    {
-                        this.filter.put(match);
-                    }
+                    matchesUris.forEach(this.filter::put);
                 }
 
                 entityMatches.put(location, matchesUris);

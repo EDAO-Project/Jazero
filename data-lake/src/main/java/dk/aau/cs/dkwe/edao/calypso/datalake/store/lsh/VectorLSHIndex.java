@@ -356,4 +356,11 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
         List<Integer> bandKeys = createKeys(this.projections.size(), this.bandSize, bitVector, groupSize(), this.hash);
         return super.search(bandKeys, vote);
     }
+
+    @Override
+    public void clear()
+    {
+        this.projections.clear();
+        this.cache.cleanUp();
+    }
 }

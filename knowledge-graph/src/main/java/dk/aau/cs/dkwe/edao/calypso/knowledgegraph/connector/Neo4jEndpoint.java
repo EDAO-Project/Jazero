@@ -8,6 +8,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Connects and query the KG in Neo4j
@@ -186,6 +187,22 @@ public class Neo4jEndpoint implements AutoCloseable
                 }
 
                 return entity_types;
+            });
+        }
+    }
+
+    /**
+     * Returns all entities and their labels (labels can be null)
+     * @return Result of all entities and their labels. Entities are returned as 'uri' and labels as 'label'.
+     */
+    public Set<Record> entityLabels()
+    {
+        try (Session session = this.driver.session())
+        {
+            return session.readTransaction(tx -> {
+                Result result = tx.run("MATCH (a:Resource)" + "\n"
+                        + "RETURN DISTINCT a.uri as uri, a.rdfs__label as label");
+                return new HashSet<>(result.list());
             });
         }
     }

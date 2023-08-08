@@ -10,8 +10,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class DiskTest
 {
@@ -111,6 +110,27 @@ public class DiskTest
         assertTrue(files.contains(new File("test/source1.txt")));
         assertTrue(files.contains(new File("test/source2.txt")));
         assertTrue(files.contains(new File("test/source3.txt")));
+
+        new File(dir + "/" + this.source1.getName()).delete();
+        new File(dir + "/" + this.source2.getName()).delete();
+        new File(dir + "/" + this.source3.getName()).delete();
+        dir.delete();
+    }
+
+    @Test
+    public void testDelete()
+    {
+        File dir = new File("test");
+        Disk d = new Disk(dir);
+        d.insert(this.source1);
+        d.insert(this.source2);
+        d.insert(this.source3);
+        assertTrue(new File("test/" + this.source1.getName()).exists());
+
+        d.delete(this.source1);
+        assertFalse(new File("test/" + this.source1.getName()).exists());
+        assertTrue(new File("test/" + this.source2.getName()).exists());
+        assertTrue(new File("test/" + this.source3.getName()).exists());
 
         new File(dir + "/" + this.source1.getName()).delete();
         new File(dir + "/" + this.source2.getName()).delete();

@@ -84,4 +84,10 @@ public class StorageHandler implements Storage<File>
     {
         return this.storage.clear();
     }
+
+    @Override
+    public boolean delete(File element)
+    {
+        return this.storage.delete(element);
+    }
 }

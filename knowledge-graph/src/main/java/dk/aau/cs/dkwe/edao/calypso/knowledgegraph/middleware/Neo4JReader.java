@@ -4,6 +4,7 @@ import dk.aau.cs.dkwe.edao.calypso.datalake.loader.IndexIO;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.calypso.datalake.structures.graph.Type;
 import dk.aau.cs.dkwe.edao.calypso.knowledgegraph.connector.Neo4jEndpoint;
+import org.neo4j.driver.Record;
 
 import java.io.*;
 import java.util.*;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 public class Neo4JReader extends Neo4JHandler implements IndexIO
 {
     private final Neo4jEndpoint endpoint;
+    private Set<Record> entityLabels = null;
 
     public Neo4JReader(Neo4jEndpoint endpoint)
     {
@@ -65,6 +67,25 @@ public class Neo4JReader extends Neo4JHandler implements IndexIO
     {
         List<String> typesStr = this.endpoint.searchTypes(entity.getUri());
         return typesStr.stream().map(Type::new).collect(Collectors.toList());
+    }
+
+    public List<String> entityLabels(Entity entity)
+    {
+        if (this.entityLabels == null)
+        {
+            this.entityLabels = this.endpoint.entityLabels();
+        }
+
+        String entityUri = entity.getUri();
+        List<String> labels = new ArrayList<>();
+        this.entityLabels.forEach(record -> {
+            if (!record.get("label").isNull() && record.get("uri").asString().equals(entityUri))
+            {
+                labels.add(record.get("label").asString());
+            }
+        });
+
+        return labels;
     }
 
     public List<String> entityPredicates(Entity entity)

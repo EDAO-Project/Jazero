@@ -42,4 +42,10 @@ public class HDFS implements Storage<File>
     {
         return true;
     }
+
+    @Override
+    public boolean delete(File element)
+    {
+        return true;
+    }
 }

@@ -11,4 +11,5 @@ public interface LSHIndex<K, V>
     Set<V> agggregatedSearch(K ... keys);
     Set<V> agggregatedSearch(int vote, K ... keys);
     int size();
+    void clear();
 }

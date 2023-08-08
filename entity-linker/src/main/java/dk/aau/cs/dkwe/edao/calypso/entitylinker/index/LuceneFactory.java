@@ -54,8 +54,8 @@ public class LuceneFactory
         {
             if (verbose)
             {
-                Logger.log(Logger.Level.INFO, ((prog++ / filesCount) * 100) + " KG files indexed into Lucene index ("
-                        + kgFile.getName() + ")");
+                Logger.log(Logger.Level.INFO, ((prog++ / filesCount) * 100) +
+                        "% of KG files indexed into Lucene index (" + kgFile.getName() + ")");
             }
 
             try

@@ -94,4 +94,10 @@ public class Disk implements Storage<File>
 
         return true;
     }
+
+    @Override
+    public boolean delete(File element)
+    {
+        return new File(getDirectory().getPath() + "/" + element.getName()).delete();
+    }
 }

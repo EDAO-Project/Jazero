@@ -151,11 +151,6 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             return ResponseEntity.badRequest().body("Indexes have not been loaded. Use the '/insert' endpoint.");
         }
 
-        else if (!Configuration.areEmbeddingsLoaded())
-        {
-            return ResponseEntity.badRequest().body("Embeddings have not been loaded. Use the '/embeddings' endpoint.");
-        }
-
         else if (!headers.containsKey("content-type") || !headers.get("content-type").equals(MediaType.APPLICATION_JSON_VALUE))
         {
             return ResponseEntity.badRequest().body("Content-Type header must be " + MediaType.APPLICATION_JSON);
@@ -668,8 +663,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     }
 
     /**
-     * Remove all tables.
-     * KG, embeddings, and indexes remain untouched.
+     * Remove all tables and clears all indexes.
+     * KG remains untouched.
      */
     @GetMapping("/clear")
     public synchronized ResponseEntity<String> clear(@RequestHeader Map<String, String> headers)
@@ -680,15 +675,38 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         }
 
         StorageHandler storage = new StorageHandler(Configuration.getStorageType());
+        Logger.log(Logger.Level.INFO, "Removing tables");
 
         if (!storage.clear())
         {
             return ResponseEntity.badRequest().body("Tables could not be removed: unknown reason");
         }
 
-        return ResponseEntity.ok("Removed all tables successfully");
+        try
+        {
+            Logger.log(Logger.Level.INFO, "Clearing indexes");
+            embeddingsIndex.clear();
+            linker.clear();
+            entityTable.clear();
+            tableLink.clear();
+            typesLSH.clear();
+            embeddingLSH.clear();
+            IndexWriter.synchronizeIndexes(new File(Configuration.getIndexDir()), linker, entityTable, tableLink, embeddingsIndex,
+                    typesLSH, embeddingLSH);
+            Configuration.setIndexesLoaded(false);
+        }
+
+        catch (IOException e)
+        {
+            return ResponseEntity.internalServerError().body("Failed updating cleared indexes to disk: " + e.getMessage());
+        }
+
+        return ResponseEntity.ok("Removed all tables and cleared all indexes successfully");
     }
 
+    /**
+     * Removes embeddings from DB and embeddings index
+     */
     @GetMapping("/clear-embeddings")
     public synchronized ResponseEntity<String> clearEmbeddings(@RequestHeader Map<String, String> headers)
     {
@@ -700,24 +718,49 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         try
         {
             DBDriverBatch<List<Double>, String> db = EmbeddingsFactory.fromConfig(false);
+            Logger.log(Logger.Level.INFO, "Clearing embeddings DB");
 
             if (!db.clear())
             {
                 throw new IOException("Could not clear embeddings from DB");
             }
 
-            embeddingsIndex.clear();
-            IndexWriter.synchronizeIndexes(new File(Configuration.getIndexDir()), linker, entityTable, tableLink,
-                    embeddingsIndex, typesLSH, embeddingLSH);
-            Configuration.setIndexesLoaded(false);
             Configuration.setEmbeddingsLoaded(false);
+            Logger.log(Logger.Level.INFO, "Done");
 
-            return ResponseEntity.ok("Embeddings have been cleared");
+            return ResponseEntity.ok("Embeddings from DB have been cleared");
         }
 
         catch (IOException e)
         {
             return ResponseEntity.internalServerError().body("Failed updating indexes to disk: " + e.getMessage());
         }
+    }
+
+    /**
+     * Removes a single table from the data lae
+     * Body must contain entry 'table' which is the identifier of the table with file extension
+     */
+    @PostMapping(value = "/remove-table")
+    public synchronized ResponseEntity<String> removeTable(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
+    {
+        String key = "table";
+
+        if (!body.containsKey(key))
+        {
+            return ResponseEntity.badRequest().body("Missing '" + key + "' key in JSON body");
+        }
+
+        String tableId = body.get(key);
+        StorageHandler storageHandler = new StorageHandler(Configuration.getStorageType());
+
+        if (!storageHandler.delete(new File(tableId)))
+        {
+            return ResponseEntity.badRequest().body("Table '" + tableId + "' was not deleted. Maybe it doesn't exist?");
+        }
+
+        // TODO: Remove also from LSH indexes and re-serialize
+
+        return ResponseEntity.ok("Table '" + tableId + "' was deleted successfully");
     }
 }

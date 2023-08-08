@@ -557,4 +557,14 @@ public class SetLSHIndex extends BucketIndex<Id, String> implements LSHIndex<Str
     {
         return (int) (b + a * Math.pow(10, Math.ceil(Math.log10(b + 1))));
     }
+
+    @Override
+    public void clear()
+    {
+        this.permutations.clear();
+        this.signature.clear();
+        this.universeElements.clear();
+        this.entityToSigIndex.clear();
+        this.unimportantElements.clear();
+    }
 }
