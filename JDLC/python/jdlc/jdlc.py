@@ -105,6 +105,14 @@ class Connector:
 
         return req.text
 
+    def clear_embeddings(self):
+        req = requests.get(self.__host + ':' + str(self.__sdlPort) + '/clear-embeddings')
+
+        if (req.status_code != 200):
+            return 'Failed clearing embeddings: ' + req.text
+        
+        return req.text
+
 # Use --host to specify host and -o for operation
 # Operations:
 #   search: -q <QUERY FILE NAME> -sq <SCORING TYPE ('TYPE', 'COSINE_NORM', 'COSINE_ABS', 'COSINE_ANG')> -k <TOP-K> -sm <SIMILARITY MEASURE ('EUCLIDEAN', 'COSINE')>
@@ -136,9 +144,9 @@ class Connector:
 #   insert: -loc <TABLE CORPUS DIRECTORY (absolute path on machine running Jazero)> -cd <JAZERO DIRECTORY (absolute path on machine running Jazero)> -st <STORAGE TYPE ('NATIVE' and 'HDFS')> -tp <TABLE ENTITY PREFIX> -kgp <KG ENTITY PREFIX>
 #   loadembeddings: -cd <JAZERO DIRECTORY (absolute path on machine running Jazero)> -e <EMBEDDINGS FILE (absolute path on machine running Jazero)> -d <DELIMITER>
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser('CDLC Connector')
+    parser = argparse.ArgumentParser('JDLC Connector')
     parser.add_argument('--host', metavar = 'Host', type = str, help = 'Host of machine on which Jazero is deployed', required = True)
-    parser.add_argument('-o', '--operation', metavar = 'Op', type = str, help = 'Jazero operation to perform (search, insert, loadembeddings, clear)', choices = ['search', 'insert', 'loadembeddings', 'clear'], required = True)
+    parser.add_argument('-o', '--operation', metavar = 'Op', type = str, help = 'Jazero operation to perform (ping, search, insert, loadembeddings, clear, clearembeddings)', choices = ['ping', 'search', 'insert', 'loadembeddings', 'clear', 'clearembeddings'], required = True)
     parser.add_argument('-q', '--query', metavar = 'Query', type = str, help = 'Query file path', required = False)
     parser.add_argument('-sq', '--scoringtype', metavar = 'ScoringType', type = str, help = 'Type of entity scoring (\'TYPE\', \'COSINE_NORM\', \'COSINE_ABS\', \'COSINE_ANG\')', choices = ['TYPE', 'COSINE_NORM', 'COSINE_ABS', 'COSINE_ANG'], required = False, default = 'TYPE')
     parser.add_argument('-k', '--topk', metavar = 'Top-K', type = str, help = 'Top-K value', required = False, default = '100')
@@ -165,7 +173,10 @@ if __name__ == '__main__':
         print('Make sure all 3 Jazero services are running (check with \'docker ps\')')
         exit(1)
 
-    if (op == 'search'):
+    if (op == 'ping'):
+        output = 'Pong'
+
+    elif (op == 'search'):
         queryFile = args.query
         scoringType = args.scoringtype
         topK = int(args.topk)
@@ -230,5 +241,8 @@ if __name__ == '__main__':
 
     elif (op == 'clear'):
         output = conn.clear()
+
+    elif (op == 'clearembeddings'):
+        output = conn.clear_embeddings()
 
     print(output)

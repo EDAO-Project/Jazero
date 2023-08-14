@@ -6,8 +6,8 @@
 #include <string.h>
 
 #define USAGE "usage: jdlc [option] ...\n" \
-                "-o, --operation : Jazero operation to perform (search, insert, loadembeddings, ping)\n" \
-                "\nping, search, insert, insertembeddings\n" \
+                "-o, --operation : Jazero operation to perform (search, insert, loadembeddings, ping, clear, clearembeddings)\n" \
+                "\nping, search, insert, insertembeddings, clear, clearembeddings\n" \
                 "-h, --host : Host of machine on which Jazero is deployed\n" \
                 "\nsearch\n" \
                 "-q, --query : Query file path\n" \
@@ -99,6 +99,16 @@ static inline uint8_t check_key(const char *key, const char *short_check, const 
     return strcmp(key, short_check) == 0 || strcmp(key, long_check) == 0;
 }
 
+static response do_clear(const char *ip)
+{
+    return clear(ip);
+}
+
+static response do_clear_embeddings(const char *ip)
+{
+    return clear_embeddings(ip);
+}
+
 error_t parse(const char *key, const char *arg, struct arguments *args)
 {
     if (check_key(key, "-h", "--host"))
@@ -126,6 +136,16 @@ error_t parse(const char *key, const char *arg, struct arguments *args)
         else if (strcmp(arg, "ping") == 0)
         {
             args->op = PING;
+        }
+
+        else if (strcmp(arg, "clear") == 0)
+        {
+            args->op = CLEAR;
+        }
+
+        else if (strcmp(arg, "clearembeddings") == 0)
+        {
+            args->op = CLEAR_EMBEDDINGS;
         }
 
         else
@@ -366,6 +386,14 @@ int main(int argc, char *argv[])
 
         case PING:
             ret = do_ping(args.host);
+            break;
+
+        case CLEAR:
+            ret = do_clear(args.host);
+            break;
+
+        case CLEAR_EMBEDDINGS:
+            ret = do_clear_embeddings(args.host);
             break;
 
         default:

@@ -10,7 +10,9 @@ enum operation
     INSERT_EMBEDDINGS,
     LOAD,
     SEARCH,
-    PING
+    PING,
+    CLEAR,
+    CLEAR_EMBEDDINGS
 };
 
 enum response_status

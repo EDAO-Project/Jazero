@@ -10,5 +10,7 @@ response load(const char *ip, const char *storage_type, const char *table_entity
 response search(const char *ip, query q, uint32_t top_k, enum entity_similarity entity_sim, enum similarity_measure sim_measure,
         enum cosine_function embeddings_function, enum prefilter filter_type);
 response ping(const char *ip);
+response clear(const char *ip);
+response clear_embeddings(const char *ip);
 
 #endif

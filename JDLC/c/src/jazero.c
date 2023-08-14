@@ -67,6 +67,48 @@ response ping(const char *ip)
     return (response) {.status = OK, .msg = "Pong"};
 }
 
+response clear(const char *ip)
+{
+    struct address dl_addr = init_addr(ip, DL_PORT, "/clear");
+    jdlc dl_req;
+    struct properties headers = prop_init();
+    uint8_t init_dl = init(&dl_req, CLEAR, dl_addr, headers, NULL);
+
+    if (!init_dl)
+    {
+        prop_clear(&headers);
+        addr_clear(dl_addr);
+        return (response) {.status = JAZERO_ERROR, .msg = "Could not initialize Jazero CLEAR request"};
+    }
+
+    response dl_response = perform(dl_req);
+    prop_clear(&headers);
+    addr_clear(dl_addr);
+
+    return dl_response;
+}
+
+response clear_embeddings(const char *ip)
+{
+    struct address dl_addr = init_addr(ip, DL_PORT, "/clear-embeddings");
+    jdlc dl_req;
+    struct properties headers = prop_init();
+    uint8_t init_dl = init(&dl_req, CLEAR, dl_addr, headers, NULL);
+
+    if (!init_dl)
+    {
+        prop_clear(&headers);
+        addr_clear(dl_addr);
+        return (response) {.status = JAZERO_ERROR, .msg = "Could not initialize Jazero CLEAR-EMBEDDINGS request"};
+    }
+
+    response dl_response = perform(dl_req);
+    prop_clear(&headers);
+    addr_clear(dl_addr);
+
+    return dl_response;
+}
+
 static inline uint8_t prepare_embeddings(const char *embeddings_file, const char *jazero_dir)
 {
     char *mount = (char *) malloc(strlen(jazero_dir) + strlen(RELATIVE_TABLES) + 5);
