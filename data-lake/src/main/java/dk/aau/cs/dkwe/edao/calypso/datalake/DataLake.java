@@ -685,14 +685,19 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         try
         {
             Logger.log(Logger.Level.INFO, "Clearing indexes");
-            embeddingsIndex.clear();
-            linker.clear();
-            entityTable.clear();
-            tableLink.clear();
-            typesLSH.clear();
-            embeddingLSH.clear();
-            IndexWriter.synchronizeIndexes(new File(Configuration.getIndexDir()), linker, entityTable, tableLink, embeddingsIndex,
-                    typesLSH, embeddingLSH);
+
+            if (Configuration.areIndexesLoaded())
+            {
+                embeddingsIndex.clear();
+                linker.clear();
+                entityTable.clear();
+                tableLink.clear();
+                typesLSH.clear();
+                embeddingLSH.clear();
+                IndexWriter.synchronizeIndexes(new File(Configuration.getIndexDir()), linker, entityTable, tableLink,
+                        embeddingsIndex, typesLSH, embeddingLSH);
+            }
+
             Configuration.setIndexesLoaded(false);
         }
 
