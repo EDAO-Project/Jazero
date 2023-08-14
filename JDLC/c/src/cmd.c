@@ -6,7 +6,7 @@
 #include <string.h>
 
 #define USAGE "usage: jdlc [option] ...\n" \
-                "-o, --operation : Jazero operation to perform (search, insert, loadembeddings, ping, clear, clearembeddings)\n" \
+                "-o, --operation : Jazero operation to perform (search, insert, insertembeddings, ping, clear, clearembeddings)\n" \
                 "\nping, search, insert, insertembeddings, clear, clearembeddings\n" \
                 "-h, --host : Host of machine on which Jazero is deployed\n" \
                 "\nsearch\n" \
@@ -128,7 +128,7 @@ error_t parse(const char *key, const char *arg, struct arguments *args)
             args->op = LOAD;
         }
 
-        else if (strcmp(arg, "loadembeddings") == 0)
+        else if (strcmp(arg, "insertembeddings") == 0)
         {
             args->op = INSERT_EMBEDDINGS;
         }
