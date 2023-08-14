@@ -361,6 +361,10 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
     public void clear()
     {
         this.projections.clear();
-        this.cache.cleanUp();
+
+        if (this.cache != null)
+        {
+            this.cache.cleanUp();
+        }
     }
 }

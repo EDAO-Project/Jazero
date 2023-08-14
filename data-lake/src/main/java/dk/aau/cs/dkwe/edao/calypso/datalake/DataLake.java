@@ -705,7 +705,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     }
 
     /**
-     * Removes embeddings from DB and embeddings index
+     * Removes embeddings from DB but not index
      */
     @GetMapping("/clear-embeddings")
     public synchronized ResponseEntity<String> clearEmbeddings(@RequestHeader Map<String, String> headers)
