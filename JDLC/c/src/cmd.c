@@ -344,6 +344,20 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
+    response ping = do_ping(args.host);
+
+    if (ping.status == JAZERO_ERROR)
+    {
+        printf("Jazero is experiencing problems. Check the Jazero logs for more information.\n");
+        return ping.status;
+    }
+
+    else if (ping.status == REQUEST_ERROR)
+    {
+        printf("Request error\n");
+        return ping.status;
+    }
+
     switch (args.op)
     {
         case INSERT_EMBEDDINGS:
@@ -385,7 +399,7 @@ int main(int argc, char *argv[])
             break;
 
         case PING:
-            ret = do_ping(args.host);
+            ret = ping;
             break;
 
         case CLEAR:
