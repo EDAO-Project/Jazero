@@ -22,7 +22,7 @@ class Connector:
             sdl = requests.get(self.__host + ':' + str(self.__sdlPort) + '/ping')
             entityLinker = requests.get(self.__host + ':' + str(self.__entityLinkerPort) + '/ping')
             ekg = requests.get(self.__host + ':' + str(self.__ekgPort) + '/ping')
-        
+
         except:
             return False
 
@@ -68,7 +68,7 @@ class Connector:
         return req.text
 
     # topK: Top-K ranking results
-    # scoringType: Entity similarity KG property (must be one of 'TYPE', 'PREDICATE', 'COSINE_NORM', 'COSINE_ABS', 'COSINE_ANG')
+    # scoringType: Entity similarity KG property (must be one of 'TYPES', 'PREDICATES', 'COSINE_NORM', 'COSINE_ABS', 'COSINE_ANG')
     # similarityMeasure: Type of similarity measurement of between vectors of entity scores using a scoring type (must be one of 'EUCLIDEAN', 'COSINE')
     # query: A table query of entity string representations
     def search(self, topK, scoringType, query, similarityMeasure = 'EUCLIDEAN', prefilter = ''):
@@ -110,7 +110,7 @@ class Connector:
 
         if (req.status_code != 200):
             return 'Failed clearing embeddings: ' + req.text
-        
+
         return req.text
 
 # Use --host to specify host and -o for operation
@@ -148,7 +148,7 @@ if __name__ == '__main__':
     parser.add_argument('--host', metavar = 'Host', type = str, help = 'Host of machine on which Jazero is deployed', required = True)
     parser.add_argument('-o', '--operation', metavar = 'Op', type = str, help = 'Jazero operation to perform (ping, search, insert, loadembeddings, clear, clearembeddings)', choices = ['ping', 'search', 'insert', 'loadembeddings', 'clear', 'clearembeddings'], required = True)
     parser.add_argument('-q', '--query', metavar = 'Query', type = str, help = 'Query file path', required = False)
-    parser.add_argument('-sq', '--scoringtype', metavar = 'ScoringType', type = str, help = 'Type of entity scoring (\'TYPE\', \'COSINE_NORM\', \'COSINE_ABS\', \'COSINE_ANG\')', choices = ['TYPE', 'COSINE_NORM', 'COSINE_ABS', 'COSINE_ANG'], required = False, default = 'TYPE')
+    parser.add_argument('-sq', '--scoringtype', metavar = 'ScoringType', type = str, help = 'Type of entity scoring (\'TYPES\', \'PREDICATES\', \'COSINE_NORM\', \'COSINE_ABS\', \'COSINE_ANG\')', choices = ['TYPES', 'PREDICATES', 'COSINE_NORM', 'COSINE_ABS', 'COSINE_ANG'], required = False, default = 'TYPE')
     parser.add_argument('-k', '--topk', metavar = 'Top-K', type = str, help = 'Top-K value', required = False, default = '100')
     parser.add_argument('-sm', '--similaritymeasure', metavar = 'SimilarityMeasure', type = str, help = 'Similarity measure between vectors of entity scores (\'EUCLIDEAN\', \'COSINE\')', choices = ['EUCLIDEAN', 'COSINE'], required = False, default = 'EUCLIDEAN')
     parser.add_argument('-loc', '--location', metavar = 'Location', type = str, help = 'Absolute path to table corpus directory on machine running Jazero', required = False)
