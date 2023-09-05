@@ -148,7 +148,7 @@ There is both a C, Java connector, and Python connector.
 
 ### Jazero Web
 This repository has a Django web interface to interact with an instance of Jazero.
-Navigate to `JDLC/python/api/` and build the Docker image.
+Build the Docker image from the project root.
 
 ```bash
 docker build -t jazero_web -f JDLC/python/api/Dockerfile JDLC/python
@@ -167,7 +167,7 @@ For demonstration purposes, we already have an instance of Jazero running, and i
 You can stop the Jazero web interface with the following command.
 
 ```bash
-docker stop jazero_web
+docker stop jazero
 ```
 
 ## Setting Up Jazero in an IDE
