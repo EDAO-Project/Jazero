@@ -148,7 +148,7 @@ There is both a C, Java connector, and Python connector.
 
 ### Jazero Web
 This repository has a Django web interface to interact with an instance of Jazero.
-Navigate to `CDLC/python/api/` and build the Docker image.
+Navigate to `JDLC/python/api/` and build the Docker image.
 
 ```bash
 docker build -t jazero_web -f JDLC/python/api/Dockerfile JDLC/python
@@ -160,7 +160,7 @@ Then, run a container of Jazero web.
 docker run --rm --network="host" -d --name jazero -e JAZERO_HOST=<HOST> jazero_web
 ```
 
-You can now access the Jazero web interface <a href="http://127.0.0.1:8084/cdlc/">here</a>.
+You can now access the Jazero web interface <a href="http://127.0.0.1:8084/jdlc/">here</a>.
 Just substitute `<HOST>` with the host name of the running Jazero instance.
 For demonstration purposes, we already have an instance of Jazero running, and it can be accessed using its web interface <a href="">here</a>.
 
