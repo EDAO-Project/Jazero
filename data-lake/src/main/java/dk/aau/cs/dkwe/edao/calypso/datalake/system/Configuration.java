@@ -2,6 +2,9 @@ package dk.aau.cs.dkwe.edao.calypso.datalake.system;
 
 import dk.aau.cs.dkwe.edao.calypso.storagelayer.StorageHandler;
 
+import java.dk.aau.cs.dkwe.edao.calypso.datalake.system.Authenticator;
+import java.dk.aau.cs.dkwe.edao.calypso.datalake.system.ConfigAuthenticator;
+import java.dk.aau.cs.dkwe.edao.calypso.datalake.system.User;
 import java.io.*;
 import java.util.Properties;
 
@@ -186,6 +189,29 @@ public class Configuration
         Properties properties = readProperties();
         properties.setProperty(key, value);
         writeProperties(properties);
+    }
+
+    public static Authenticator initAuthenticator()
+    {
+        return new ConfigAuthenticator();
+    }
+
+    void setUserAuthenticate(User user)
+    {
+        addProperty("auth:" + user.username(), user.password() + ":" + user.readOnly());
+    }
+
+    User getUserAuthenticate(String username)
+    {
+        String property = readProperties().getProperty("auth:" + username);
+
+        if (property == null)
+        {
+            return null;
+        }
+
+        String[] split = property.split(":");
+        return new User(username, split[0], Boolean.parseBoolean(split[1]));
     }
 
     public static void setDBPath(String path)
