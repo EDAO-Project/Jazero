@@ -1,4 +1,4 @@
-package java.dk.aau.cs.dkwe.edao.calypso.datalake.system;
+package dk.aau.cs.dkwe.edao.calypso.datalake.system;
 
 public abstract class Authenticator
 {
@@ -9,4 +9,5 @@ public abstract class Authenticator
 
     public abstract Auth authenticate(String username, String password);
     public abstract void allow(User user);
+    public abstract void disallow(User user);
 }

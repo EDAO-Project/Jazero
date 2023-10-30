@@ -2,9 +2,6 @@ package dk.aau.cs.dkwe.edao.calypso.datalake.system;
 
 import dk.aau.cs.dkwe.edao.calypso.storagelayer.StorageHandler;
 
-import java.dk.aau.cs.dkwe.edao.calypso.datalake.system.Authenticator;
-import java.dk.aau.cs.dkwe.edao.calypso.datalake.system.ConfigAuthenticator;
-import java.dk.aau.cs.dkwe.edao.calypso.datalake.system.User;
 import java.io.*;
 import java.util.Properties;
 
@@ -61,7 +58,7 @@ public class Configuration
         }
     }
 
-    private static final File CONF_FILE = new File(getIndexDir() + "/.config.conf");
+    private static File CONF_FILE = new File(getIndexDir() + "/.config.conf");
 
     static
     {
@@ -71,6 +68,11 @@ public class Configuration
     public static void reloadConfiguration()
     {
         addDefaults();
+    }
+
+    public static void debug()
+    {
+        CONF_FILE = new File(".config.conf");
     }
 
     private static void addDefaults()
@@ -196,12 +198,12 @@ public class Configuration
         return new ConfigAuthenticator();
     }
 
-    void setUserAuthenticate(User user)
+    static void setUserAuthenticate(User user)
     {
         addProperty("auth:" + user.username(), user.password() + ":" + user.readOnly());
     }
 
-    User getUserAuthenticate(String username)
+    static User getUserAuthenticate(String username)
     {
         String property = readProperties().getProperty("auth:" + username);
 
@@ -212,6 +214,13 @@ public class Configuration
 
         String[] split = property.split(":");
         return new User(username, split[0], Boolean.parseBoolean(split[1]));
+    }
+
+    static void removeUserAuthenticate(String username)
+    {
+        Properties updated = readProperties();
+        updated.remove("auth:" + username);
+        writeProperties(updated);
     }
 
     public static void setDBPath(String path)

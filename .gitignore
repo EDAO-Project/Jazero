@@ -44,3 +44,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Testing ###
+data-lake/.config.conf

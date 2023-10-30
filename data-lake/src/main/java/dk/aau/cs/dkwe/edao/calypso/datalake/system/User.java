@@ -1,4 +1,4 @@
-package java.dk.aau.cs.dkwe.edao.calypso.datalake.system;
+package dk.aau.cs.dkwe.edao.calypso.datalake.system;
 
 public record User(String username, String password, boolean readOnly)
 {
