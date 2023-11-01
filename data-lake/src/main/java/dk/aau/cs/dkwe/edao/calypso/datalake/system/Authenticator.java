@@ -9,5 +9,5 @@ public abstract class Authenticator
 
     public abstract Auth authenticate(String username, String password);
     public abstract void allow(User user);
-    public abstract void disallow(User user);
+    public abstract void disallow(String username);
 }

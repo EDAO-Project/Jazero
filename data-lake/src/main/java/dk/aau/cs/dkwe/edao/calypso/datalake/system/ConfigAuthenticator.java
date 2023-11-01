@@ -29,13 +29,13 @@ public class ConfigAuthenticator extends Authenticator
     }
 
     @Override
-    public void disallow(User user)
+    public void disallow(String username)
     {
-        User foundUser = Configuration.getUserAuthenticate(user.username());
+        User foundUser = Configuration.getUserAuthenticate(username);
 
-        if (foundUser != null && foundUser.password().equals(user.password()))
+        if (foundUser != null)
         {
-            Configuration.removeUserAuthenticate(user.username());
+            Configuration.removeUserAuthenticate(username);
         }
     }
 }

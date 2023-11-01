@@ -1,7 +1,13 @@
 package dk.aau.cs.dkwe.edao.calypso.datalake.system;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -13,6 +19,12 @@ public class ConfigAuthenticatorTest
         Configuration.debug();
     }
 
+    @AfterEach
+    public void clear() throws IOException
+    {
+        Files.delete(new File(".config.conf").toPath());
+    }
+
     @Test
     public void testAuthenticatorReadOnly()
     {
@@ -22,7 +34,6 @@ public class ConfigAuthenticatorTest
 
         Authenticator.Auth auth = authenticator.authenticate("username", "password");
         assertEquals(Authenticator.Auth.READ, auth);
-        Configuration.initAuthenticator().disallow(u);
     }
 
     @Test
@@ -34,7 +45,6 @@ public class ConfigAuthenticatorTest
 
         Authenticator.Auth auth = authenticator.authenticate("username", "password");
         assertEquals(Authenticator.Auth.WRITE, auth);
-        Configuration.initAuthenticator().disallow(u);
     }
 
     @Test
@@ -46,7 +56,6 @@ public class ConfigAuthenticatorTest
 
         Authenticator.Auth auth = authenticator.authenticate("username2", "password2");
         assertEquals(Authenticator.Auth.NOT_AUTH, auth);
-        Configuration.initAuthenticator().disallow(u);
     }
 
     @Test
@@ -65,9 +74,6 @@ public class ConfigAuthenticatorTest
         assertEquals(Authenticator.Auth.WRITE, auth1);
         assertEquals(Authenticator.Auth.READ, auth2);
         assertEquals(Authenticator.Auth.WRITE, auth3);
-        Configuration.initAuthenticator().disallow(u1);
-        Configuration.initAuthenticator().disallow(u2);
-        Configuration.initAuthenticator().disallow(u3);
     }
 
     @Test
@@ -82,7 +88,7 @@ public class ConfigAuthenticatorTest
                 auth2 = Configuration.initAuthenticator().authenticate("username7", "password7");
         assertEquals(Authenticator.Auth.WRITE, auth1);
         assertEquals(Authenticator.Auth.READ, auth2);
-        Configuration.initAuthenticator().disallow(u1);
+        Configuration.initAuthenticator().disallow(u1.username());
 
         Authenticator.Auth authRemoved = Configuration.initAuthenticator().authenticate("username6", "password6");
         assertEquals(Authenticator.Auth.NOT_AUTH, authRemoved);
