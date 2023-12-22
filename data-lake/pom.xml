@@ -8,7 +8,7 @@
         <version>2.7.1</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>dk.aau.cs.dkwe.edao.calypso</groupId>
+    <groupId>dk.aau.cs.dkwe.edao.jazero</groupId>
     <artifactId>data-lake</artifactId>
     <version>1.0-SNAPSHOT</version>
     <name>data-lake</name>
@@ -65,13 +65,13 @@
         </dependency>
 
         <dependency>
-            <groupId>dk.aau.cs.dkwe.edao.calypso</groupId>
+            <groupId>dk.aau.cs.dkwe.edao.jazero</groupId>
             <artifactId>communication</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
 
         <dependency>
-            <groupId>dk.aau.cs.dkwe.edao.calypso</groupId>
+            <groupId>dk.aau.cs.dkwe.edao.jazero</groupId>
             <artifactId>storagelayer</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
