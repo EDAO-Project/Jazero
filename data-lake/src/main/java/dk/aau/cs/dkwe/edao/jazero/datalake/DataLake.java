@@ -307,11 +307,13 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
         if (result == null)
         {
+            FileLogger.log(FileLogger.Service.SDL_Manager, "Search result set is null");
             return ResponseEntity.internalServerError().body("Internal error when searching");
         }
 
         JsonObject jsonResult = resultToJson(result, search.elapsedNanoSeconds(), search.getReduction());
         analysis.record("search", 1);
+        FileLogger.log(FileLogger.Service.SDL_Manager, "Query finished in " + search.elapsedNanoSeconds() + "ns and with a " + search.getReduction() + " reduction");
 
         return ResponseEntity
                 .ok()
@@ -525,7 +527,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                     TimeUnit.SECONDS.convert(indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s");
             Configuration.setIndexesLoaded(true);
             loadIndexes();
-            FileLogger.log(FileLogger.Service.SDL_Manager, "Loaded " + indexWriter.loadedTables() + " tables");
+            FileLogger.log(FileLogger.Service.SDL_Manager, "Loaded " + indexWriter.loadedTables() + " tables in " + TimeUnit.SECONDS.convert(indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s");
             analysis.record("insert", 1);
             this.indexLoadingInProgress = false;
 
@@ -538,7 +540,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         {
             this.indexLoadingInProgress = false;
             Configuration.setIndexesLoaded(false);
-            return ResponseEntity.badRequest().body("Error locating JSON table files: " + e.getMessage());
+            FileLogger.log(FileLogger.Service.SDL_Manager, "IOException when loading tables");
+            return ResponseEntity.badRequest().body("Error locating table files: " + e.getMessage());
         }
 
         catch (RuntimeException e)
@@ -550,6 +553,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
             this.indexLoadingInProgress = false;
             Configuration.setIndexesLoaded(false);
+            FileLogger.log(FileLogger.Service.SDL_Manager, "RuntimeException when loading tables");
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
     }
@@ -635,6 +639,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         {
             this.embeddingsLoadingInProgress = false;
             Configuration.setEmbeddingsLoaded(false);
+            FileLogger.log(FileLogger.Service.SDL_Manager, "FileNotFoundException when loading embeddings");
             return ResponseEntity.badRequest().body("Embeddings file error: " + e.getMessage());
         }
 
@@ -642,6 +647,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         {
             this.embeddingsLoadingInProgress = false;
             Configuration.setEmbeddingsLoaded(false);
+            FileLogger.log(FileLogger.Service.SDL_Manager, "IllegalArgumentException when loading embeddings");
             return ResponseEntity.badRequest().body("Could not initialize embeddings database: " + e.getMessage());
         }
     }
@@ -733,6 +739,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             }
 
             Configuration.setIndexesLoaded(false);
+            FileLogger.log(FileLogger.Service.SDL_Manager, "Cleared all indexes and " + storage.count() + " tables");
         }
 
         catch (IOException e)
@@ -771,6 +778,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
             Configuration.setEmbeddingsLoaded(false);
             Logger.log(Logger.Level.INFO, "Done");
+            FileLogger.log(FileLogger.Service.SDL_Manager, "Cleared all embeddings");
 
             return ResponseEntity.ok("Embeddings from DB have been cleared");
         }
@@ -810,11 +818,15 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
         // TODO: Remove also from LSH indexes and re-serialize
 
+        Logger.log(Logger.Level.INFO, "Removed table '" + tableId + "'");
+        FileLogger.log(FileLogger.Service.SDL_Manager, "Table '" + tableId + "' has been removed");
+
         return ResponseEntity.ok("Table '" + tableId + "' was deleted successfully");
     }
 
     /**
      * Adds a user to the system
+     * All users are are assigned write privileges
      */
     @PostMapping
     public synchronized ResponseEntity<String> addUser(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
@@ -838,6 +850,9 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         }
 
         auth.allow(new User(newUsername, newPassword, false));
+        Logger.log(Logger.Level.INFO, "Added user '" + newUsername + "'");
+        FileLogger.log(FileLogger.Service.SDL_Manager, "New user '" + newUsername + "' was added");
+
         return ResponseEntity.ok("User '" + newUsername + "' has been added");
     }
 
@@ -860,6 +875,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         String oldUsername = body.get("old-username");
         Authenticator auth = Configuration.initAuthenticator();
         auth.disallow(oldUsername);
+        Logger.log(Logger.Level.INFO, "Removed user '" + oldUsername + "'");
+        FileLogger.log(FileLogger.Service.SDL_Manager, "User '" + oldUsername + "' was removed");
 
         return ResponseEntity.ok("User '" + oldUsername + "' has been removed");
     }
