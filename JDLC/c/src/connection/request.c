@@ -51,6 +51,7 @@ static size_t callback(void *contents, size_t size, size_t n, void *buffer)
     }
 
     memcpy(res->msg, contents, full_size);
+    res->length[full_size] = '\0';
     res->length = full_size;
     return full_size;
 }

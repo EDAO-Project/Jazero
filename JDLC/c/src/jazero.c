@@ -51,17 +51,17 @@ response ping(const char *ip, user u)
     addr_clear(linker_addr);
     addr_clear(ekg_addr);
 
-    if (dl_response.status != OK)
+    if (strcmp(dl_response.msg, "pong") != 0)
     {
         return dl_response;
     }
 
-    else if (el_response.status != OK)
+    else if (strcmp(el_response.msg, "pong") != 0)
     {
         return el_response;
     }
 
-    else if (ekg_response.status != OK)
+    else if (strcmp(ekg_response.msg, "pong") != 0)
     {
         return ekg_response;
     }
