@@ -3,13 +3,15 @@
 
 const char *load_embeddings_body(char *buffer, const char *file, const char *delimiter)
 {
-    sprintf(buffer, "{\"file\": \"%s\", \"delimiter\": \"%s\"}", file, delimiter);
+    sprintf(buffer, "{\"file\": \"%s\", \"delimiter\": \"%s\"}",
+            file, delimiter);
     return buffer;
 }
 
 const char *load_body(char *buffer, const char *table_dir, const char *table_entity_prefix, const char *kg_prefix)
 {
-    sprintf(buffer, "{\"directory\": \"%s\", \"table-prefix\": \"%s\", \"kg-prefix\": \"%s\"}", table_dir, table_entity_prefix, kg_prefix);
+    sprintf(buffer, "{\"directory\": \"%s\", \"table-prefix\": \"%s\", \"kg-prefix\": \"%s\", \"username\": \"%s\", \"password\": \"%s\"}",
+            table_dir, table_entity_prefix, kg_prefix);
     return buffer;
 }
 
@@ -24,5 +26,17 @@ const char *search_body(char *buffer, uint32_t top_k, enum entity_similarity ent
                   "\"use-max-similarity-per-column\": \"true\", \"similarity-measure\": \"%s\", \"lsh\": \"%s\", "
                   "\"query\": \"%s\"}",
                   top_k, entity_sim_str, cos_func_str, sim_str, prefilter_str, query_str);
+    return buffer;
+}
+
+const char *add_user_body(char *buffer, user new_user)
+{
+    sprintf(buffer, "{\"new-username\": \%s\", \"new-password\": \%s\"}", new_user.username, new_user.password);
+    return buffer;
+}
+
+const char *remove_user_body(char *buffer, const char *username)
+{
+    sprintf(buffer, "{\"old-username\": \"%s\"}", username);
     return buffer;
 }

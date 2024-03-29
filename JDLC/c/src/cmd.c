@@ -6,9 +6,11 @@
 #include <string.h>
 
 #define USAGE "usage: jdlc [option] ...\n" \
-                "-o, --operation : Jazero operation to perform (search, insert, insertembeddings, ping, clear, clearembeddings)\n" \
-                "\nping, search, insert, insertembeddings, clear, clearembeddings\n" \
+                "-o, --operation : Jazero operation to perform (search, insert, insertembeddings, ping, clear, clearembeddings, adduser, removeuser)\n" \
+                "\nping, search, insert, insertembeddings, clear, clearembeddings, adduser, removeuser\n" \
                 "-h, --host : Host of machine on which Jazero is deployed\n" \
+                "-u, --username : Username of this user\n" \
+                "-c, --password : Password for this user\n" \
                 "\nsearch\n" \
                 "-q, --query : Query file path\n" \
                 "-s, --scoringtype : Type of entity scoring ('TYPE', 'PREDICATE', 'COSINE_NORM', 'COSINE_ABS', 'COSINE_ANG')\n" \
@@ -27,11 +29,16 @@
                 "\ninsertembeddings\n" \
                 "-e, --embeddings : Absolute path to embeddings file on the machine running Jazero\n" \
                 "-d, --delimiter : Delimiter in embeddings file (see README)\n" \
+                "\nadduser\n" \
+                "-nu, --newusername : Username of new user\n" \
+                "-nc, --newpassword : Password of new user\n" \
+                "\nremoveuser\n" \
+                "-ou, --oldusername : Username of user to remove\n" \
 
 struct arguments
 {
     char *host, *query_file, *table_loc, *jazero_dir, *storage_type, *table_prefix, *kg_prefix, *embeddings_file,
-            *delimiter, *error_msg;
+            *delimiter, *error_msg, *this_username, *this_password, *new_username, *new_password, *old_username;
     enum operation op;
     enum cosine_function cos_func;
     enum similarity_measure sim_measure;
@@ -40,7 +47,8 @@ struct arguments
     enum entity_similarity entity_sim;
 };
 
-static response do_insert_embeddings(const char *ip, const char *jazero_dir, const char *embeddings_file, const char *delimiter)
+static response do_insert_embeddings(const char *ip, const char *username, const char *password, const char *jazero_dir,
+                                     const char *embeddings_file, const char *delimiter)
 {
     if (!file_exists(jazero_dir))
     {
@@ -52,11 +60,13 @@ static response do_insert_embeddings(const char *ip, const char *jazero_dir, con
         return (response) {.status = REQUEST_ERROR, .msg = "Embeddings file does not exist"};
     }
 
-    return insert_embeddings(ip, embeddings_file, delimiter, jazero_dir, 1);
+    user u = create_user(username, password);
+    return insert_embeddings(ip, u, embeddings_file, delimiter, jazero_dir, 1);
 }
 
-static response do_load(const char *ip, const char *jazero_dir, const char *table_dir, const char *storage_type,
-                    const char *table_prefix, const char *kg_prefix, int signature_size, int band_size)
+static response do_load(const char *ip, const char *username, const char *password, const char *jazero_dir,
+                        const char *table_dir, const char *storage_type, const char *table_prefix, const char *kg_prefix,
+                        int signature_size, int band_size)
 {
     if (!file_exists(jazero_dir))
     {
@@ -68,11 +78,13 @@ static response do_load(const char *ip, const char *jazero_dir, const char *tabl
         return (response) {.status = REQUEST_ERROR, .msg = "Table directory does not exist"};
     }
 
-    return load(ip, storage_type, table_prefix, kg_prefix, signature_size, band_size, jazero_dir, table_dir, 1);
+    user u = create_user(username, password);
+    return load(ip, u, storage_type, table_prefix, kg_prefix, signature_size, band_size, jazero_dir, table_dir, 1);
 }
 
-static response do_search(const char *ip, const char *query_file, enum entity_similarity entity_sim, enum cosine_function cos_func, int top_k,
-        enum similarity_measure measure, enum prefilter filter)
+static response do_search(const char *ip, const char *username, const char *password, const char *query_file,
+                          enum entity_similarity entity_sim, enum cosine_function cos_func, int top_k,
+                                  enum similarity_measure measure, enum prefilter filter)
 {
     if (!file_exists(query_file))
     {
@@ -80,18 +92,20 @@ static response do_search(const char *ip, const char *query_file, enum entity_si
     }
 
     query q = parse_query_file(query_file);
+    user u = create_user(username, password);
 
     if (q.rows == NULL)
     {
         return (response) {.status = REQUEST_ERROR, .msg = "Could not parse JSON query file"};
     }
 
-    return search(ip, q, top_k, entity_sim, measure, cos_func, filter);
+    return search(ip, u, q, top_k, entity_sim, measure, cos_func, filter);
 }
 
-static response do_ping(const char *ip)
+static response do_ping(const char *ip, const char *username, const char *password)
 {
-    return ping(ip);
+    user u = create_user(username, password);
+    return ping(ip, u);
 }
 
 static inline uint8_t check_key(const char *key, const char *short_check, const char *long_check)
@@ -99,14 +113,28 @@ static inline uint8_t check_key(const char *key, const char *short_check, const 
     return strcmp(key, short_check) == 0 || strcmp(key, long_check) == 0;
 }
 
-static response do_clear(const char *ip)
+static response do_clear(const char *ip, const char *username, const char *password)
 {
-    return clear(ip);
+    user u = create_user(username, password);
+    return clear(ip, u);
 }
 
-static response do_clear_embeddings(const char *ip)
+static response do_clear_embeddings(const char *ip, const char *username, const char *password)
 {
-    return clear_embeddings(ip);
+    user u = create_user(username, password);
+    return clear_embeddings(ip, u);
+}
+
+static response do_add_user(const char *ip, const char *username, const char *password, const char *new_username, const char *new_password)
+{
+    user u = create_user(username, password), new_user = create_user(new_username, new_password);
+    return add_user(ip, u, new_user);
+}
+
+static response do_remove_user(const char *ip, const char *username, const char *password, const char *old_username)
+{
+    user u = create_user(username, password);
+    return remove_user(ip, u, old_username);
 }
 
 error_t parse(const char *key, const char *arg, struct arguments *args)
@@ -296,6 +324,31 @@ error_t parse(const char *key, const char *arg, struct arguments *args)
         }
     }
 
+    else if (check_key(key, "-u", "--username"))
+    {
+        args->this_username = (char *) arg;
+    }
+
+    else if (check_key(key, "-c", "--password"))
+    {
+        args->this_password = (char *) arg;
+    }
+
+    else if (check_key(key, "-nu", "--newusername"))
+    {
+        args->new_username = (char *) arg;
+    }
+
+    else if (check_key(key, "-nc", "--newpassword"))
+    {
+        args->new_password = (char *) arg;
+    }
+
+    else if (check_key(key, "-ou", "--oldusername"))
+    {
+        args->old_username = (char *) arg;
+    }
+
     else
     {
         args->parse_error = 1;
@@ -344,7 +397,13 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    response ping = do_ping(args.host);
+    else if (args.this_username == NULL || args.this_password == NULL)
+    {
+        printf("Missing authentication: Use options '-u' and '-c' to specify your username and password\n");
+        return REQUEST_ERROR;
+    }
+
+    response ping = do_ping(args.host, args.this_username, args.this_password);
 
     if (ping.status == JAZERO_ERROR)
     {
@@ -367,7 +426,8 @@ int main(int argc, char *argv[])
                 break;
             }
 
-            ret = do_insert_embeddings(args.host, args.jazero_dir, args.embeddings_file, args.delimiter);
+            ret = do_insert_embeddings(args.host, args.this_username, args.this_password, args.jazero_dir,
+                                       args.embeddings_file, args.delimiter);
             break;
 
         case LOAD:
@@ -383,8 +443,9 @@ int main(int argc, char *argv[])
                 break;
             }
 
-            ret = do_load(args.host, args.jazero_dir, args.table_loc, args.storage_type, args.table_prefix,
-                       args.kg_prefix, args.signature_size, args.band_size);
+            ret = do_load(args.host, args.this_username, args.this_password, args.jazero_dir,
+                          args.table_loc, args.storage_type, args.table_prefix, args.kg_prefix, args.signature_size,
+                          args.band_size);
             break;
 
         case SEARCH:
@@ -394,8 +455,8 @@ int main(int argc, char *argv[])
                 break;
             }
 
-            ret = do_search(args.host, args.query_file, args.entity_sim, args.cos_func, args.top_k,
-                            args.sim_measure, args.filter);
+            ret = do_search(args.host, args.this_username, args.this_password, args.query_file,
+                            args.entity_sim, args.cos_func, args.top_k,args.sim_measure, args.filter);
             break;
 
         case PING:
@@ -403,11 +464,31 @@ int main(int argc, char *argv[])
             break;
 
         case CLEAR:
-            ret = do_clear(args.host);
+            ret = do_clear(args.host, args.this_username, args.this_password);
             break;
 
         case CLEAR_EMBEDDINGS:
-            ret = do_clear_embeddings(args.host);
+            ret = do_clear_embeddings(args.host, args.this_username, args.this_password);
+            break;
+
+        case ADD_USER:
+            if (args.new_username == NULL || args.new_password == NULL)
+            {
+                ret = (response) {.status = REQUEST_ERROR, .msg = "Missing username or password of user to be added"};
+                break;
+            }
+
+            ret = do_add_user(args.host, args.this_username, args.this_password, args.new_username, args.new_password);
+            break;
+
+        case REMOVE_USER:
+            if (args.old_username == NULL)
+            {
+                ret = (response) {.status = REQUEST_ERROR, .msg = "Missing username of user to be removed"};
+                break;
+            }
+
+            ret = do_remove_user(args.host, args.this_username, args.this_password, args.old_username);
             break;
 
         default:

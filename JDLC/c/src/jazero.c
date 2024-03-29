@@ -21,7 +21,7 @@ static inline void print(uint8_t verbose, const char *message)
     }
 }
 
-response ping(const char *ip)
+response ping(const char *ip, user u)
 {
     struct address dl_addr = init_addr(ip, DL_PORT, "/ping"),
             linker_addr = init_addr(ip, ENTITY_LINKER_PORT, "/ping"),
@@ -31,6 +31,8 @@ response ping(const char *ip)
     uint8_t init_dl = init(&dl_req, PING, dl_addr, headers, NULL),
             init_el = init(&linker_req, PING, linker_addr, headers, NULL),
             init_ekg = init(&ekg_req, PING, ekg_addr, headers, NULL);
+    prop_insert(&headers, "username", u.username, strlen(u.username));
+    prop_insert(&headers, "password", u.username, strlen(u.username));
 
     if (!init_dl || !init_el || !init_ekg)
     {
@@ -67,12 +69,14 @@ response ping(const char *ip)
     return (response) {.status = OK, .msg = "Pong"};
 }
 
-response clear(const char *ip)
+response clear(const char *ip, user u)
 {
     struct address dl_addr = init_addr(ip, DL_PORT, "/clear");
     jdlc dl_req;
     struct properties headers = prop_init();
     uint8_t init_dl = init(&dl_req, CLEAR, dl_addr, headers, NULL);
+    prop_insert(&headers, "username", u.username, strlen(u.username));
+    prop_insert(&headers, "password", u.username, strlen(u.username));
 
     if (!init_dl)
     {
@@ -88,12 +92,14 @@ response clear(const char *ip)
     return dl_response;
 }
 
-response clear_embeddings(const char *ip)
+response clear_embeddings(const char *ip, user u)
 {
     struct address dl_addr = init_addr(ip, DL_PORT, "/clear-embeddings");
     jdlc dl_req;
     struct properties headers = prop_init();
     uint8_t init_dl = init(&dl_req, CLEAR, dl_addr, headers, NULL);
+    prop_insert(&headers, "username", u.username, strlen(u.username));
+    prop_insert(&headers, "password", u.username, strlen(u.username));
 
     if (!init_dl)
     {
@@ -141,7 +147,7 @@ static inline uint8_t remove_embeddings_file(const char *embeddings_file, const 
     return ret;
 }
 
-response insert_embeddings(const char *ip, const char *embeddings_file, const char *delimiter, const char *jazero_dir,
+response insert_embeddings(const char *ip, user u, const char *embeddings_file, const char *delimiter, const char *jazero_dir,
                                 uint8_t verbose)
 {
     print(verbose, "Copying embeddings file...\n");
@@ -159,6 +165,8 @@ response insert_embeddings(const char *ip, const char *embeddings_file, const ch
     char *body = (char *) malloc(100 + strlen(embeddings_file) + strlen(delimiter)),
         *mount_file = (char *) malloc(strlen(TABLES_MOUNT) + strlen(embeddings_file) + 1),
         *file_name = basename((char *) embeddings_file);
+    prop_insert(&headers, "username", u.username, strlen(u.username));
+    prop_insert(&headers, "password", u.username, strlen(u.username));
 
     if (body == NULL || mount_file == NULL)
     {
@@ -218,7 +226,7 @@ static inline uint8_t prepare_tables(const char *jazero_table_dir, const char *t
     return 1;
 }
 
-response load(const char *ip, const char *storage_type, const char *table_entity_prefix, const char *kg_entity_prefix,
+response load(const char *ip, user u, const char *storage_type, const char *table_entity_prefix, const char *kg_entity_prefix,
               uint16_t signature_size, uint16_t band_size, const char *jazero_dir, const char *table_dir, uint8_t verbose)
 {
     char *table_storage = (char *) malloc(strlen(jazero_dir) + strlen(RELATIVE_TABLES) + 5);
@@ -262,6 +270,8 @@ response load(const char *ip, const char *storage_type, const char *table_entity
     jdlc request;
     struct address addr = init_addr(ip, DL_PORT, "/insert");
     char *body = (char *) malloc(100 + strlen(TABLES_MOUNT) + strlen(table_entity_prefix) + strlen(kg_entity_prefix));
+    prop_insert(&headers, "username", u.username, strlen(u.username));
+    prop_insert(&headers, "password", u.username, strlen(u.username));
 
     if (body == NULL)
     {
@@ -295,13 +305,15 @@ response load(const char *ip, const char *storage_type, const char *table_entity
     return res;
 }
 
-response search(const char *ip, query q, uint32_t top_k, enum entity_similarity entity_sim, enum similarity_measure sim_measure,
+response search(const char *ip, user u, query q, uint32_t top_k, enum entity_similarity entity_sim, enum similarity_measure sim_measure,
                 enum cosine_function embeddings_function, enum prefilter filter_type)
 {
     jdlc request;
     struct properties headers = init_params_search();
     struct address addr = init_addr(ip, DL_PORT, "/search");
     char *body = (char *) malloc(1000);
+    prop_insert(&headers, "username", u.username, strlen(u.username));
+    prop_insert(&headers, "password", u.username, strlen(u.username));
 
     if (body == NULL)
     {
@@ -325,6 +337,88 @@ response search(const char *ip, query q, uint32_t top_k, enum entity_similarity 
         addr_clear(addr);
         prop_clear(&headers);
         return (response) {.status = JAZERO_ERROR, .msg = "Could not initialize Jazero SEARCH request"};
+    }
+
+    response res = perform(request);
+    free(body);
+    addr_clear(addr);
+    prop_clear(&headers);
+
+    return res;
+}
+
+response add_user(const char *ip, user u, user new_user)
+{
+    jdlc request;
+    struct properties headers = init_params_search();
+    struct address addr = init_addr(ip, DL_PORT, "/add-user");
+    char *body = (char *) malloc(1000);
+    prop_insert(&headers, "username", u.username, strlen(u.username));
+    prop_insert(&headers, "password", u.username, strlen(u.username));
+
+    if (body == NULL)
+    {
+        addr_clear(addr);
+        prop_clear(&headers);
+        return (response) {.status = JAZERO_ERROR, .msg = "Ran out of memory"};
+    }
+
+    add_user_body(body, new_user);
+
+    char *body_copy = (char *) realloc(body, strlen(body));
+
+    if (body_copy != NULL)
+    {
+        body = body_copy;
+    }
+
+    if (!init(&request, ADD_USER, addr, headers, body))
+    {
+        free(body);
+        addr_clear(addr);
+        prop_clear(&headers);
+        return (response) {.status = JAZERO_ERROR, .msg = "Could not initialize Jazero ADD_USER request"};
+    }
+
+    response res = perform(request);
+    free(body);
+    addr_clear(addr);
+    prop_clear(&headers);
+
+    return res;
+}
+
+response remove_user(const char *ip, user u, const char *old_username)
+{
+    jdlc request;
+    struct properties headers = init_params_search();
+    struct address addr = init_addr(ip, DL_PORT, "/remove-user");
+    char *body = (char *) malloc(1000);
+    prop_insert(&headers, "username", u.username, strlen(u.username));
+    prop_insert(&headers, "password", u.username, strlen(u.username));
+
+    if (body == NULL)
+    {
+        addr_clear(addr);
+        prop_clear(&headers);
+        return (response) {.status = JAZERO_ERROR, .msg = "Ran out of memory"};
+    }
+
+    remove_user_body(body, old_username);
+
+    char *body_copy = (char *) realloc(body, strlen(body));
+
+    if (body_copy != NULL)
+    {
+        body = body_copy;
+    }
+
+    if (!init(&request, REMOVE_USER, addr, headers, body))
+    {
+        free(body);
+        addr_clear(addr);
+        prop_clear(&headers);
+        return (response) {.status = JAZERO_ERROR, .msg = "Could not initialize Jazero REMOVE_USER request"};
     }
 
     response res = perform(request);
