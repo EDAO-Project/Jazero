@@ -406,7 +406,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      * @return Simple index build stats
      */
     @PostMapping(value = "/insert")
-    public ResponseEntity<String> insert(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
+    public synchronized ResponseEntity<String> insert(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
     {
         final String dirKey = "directory", tablePrefixKey = "table-prefix", kgPrefixKey = "kg-prefix";
         File indexDir = new File(Configuration.getKGDir());
@@ -573,7 +573,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      * @return Basic stats
      */
     @PostMapping(value = "/embeddings")
-    public ResponseEntity<String> loadEmbeddings(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
+    public synchronized ResponseEntity<String> loadEmbeddings(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
     {
         if (authenticateUser(headers) != Authenticator.Auth.WRITE)
         {
@@ -826,9 +826,9 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
     /**
      * Adds a user to the system
-     * All users are are assigned write privileges
+     * All users are assigned write privileges
      */
-    @PostMapping
+    @PostMapping("/add-user")
     public synchronized ResponseEntity<String> addUser(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
     {
         if (authenticateUser(headers) != Authenticator.Auth.WRITE)
@@ -859,7 +859,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     /**
      * Removes a user from the system
      */
-    @PostMapping
+    @PostMapping("/remove-user")
     public synchronized ResponseEntity<String> removeUser(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
     {
         if (authenticateUser(headers) != Authenticator.Auth.WRITE)
