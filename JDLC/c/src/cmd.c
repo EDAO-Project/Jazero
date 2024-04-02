@@ -176,6 +176,16 @@ error_t parse(const char *key, const char *arg, struct arguments *args)
             args->op = CLEAR_EMBEDDINGS;
         }
 
+        else if (strcmp(arg, "adduser") == 0)
+        {
+            args->op = ADD_USER;
+        }
+
+        else if (strcmp(arg, "removeuser") == 0)
+        {
+            args->op = REMOVE_USER;
+        }
+
         else
         {
             args->parse_error = 1;
