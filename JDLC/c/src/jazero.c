@@ -28,11 +28,12 @@ response ping(const char *ip, user u)
             ekg_addr = init_addr(ip, EKG_PORT, "/ping");
     jdlc dl_req, linker_req, ekg_req;
     struct properties headers = prop_init();
+    prop_insert(&headers, "username", u.username, strlen(u.username));
+    prop_insert(&headers, "password", u.username, strlen(u.username));
+
     uint8_t init_dl = init(&dl_req, PING, dl_addr, headers, NULL),
             init_el = init(&linker_req, PING, linker_addr, headers, NULL),
             init_ekg = init(&ekg_req, PING, ekg_addr, headers, NULL);
-    prop_insert(&headers, "username", u.username, strlen(u.username));
-    prop_insert(&headers, "password", u.username, strlen(u.username));
 
     if (!init_dl || !init_el || !init_ekg)
     {
@@ -74,9 +75,10 @@ response clear(const char *ip, user u)
     struct address dl_addr = init_addr(ip, DL_PORT, "/clear");
     jdlc dl_req;
     struct properties headers = prop_init();
-    uint8_t init_dl = init(&dl_req, CLEAR, dl_addr, headers, NULL);
     prop_insert(&headers, "username", u.username, strlen(u.username));
     prop_insert(&headers, "password", u.username, strlen(u.username));
+
+    uint8_t init_dl = init(&dl_req, CLEAR, dl_addr, headers, NULL);
 
     if (!init_dl)
     {
@@ -97,9 +99,10 @@ response clear_embeddings(const char *ip, user u)
     struct address dl_addr = init_addr(ip, DL_PORT, "/clear-embeddings");
     jdlc dl_req;
     struct properties headers = prop_init();
-    uint8_t init_dl = init(&dl_req, CLEAR, dl_addr, headers, NULL);
     prop_insert(&headers, "username", u.username, strlen(u.username));
     prop_insert(&headers, "password", u.username, strlen(u.username));
+
+    uint8_t init_dl = init(&dl_req, CLEAR, dl_addr, headers, NULL);
 
     if (!init_dl)
     {
