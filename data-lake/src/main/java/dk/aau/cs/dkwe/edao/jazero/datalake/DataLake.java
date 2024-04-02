@@ -140,11 +140,13 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     /**
      * POST request to query data lake.
      * @param headers Requires:
-     *                Content-Type: application/json
+     *                "Content-Type": "application/json",
+     *                "username": "<USERNAME>",
+     *                "password": "<PASSWORD>"
      * @param body Query as JSON string on the form:
      *             {
      *                  "top-k": "<INTEGER VALUE>",
-     *                  "entity-similarity": "TYPES|PREDICATES|EMBEDDINGS"
+     *                  "entity-similarity": "TYPES|PREDICATES|EMBEDDINGS",
      *                  "single-column-per-query-entity": "<BOOLEAN VALUE>",
      *                  "use-max-similarity-per-column": "<BOOLEAN VALUE>",
      *                  ["weighted-jaccard": "<BOOLEAN VALUE>,]
@@ -387,10 +389,12 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      * 'Signature-Size' is number of permutation/projection vectors to be used in LSH index
      * 'Band-Size' is size of bands for the LSH signature
      * @param headers Requires:
-     *                Content-Type: application/json
-     *                Storage-Type: native|HDFS
-     *                Signature-Size: <INTEGER>
-     *                Band-Size: <INTEGER>
+     *                "Content-Type": "application/json",
+     *                "Storage-Type": "native|HDFS",
+     *                "Signature-Size": <INTEGER>,
+     *                "Band-Size": <INTEGER>,
+     *                "username": "<USERNAME>",
+     *                "password": "<PASSWORD>"
      *
      * @param body JSON string with path to directory of JSON table files. Format:
      *             {
@@ -564,7 +568,9 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      * In each line, start with the entity URI and follow by its embedding values
      * Use the same delimiter to separate embedding values and entity URI from its embedding
      * @param headers Requires:
-     *                Content-Type: application/json
+     *                "Content-Type": "application/json",
+     *                "username": "<USERNAME>",
+     *                "password": "<PASSWORD>"
      * @param body Requires JSON with two entries:
      *             {
      *                  "file": "<PATH/TO/EMBEDDINGS>"
