@@ -902,6 +902,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         User admin = new User(body.get("username"), body.get("password"), false);
         Authenticator auth = Configuration.initAuthenticator();
         auth.allow(admin);
+        Configuration.setAdmin();
         Logger.log(Logger.Level.INFO, "Admin has been set");
         FileLogger.log(FileLogger.Service.SDL_Manager, "Admin has been set");
 
