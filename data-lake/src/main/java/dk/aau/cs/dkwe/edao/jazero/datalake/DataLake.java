@@ -880,4 +880,31 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
         return ResponseEntity.ok("User '" + oldUsername + "' has been removed");
     }
+
+    /**
+     * Adds the admin user.
+     * This endpoint can only be reached once sor security reasons.
+     * The body requires two fields, 'username' and 'password', both of which are strings to set the admin login credentials.
+     */
+    @PostMapping("/set-admin")
+    public synchronized ResponseEntity<String> setAdmin(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
+    {
+        if (Configuration.isAdminSet())
+        {
+            return ResponseEntity.badRequest().body("Admin is already set");
+        }
+
+        else if (!body.containsKey("username") && !body.containsKey("password"))
+        {
+            return ResponseEntity.badRequest().body("Missing fields 'username' and/or 'password' to set admin credentials");
+        }
+
+        User admin = new User(body.get("username"), body.get("password"), false);
+        Authenticator auth = Configuration.initAuthenticator();
+        auth.allow(admin);
+        Logger.log(Logger.Level.INFO, "Admin has been set");
+        FileLogger.log(FileLogger.Service.SDL_Manager, "Admin has been set");
+
+        return ResponseEntity.ok("User '" + admin.username() + "' has been set as admin");
+    }
 }

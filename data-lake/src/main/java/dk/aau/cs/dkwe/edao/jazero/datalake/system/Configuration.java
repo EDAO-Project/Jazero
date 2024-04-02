@@ -482,4 +482,14 @@ public class Configuration
     {
         return Integer.parseInt(readProperties().getProperty("BandSize"));
     }
+
+    public static void setAdmin()
+    {
+        addProperty("admin", "true");
+    }
+
+    public static boolean isAdminSet()
+    {
+        return Boolean.parseBoolean((String) readProperties().getOrDefault("admin", "false"));
+    }
 }
