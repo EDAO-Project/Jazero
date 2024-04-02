@@ -2,7 +2,7 @@ package dk.aau.cs.dkwe.edao.jazero.entitylinker.link;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import dk.aau.cs.dkwe.edao.jazero.entitylinker.index.LuceneIndex;
+import dk.aau.cs.dkwe.edao.jazero.entitylinker.indexing.LuceneIndex;
 
 public class LuceneLinker implements EntityLink<String, String>
 {

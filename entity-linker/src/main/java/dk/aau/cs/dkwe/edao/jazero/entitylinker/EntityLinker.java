@@ -6,7 +6,7 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.TableDeserializer;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.TableSerializer;
 import dk.aau.cs.dkwe.edao.jazero.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.jazero.datalake.system.Logger;
-import dk.aau.cs.dkwe.edao.jazero.entitylinker.index.LuceneFactory;
+import dk.aau.cs.dkwe.edao.jazero.entitylinker.indexing.LuceneFactory;
 import dk.aau.cs.dkwe.edao.jazero.entitylinker.link.LuceneLinker;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
