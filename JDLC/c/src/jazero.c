@@ -29,7 +29,7 @@ response ping(const char *ip, user u)
     jdlc dl_req, linker_req, ekg_req;
     struct properties headers = prop_init();
     prop_insert(&headers, "username", u.username, strlen(u.username));
-    prop_insert(&headers, "password", u.password, strlen(u.username));
+    prop_insert(&headers, "password", u.password, strlen(u.password));
 
     uint8_t init_dl = init(&dl_req, PING, dl_addr, headers, NULL),
             init_el = init(&linker_req, PING, linker_addr, headers, NULL),
@@ -76,7 +76,7 @@ response clear(const char *ip, user u)
     jdlc dl_req;
     struct properties headers = prop_init();
     prop_insert(&headers, "username", u.username, strlen(u.username));
-    prop_insert(&headers, "password", u.password, strlen(u.username));
+    prop_insert(&headers, "password", u.password, strlen(u.password));
 
     uint8_t init_dl = init(&dl_req, CLEAR, dl_addr, headers, NULL);
 
@@ -100,7 +100,7 @@ response clear_embeddings(const char *ip, user u)
     jdlc dl_req;
     struct properties headers = prop_init();
     prop_insert(&headers, "username", u.username, strlen(u.username));
-    prop_insert(&headers, "password", u.password, strlen(u.username));
+    prop_insert(&headers, "password", u.password, strlen(u.password));
 
     uint8_t init_dl = init(&dl_req, CLEAR, dl_addr, headers, NULL);
 
@@ -169,7 +169,7 @@ response insert_embeddings(const char *ip, user u, const char *embeddings_file, 
         *mount_file = (char *) malloc(strlen(TABLES_MOUNT) + strlen(embeddings_file) + 1),
         *file_name = basename((char *) embeddings_file);
     prop_insert(&headers, "username", u.username, strlen(u.username));
-    prop_insert(&headers, "password", u.password, strlen(u.username));
+    prop_insert(&headers, "password", u.password, strlen(u.password));
 
     if (body == NULL || mount_file == NULL)
     {
@@ -274,7 +274,7 @@ response load(const char *ip, user u, const char *storage_type, const char *tabl
     struct address addr = init_addr(ip, DL_PORT, "/insert");
     char *body = (char *) malloc(100 + strlen(TABLES_MOUNT) + strlen(table_entity_prefix) + strlen(kg_entity_prefix));
     prop_insert(&headers, "username", u.username, strlen(u.username));
-    prop_insert(&headers, "password", u.password, strlen(u.username));
+    prop_insert(&headers, "password", u.password, strlen(u.password));
 
     if (body == NULL)
     {
@@ -316,7 +316,7 @@ response search(const char *ip, user u, query q, uint32_t top_k, enum entity_sim
     struct address addr = init_addr(ip, DL_PORT, "/search");
     char *body = (char *) malloc(1000);
     prop_insert(&headers, "username", u.username, strlen(u.username));
-    prop_insert(&headers, "password", u.password, strlen(u.username));
+    prop_insert(&headers, "password", u.password, strlen(u.password));
 
     if (body == NULL)
     {
@@ -357,7 +357,7 @@ response add_user(const char *ip, user u, user new_user)
     struct address addr = init_addr(ip, DL_PORT, "/add-user");
     char *body = (char *) malloc(1000);
     prop_insert(&headers, "username", u.username, strlen(u.username));
-    prop_insert(&headers, "password", u.password, strlen(u.username));
+    prop_insert(&headers, "password", u.password, strlen(u.password));
 
     if (body == NULL)
     {
@@ -398,7 +398,7 @@ response remove_user(const char *ip, user u, const char *old_username)
     struct address addr = init_addr(ip, DL_PORT, "/remove-user");
     char *body = (char *) malloc(1000);
     prop_insert(&headers, "username", u.username, strlen(u.username));
-    prop_insert(&headers, "password", u.password, strlen(u.username));
+    prop_insert(&headers, "password", u.password, strlen(u.password));
 
     if (body == NULL)
     {
