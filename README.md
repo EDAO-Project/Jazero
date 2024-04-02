@@ -15,6 +15,15 @@ Then, start an instance by running the following command:
 The first time you start an instance, the entity linker will construct its indexes which will take around 1 hour for a 10GB KG dataset.
 Therefore, do not start loading data until the entity linker finishes constructing its own indexes.
 
+<b>Important:</b> The first time the instance is started, an admin must be set.
+This can be done <i>once</i> with the following command:
+
+```bash
+curl -H "Content-Type: application/json" -d '{"username": "admin", "password": "1234"}' http://localhost:8081/set-admin
+```
+
+Instead of `admin` and `1234`, you can choose your own credentials for the admin.
+
 The following command will install the necessary plugins.
 This can run in parallel with the index construction in the entity linker.
 
