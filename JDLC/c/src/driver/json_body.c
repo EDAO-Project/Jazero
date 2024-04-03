@@ -10,7 +10,7 @@ const char *load_embeddings_body(char *buffer, const char *file, const char *del
 
 const char *load_body(char *buffer, const char *table_dir, const char *table_entity_prefix, const char *kg_prefix)
 {
-    sprintf(buffer, "{\"directory\": \"%s\", \"table-prefix\": \"%s\", \"kg-prefix\": \"%s\", \"username\": \"%s\", \"password\": \"%s\"}",
+    sprintf(buffer, "{\"directory\": \"%s\", \"table-prefix\": \"%s\", \"kg-prefix\": \"%s\"}",
             table_dir, table_entity_prefix, kg_prefix);
     return buffer;
 }
