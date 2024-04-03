@@ -272,7 +272,7 @@ response load(const char *ip, user u, const char *storage_type, const char *tabl
     struct properties headers = init_params_load(storage_type, signature_size, band_size);
     jdlc request;
     struct address addr = init_addr(ip, DL_PORT, "/insert");
-    char *body = (char *) malloc(100 + strlen(TABLES_MOUNT) + strlen(table_entity_prefix) + strlen(kg_entity_prefix));
+    char *body = (char *) malloc(1000);
     prop_insert(&headers, "username", u.username, strlen(u.username));
     prop_insert(&headers, "password", u.password, strlen(u.password));
 
@@ -285,6 +285,13 @@ response load(const char *ip, user u, const char *storage_type, const char *tabl
     }
 
     load_body(body, TABLES_MOUNT, table_entity_prefix, kg_entity_prefix);
+
+    char *body_copy = (char *) realloc(body, strlen(body));
+
+    if (body_copy != NULL)
+    {
+        body = body_copy;
+    }
 
     if (!init(&request, LOAD, addr, headers, body))
     {
