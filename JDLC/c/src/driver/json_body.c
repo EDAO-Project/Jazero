@@ -31,7 +31,7 @@ const char *search_body(char *buffer, uint32_t top_k, enum entity_similarity ent
 
 const char *add_user_body(char *buffer, user new_user)
 {
-    sprintf(buffer, "{\"new-username\": \%s\", \"new-password\": \%s\"}", new_user.username, new_user.password);
+    sprintf(buffer, "{\"new-username\": \"%s\", \"new-password\": \"%s\"}", new_user.username, new_user.password);
     return buffer;
 }
 
