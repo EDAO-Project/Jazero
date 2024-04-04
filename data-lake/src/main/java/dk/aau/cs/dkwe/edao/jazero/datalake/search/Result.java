@@ -13,6 +13,7 @@ import java.io.*;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class Result implements Externalizable
 {
@@ -21,6 +22,7 @@ public class Result implements Externalizable
     private final Map<String, Stats> stats;
     private final double runtime;
     private double reduction = 0;
+    private static final double MAX_MEM_LIMIT_FACTOR = 0.45;    // In case the query is run locally, the total memory consumption will be double to store the results
 
     public Result(int k, List<Pair<File, Double>> tableScores, double runtime, Map<String, Stats> tableStats)
     {
@@ -77,12 +79,21 @@ public class Result implements Externalizable
         JsonObject object = new JsonObject();
         JsonArray array = new JsonArray(getK());
         Iterator<Pair<File, Double>> scores = getResults();
+        double availableMemory = Runtime.getRuntime().freeMemory() * MAX_MEM_LIMIT_FACTOR;
+        AtomicLong usedMemory = new AtomicLong(0);
 
         while (scores.hasNext())
         {
+            if (usedMemory.get() > availableMemory)
+            {
+                object.addProperty("message", "Result set was limited due to not enough memory");
+                break;
+            }
+
             Pair<File, Double> score = scores.next();
             JsonObject jsonScore = new JsonObject();
-            jsonScore.add("table ID", new JsonPrimitive(score.first().getName()));
+            String tableId = score.first().getName();
+            jsonScore.add("table ID", new JsonPrimitive(tableId));
 
             try
             {
@@ -98,14 +109,17 @@ public class Result implements Externalizable
                         JsonObject cellObject = new JsonObject();
                         cellObject.addProperty("text", cell);
                         column.add(cellObject);
+                        usedMemory.setPlain(usedMemory.get() + 5 + cell.length());
                     });
 
                     rows.add(column);
+                    usedMemory.setPlain(usedMemory.get() + 10);
                 }
 
                 jsonScore.add("table", rows);
                 jsonScore.add("score", new JsonPrimitive(score.second()));
                 array.add(jsonScore);
+                usedMemory.setPlain(usedMemory.get() + 25 + tableId.length());
             }
 
             catch (ParsingException e) {}
