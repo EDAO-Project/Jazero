@@ -305,8 +305,10 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         if (result == null)
         {
             FileLogger.log(FileLogger.Service.SDL_Manager, "Search result set is null");
-            return ResponseEntity.internalServerError().body("Internal error when searching");
+            return ResponseEntity.internalServerError().body("Result set is null");
         }
+
+        result.setReduction(search.getReduction());
 
         try
         {
