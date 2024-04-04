@@ -1,8 +1,6 @@
 package dk.aau.cs.dkwe.edao.jazero.datalake;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import dk.aau.cs.dkwe.edao.jazero.datalake.connector.DBDriverBatch;
 import dk.aau.cs.dkwe.edao.jazero.datalake.connector.EmbeddingsFactory;
 import dk.aau.cs.dkwe.edao.jazero.datalake.connector.ExplainableCause;
@@ -11,8 +9,6 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.connector.service.KGService;
 import dk.aau.cs.dkwe.edao.jazero.datalake.loader.IndexReader;
 import dk.aau.cs.dkwe.edao.jazero.datalake.loader.IndexWriter;
 import dk.aau.cs.dkwe.edao.jazero.datalake.parser.EmbeddingsParser;
-import dk.aau.cs.dkwe.edao.jazero.datalake.parser.ParsingException;
-import dk.aau.cs.dkwe.edao.jazero.datalake.parser.TableParser;
 import dk.aau.cs.dkwe.edao.jazero.datalake.search.Prefilter;
 import dk.aau.cs.dkwe.edao.jazero.datalake.search.Result;
 import dk.aau.cs.dkwe.edao.jazero.datalake.search.TableSearch;
@@ -23,7 +19,6 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTableLink;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.SetLSHIndex;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.VectorLSHIndex;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Id;
-import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Pair;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph.Type;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.DynamicTable;
@@ -313,14 +308,26 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             return ResponseEntity.internalServerError().body("Internal error when searching");
         }
 
-        JsonObject jsonResult = resultToJson(result, search.elapsedNanoSeconds(), search.getReduction());
-        analysis.record("search", 1);
-        FileLogger.log(FileLogger.Service.SDL_Manager, "Query finished in " + search.elapsedNanoSeconds() + "ns and with a " + search.getReduction() + " reduction");
+        try
+        {
+            ByteArrayOutputStream resultWriter = new ByteArrayOutputStream();
+            ObjectOutputStream resultOutputStream = new ObjectOutputStream(resultWriter);
+            resultOutputStream.writeObject(result);
+            analysis.record("search", 1);
+            FileLogger.log(FileLogger.Service.SDL_Manager, "Query finished in " + search.elapsedNanoSeconds() + "ns and with a " + search.getReduction() + " reduction");
 
-        return ResponseEntity
-                .ok()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(jsonResult.toString());
+            return ResponseEntity
+                    .ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(resultWriter.toString());
+        }
+
+        catch (IOException e)
+        {
+            return ResponseEntity
+                    .internalServerError()
+                    .body("IOException when serializing result set: " + e.getMessage());
+        }
     }
 
     private static Table<String> parseQuery(String queryStr)
@@ -335,52 +342,6 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         }
 
         return query;
-    }
-
-    private static JsonObject resultToJson(Result res, long runtime, double reduction)
-    {
-        JsonObject object = new JsonObject();
-        JsonArray array = new JsonArray(res.getK());
-        Iterator<Pair<File, Double>> scores = res.getResults();
-
-        while (scores.hasNext())
-        {
-            Pair<File, Double> score = scores.next();
-            JsonObject jsonScore = new JsonObject();
-            jsonScore.add("table ID", new JsonPrimitive(score.first().getName()));
-
-            try
-            {
-                Table<String> table = TableParser.parse(score.first());
-                int rowCount = table.rowCount();
-                JsonArray rows = new JsonArray(rowCount);
-
-                for (int rowIdx = 0; rowIdx < rowCount; rowIdx++)
-                {
-                    Table.Row<String> row = table.getRow(rowIdx);
-                    JsonArray column = new JsonArray(row.size());
-                    row.forEach(cell -> {
-                        JsonObject cellObject = new JsonObject();
-                        cellObject.addProperty("text", cell);
-                        column.add(cellObject);
-                    });
-
-                    rows.add(column);
-                }
-
-                jsonScore.add("table", rows);
-                jsonScore.add("score", new JsonPrimitive(score.second()));
-                array.add(jsonScore);
-            }
-
-            catch (ParsingException e) {}
-        }
-
-        object.add("scores", array);
-        object.addProperty("runtime", runtime);
-        object.addProperty("reduction", reduction * 100);
-
-        return object;
     }
 
     /**

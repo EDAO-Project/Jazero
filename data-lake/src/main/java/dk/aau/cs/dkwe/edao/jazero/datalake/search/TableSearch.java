@@ -191,6 +191,11 @@ public class TableSearch extends AbstractSearch
             Logger.log(Logger.Level.INFO, "A total of " + parsedTables + " tables were parsed.");
             Logger.log(Logger.Level.INFO, "Elapsed time: " + this.elapsed / 1e9 + " seconds\n");
 
+            if (this.prefilter != null)
+            {
+                this.elapsed += this.prefilter.elapsedNanoSeconds();
+            }
+
             if (useEmbeddings(this.simProp))
             {
                 Logger.log(Logger.Level.INFO, "A total of " + this.embeddingComparisons + " entity comparisons were made using embeddings.");
@@ -205,7 +210,7 @@ public class TableSearch extends AbstractSearch
                 Logger.log(Logger.Level.INFO, "Query Entities with missing embedding coverage: " + this.queryEntitiesMissingCoverage + "\n");
             }
 
-            return new Result(this.topK, scores, this.tableStats);
+            return new Result(this.topK, scores, this.elapsed, this.tableStats);
         }
 
         catch (RuntimeException e)

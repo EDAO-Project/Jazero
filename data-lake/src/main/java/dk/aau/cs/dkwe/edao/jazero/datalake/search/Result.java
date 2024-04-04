@@ -2,8 +2,12 @@ package dk.aau.cs.dkwe.edao.jazero.datalake.search;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import dk.aau.cs.dkwe.edao.jazero.datalake.loader.Stats;
+import dk.aau.cs.dkwe.edao.jazero.datalake.parser.ParsingException;
+import dk.aau.cs.dkwe.edao.jazero.datalake.parser.TableParser;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Pair;
+import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.Table;
 
 import java.io.*;
 import java.util.Iterator;
@@ -15,18 +19,26 @@ public class Result implements Externalizable
     private final int k, size;
     private final List<Pair<File, Double>> tableScores;
     private final Map<String, Stats> stats;
+    private final double runtime;
+    private double reduction = 0;
 
-    public Result(int k, List<Pair<File, Double>> tableScores, Map<String, Stats> tableStats)
+    public Result(int k, List<Pair<File, Double>> tableScores, double runtime, Map<String, Stats> tableStats)
     {
         this.k = k;
         this.size = Math.min(k, tableScores.size());
         this.tableScores = tableScores;
         this.stats = tableStats;
+        this.runtime = runtime;
     }
 
-    public Result(int k, Map<String, Stats> tableStats, Pair<File, Double> ... tableScores)
+    public Result(int k, Map<String, Stats> tableStats, double runtime, Pair<File, Double> ... tableScores)
     {
-        this(k, List.of(tableScores), tableStats);
+        this(k, List.of(tableScores), runtime, tableStats);
+    }
+
+    public void setReduction(double reduction)
+    {
+        this.reduction = reduction;
     }
 
     public int getK()
@@ -62,42 +74,47 @@ public class Result implements Externalizable
     @Override
     public void writeExternal(ObjectOutput out) throws IOException
     {
-        Iterator<Pair<File, Double>> results = getResults();
-        JsonObject jsonObj = new JsonObject();
-        JsonArray innerObjs = new JsonArray();
+        JsonObject object = new JsonObject();
+        JsonArray array = new JsonArray(getK());
+        Iterator<Pair<File, Double>> scores = getResults();
 
-        while (results.hasNext())
+        while (scores.hasNext())
         {
-            Pair<File, Double> result = results.next();
-            String tableID = result.first().getName();
-            JsonObject tmp = new JsonObject();
-            tmp.addProperty("tableID", tableID);
-            tmp.addProperty("score", result.second());
+            Pair<File, Double> score = scores.next();
+            JsonObject jsonScore = new JsonObject();
+            jsonScore.add("table ID", new JsonPrimitive(score.first().getName()));
 
-            if (this.stats.containsKey(tableID))
+            try
             {
-                int entityMappedRows = this.stats.get(tableID).entityMappedRows();
-                double entityMappedRowsFraction = this.stats.get(tableID).fractionOfEntityMappedRows();
-                List<Double> tupleScores = this.stats.get(tableID).queryRowScores();
-                List<List<Double>> tupleVectors = this.stats.get(tableID).queryRowVectors();
-                List<List<String>> tupleQueryAlignment = this.stats.get(tableID).tupleQueryAlignment();
+                Table<String> table = TableParser.parse(score.first());
+                int rowCount = table.rowCount();
+                JsonArray rows = new JsonArray(rowCount);
 
-                tmp.addProperty("numEntityMappedRows", String.valueOf(entityMappedRows));
-                tmp.addProperty("fractionOfEntityMappedRows", String.valueOf(entityMappedRowsFraction));
-                tmp.addProperty("tupleScores", String.valueOf(tupleScores));
-                tmp.addProperty("tupleVectors", String.valueOf(tupleVectors));
-
-                if (tupleQueryAlignment != null)
+                for (int rowIdx = 0; rowIdx < rowCount; rowIdx++)
                 {
-                    tmp.addProperty("tupleQueryAlignment", String.valueOf(tupleQueryAlignment));
+                    Table.Row<String> row = table.getRow(rowIdx);
+                    JsonArray column = new JsonArray(row.size());
+                    row.forEach(cell -> {
+                        JsonObject cellObject = new JsonObject();
+                        cellObject.addProperty("text", cell);
+                        column.add(cellObject);
+                    });
+
+                    rows.add(column);
                 }
+
+                jsonScore.add("table", rows);
+                jsonScore.add("score", new JsonPrimitive(score.second()));
+                array.add(jsonScore);
             }
 
-            innerObjs.add(tmp);
+            catch (ParsingException e) {}
         }
 
-        jsonObj.add("scores", innerObjs);
-        out.writeObject(jsonObj.toString());
+        object.add("scores", array);
+        object.addProperty("runtime", this.runtime);
+        object.addProperty("reduction", this.reduction);
+        out.writeObject(object.toString());
     }
 
     @Override
