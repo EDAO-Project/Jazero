@@ -309,41 +309,10 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         }
 
         result.setReduction(search.getReduction());
-
-        try
-        {
-            OutputStream resultOutputStream = new OutputStream() {
-                StringBuilder builder = new StringBuilder();
-
-                @Override
-                public void write(int b) throws IOException
-                {
-                    this.builder.append((char) b);
-                }
-
-                @Override
-                public String toString()
-                {
-                    return this.builder.toString();
-                }
-            };
-            ObjectOutputStream resultObjOutputStream = new ObjectOutputStream(resultOutputStream);
-            resultObjOutputStream.writeObject(result);
-            analysis.record("search", 1);
-            FileLogger.log(FileLogger.Service.SDL_Manager, "Query finished in " + search.elapsedNanoSeconds() + "ns and with a " + search.getReduction() + " reduction");
-
-            return ResponseEntity
-                    .ok()
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(resultOutputStream.toString());
-        }
-
-        catch (IOException e)
-        {
-            return ResponseEntity
-                    .internalServerError()
-                    .body("IOException when serializing result set: " + e.getMessage());
-        }
+        return ResponseEntity
+                .ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(result.toString());
     }
 
     private static Table<String> parseQuery(String queryStr)

@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class Result implements Externalizable
+public class Result
 {
     private final int k, size;
     private final List<Pair<File, Double>> tableScores;
@@ -68,13 +68,8 @@ public class Result implements Externalizable
         return this.tableScores.subList(0, this.k).iterator();
     }
 
-    /**
-     * Writes results in JSON format
-     * @param out the stream to write the results to
-     * @throws IOException When an error occurs during writing result to disk
-     */
     @Override
-    public void writeExternal(ObjectOutput out) throws IOException
+    public String toString()
     {
         JsonObject object = new JsonObject();
         JsonArray array = new JsonArray(getK());
@@ -128,12 +123,7 @@ public class Result implements Externalizable
         object.add("scores", array);
         object.addProperty("runtime", this.runtime);
         object.addProperty("reduction", this.reduction);
-        out.writeObject(object.toString());
-    }
 
-    @Override
-    public void readExternal(ObjectInput in)
-    {
-        throw new UnsupportedOperationException("Reading result is not supports");
+        return object.getAsString();
     }
 }
