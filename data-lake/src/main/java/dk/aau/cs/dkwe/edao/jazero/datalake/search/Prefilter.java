@@ -1,12 +1,10 @@
 package dk.aau.cs.dkwe.edao.jazero.datalake.search;
 
-import dk.aau.cs.dkwe.edao.jazero.datalake.store.EmbeddingsIndex;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTableLink;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.SetLSHIndex;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.VectorLSHIndex;
-import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Pair;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.DynamicTable;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.Table;
@@ -27,23 +25,23 @@ public class Prefilter extends AbstractSearch
     private static final int SPLITS_SIZE = 3;
     private static final int MIN_EXISTS_IN = 2;
 
-    private Prefilter(EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink, EmbeddingsIndex<Id> embeddingsIndex)
+    private Prefilter(EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink)
     {
-        super(linker, entityTable, entityTableLink, embeddingsIndex);
+        super(linker, entityTable, entityTableLink);
     }
 
     public Prefilter(EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
-                     EmbeddingsIndex<Id> embeddingsIndex, SetLSHIndex setLSHIndex)
+                     SetLSHIndex setLSHIndex)
     {
-        this(linker, entityTable, entityTableLink, embeddingsIndex);
+        this(linker, entityTable, entityTableLink);
         this.setLSH = setLSHIndex;
         this.vectorsLSH = null;
     }
 
     public Prefilter(EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
-                     EmbeddingsIndex<Id> embeddingsIndex, VectorLSHIndex vectorLSHIndex)
+                     VectorLSHIndex vectorLSHIndex)
     {
-        this(linker, entityTable, entityTableLink, embeddingsIndex);
+        this(linker, entityTable, entityTableLink);
         this.vectorsLSH = vectorLSHIndex;
         this.setLSH = null;
     }

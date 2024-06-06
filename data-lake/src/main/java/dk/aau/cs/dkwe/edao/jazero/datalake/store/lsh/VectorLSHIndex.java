@@ -2,10 +2,11 @@ package dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import dk.aau.cs.dkwe.edao.jazero.datalake.store.EmbeddingsIndex;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityLinking;
+import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.PairNonComparable;
+import dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.Aggregator;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.ColumnAggregator;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.Table;
@@ -32,9 +33,9 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
     private final transient int threads;
     private transient final Object lock = new Object();
     private transient EntityLinking linker;
+    private transient EntityTable entityTable;
     private final HashFunction hash;
     private final transient Cache<Id, List<Integer>> cache;
-    private transient EmbeddingsIndex<Id> embeddingsIdx;
 
     /**
      * @param bucketCount Number of LSH index buckets
@@ -44,14 +45,14 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
      */
     public VectorLSHIndex(int bucketGroups, int bucketCount, int projections, int bandSize,
                           Set<PairNonComparable<String, Table<String>>> tables, int threads, RandomGenerator randomGenerator,
-                          EntityLinking linker, EmbeddingsIndex<Id> embeddings, HashFunction hash, boolean aggregateColumns)
+                          EntityLinking linker, EntityTable entityTable, HashFunction hash, boolean aggregateColumns)
     {
         super(bucketGroups, bucketCount);
         this.bandSize = bandSize;
         this.randomGen = randomGenerator;
         this.threads = threads;
         this.linker = linker;
-        this.embeddingsIdx = embeddings;
+        this.entityTable = entityTable;
         this.hash = hash;
         this.aggregateColumns = aggregateColumns;
         this.cache = CacheBuilder.newBuilder().maximumSize(500).build();
@@ -61,11 +62,6 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
     public void useEntityLinker(EntityLinking linker)
     {
         this.linker = linker;
-    }
-
-    public void useEmbeddingIndex(EmbeddingsIndex<Id> embeddingsIdx)
-    {
-        this.embeddingsIdx = embeddingsIdx;
     }
 
     private void load(Set<PairNonComparable<String, Table<String>>> tables, int projections)
@@ -78,13 +74,12 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
             throw new RuntimeException("No tables to load LSH index of embeddings");
         }
 
-        int dimension = this.embeddingsIdx.getDimension();
-
-        if (dimension == -1)
+        else if (!this.entityTable.allIds().hasNext())
         {
             throw new RuntimeException("No embeddings exists for table entities");
         }
 
+        int dimension = this.entityTable.find(this.entityTable.allIds().next()).getEmbedding().getDimension();
         this.projections = createProjections(projections, dimension, this.randomGen);
 
         for (PairNonComparable<String, Table<String>> table : tables)
@@ -129,8 +124,8 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
                     continue;
                 }
 
-                List<Double> embedding;
                 Id entityId = this.linker.uriLookup(entity);
+                Entity ent = this.entityTable.find(entityId);
                 List<Integer> keys;
 
                 if ((keys = this.cache.getIfPresent(entityId)) != null)
@@ -139,17 +134,7 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
                     continue;
                 }
 
-                synchronized (this.lock)
-                {
-                    embedding = this.embeddingsIdx.find(entityId);
-
-                    if (embedding == null)
-                    {
-                        continue;
-                    }
-                }
-
-                List<Integer> bitVector = bitVector(embedding);
+                List<Integer> bitVector = bitVector(ent.getEmbedding().toList());
                 keys = createKeys(this.projections.size(), this.bandSize, bitVector, groupSize(), this.hash);
                 this.cache.put(entityId, keys);
                 insertEntity(entityId, keys, tableName);
@@ -169,7 +154,7 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
                         return null;
                     }
 
-                    return this.embeddingsIdx.find(entityId);
+                    return this.entityTable.find(entityId).getEmbedding().toList();
                 }, coll -> Utils.averageVector(new ArrayList<>(coll)));
 
         for (List<Double> averageEmbedding : aggregatedColumns)
@@ -249,9 +234,9 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
             throw new RuntimeException("Missing EntityLinker object");
         }
 
-        else if (this.embeddingsIdx == null)
+        else if (this.entityTable == null)
         {
-            throw new RuntimeException("Missing EmbeddingsIndex object");
+            throw new RuntimeException("Missing EntityTable object");
         }
 
         Id entityId = this.linker.uriLookup(entity);
@@ -261,7 +246,7 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
             throw new RuntimeException("Entity does not exist in specified EntityLinker object");
         }
 
-        List<Double> embedding = this.embeddingsIdx.find(entityId);
+        List<Double> embedding = this.entityTable.find(entityId).getEmbedding().toList();
 
         if (embedding == null)
         {
@@ -289,9 +274,9 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
             throw new RuntimeException("Missing EntityLinker object");
         }
 
-        else if (this.embeddingsIdx == null)
+        else if (this.entityTable == null)
         {
-            throw new RuntimeException("Missing EmbeddingsIndex object");
+            throw new RuntimeException("Missing EntityTable object");
         }
 
         Id entityId = this.linker.uriLookup(entity);
@@ -301,7 +286,7 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
             return new HashSet<>();
         }
 
-        List<Double> embedding = this.embeddingsIdx.find(entityId);
+        List<Double> embedding = this.entityTable.find(entityId).getEmbedding().toList();
 
         if (embedding == null || embedding.isEmpty())
         {
@@ -327,9 +312,9 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
             throw new RuntimeException("Missing EntityLinker object");
         }
 
-        else if (this.embeddingsIdx == null)
+        else if (this.entityTable == null)
         {
-            throw new RuntimeException("Missing EmbeddingsIndex object");
+            throw new RuntimeException("Missing EntityTable object");
         }
 
         List<List<Double>> keyEmbeddings = new ArrayList<>();
@@ -343,7 +328,7 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
                 continue;
             }
 
-            List<Double> embedding = this.embeddingsIdx.find(id);
+            List<Double> embedding = this.entityTable.find(id).getEmbedding().toList();
 
             if (embedding != null)
             {

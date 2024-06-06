@@ -1,6 +1,5 @@
 package dk.aau.cs.dkwe.edao.jazero.datalake;
 
-import com.google.gson.JsonObject;
 import dk.aau.cs.dkwe.edao.jazero.datalake.connector.DBDriverBatch;
 import dk.aau.cs.dkwe.edao.jazero.datalake.connector.EmbeddingsFactory;
 import dk.aau.cs.dkwe.edao.jazero.datalake.connector.ExplainableCause;
@@ -12,7 +11,6 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.parser.EmbeddingsParser;
 import dk.aau.cs.dkwe.edao.jazero.datalake.search.Prefilter;
 import dk.aau.cs.dkwe.edao.jazero.datalake.search.Result;
 import dk.aau.cs.dkwe.edao.jazero.datalake.search.TableSearch;
-import dk.aau.cs.dkwe.edao.jazero.datalake.store.EmbeddingsIndex;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTableLink;
@@ -48,7 +46,6 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     private static EntityLinking linker;
     private static EntityTable entityTable;
     private static EntityTableLink tableLink;
-    private static EmbeddingsIndex<Id> embeddingsIndex;
     private static SetLSHIndex typesLSH;
     private static VectorLSHIndex embeddingLSH;
     private static EndpointAnalysis analysis;
@@ -86,14 +83,12 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 linker = indexReader.getLinker();
                 entityTable = indexReader.getEntityTable();
                 tableLink = indexReader.getEntityTableLink();
-                embeddingsIndex = indexReader.getEmbeddingsIndex();
                 typesLSH = indexReader.getTypesLSH();
                 embeddingLSH = indexReader.getVectorsLSH();
 
                 typesLSH.useEntityLinker(linker);
                 typesLSH.useEntityTable(entityTable);
                 embeddingLSH.useEntityLinker(linker);
-                embeddingLSH.useEmbeddingIndex(embeddingsIndex);
             }
 
             catch (IOException | RuntimeException e)
@@ -264,12 +259,12 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
             if (lshType.equals("TYPES"))
             {
-                prefilter = new Prefilter(linker, entityTable, tableLink, embeddingsIndex, typesLSH);
+                prefilter = new Prefilter(linker, entityTable, tableLink, typesLSH);
             }
 
             else if (lshType.equals("EMBEDDINGS"))
             {
-                prefilter = new Prefilter(linker, entityTable, tableLink, embeddingsIndex, embeddingLSH);
+                prefilter = new Prefilter(linker, entityTable, tableLink, embeddingLSH);
             }
         }
 
@@ -283,21 +278,19 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         while (queryIterator.hasNext())
         {
             String entity = queryIterator.next();
-            IndexWriter.indexKGEntity(entity, linker, entityTable, kgService, embeddingsIndex, embeddingsDB);
+            IndexWriter.indexKGEntity(entity, linker, entityTable, kgService, embeddingsDB);
         }
 
         if (prefilter != null)
         {
-            search = new TableSearch(storageHandler, linker, entityTable, tableLink, embeddingsIndex, topK, THREADS,
-                    entitySimilarity, singleColumnPerEntity, weightedJaccard, useMaxSimilarityPerColumn,
-                    false, similarityMeasure, prefilter);
+            search = new TableSearch(storageHandler, linker, entityTable, tableLink, topK, THREADS, entitySimilarity,
+                    singleColumnPerEntity, weightedJaccard, useMaxSimilarityPerColumn, false, similarityMeasure, prefilter);
         }
 
         else
         {
-            search = new TableSearch(storageHandler, linker, entityTable, tableLink, embeddingsIndex, topK, THREADS,
-                    entitySimilarity, singleColumnPerEntity, weightedJaccard, useMaxSimilarityPerColumn,
-                    false, similarityMeasure);
+            search = new TableSearch(storageHandler, linker, entityTable, tableLink, topK, THREADS, entitySimilarity,
+                    singleColumnPerEntity, weightedJaccard, useMaxSimilarityPerColumn, false, similarityMeasure);
         }
 
         Result result = search.search(query);
@@ -680,14 +673,13 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
             if (Configuration.areIndexesLoaded())
             {
-                embeddingsIndex.clear();
                 linker.clear();
                 entityTable.clear();
                 tableLink.clear();
                 typesLSH.clear();
                 embeddingLSH.clear();
                 IndexWriter.synchronizeIndexes(new File(Configuration.getIndexDir()), linker, entityTable, tableLink,
-                        embeddingsIndex, typesLSH, embeddingLSH);
+                        typesLSH, embeddingLSH);
             }
 
             Configuration.setIndexesLoaded(false);

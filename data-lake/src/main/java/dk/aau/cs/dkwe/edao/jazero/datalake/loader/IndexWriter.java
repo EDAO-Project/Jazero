@@ -13,6 +13,7 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.store.*;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.HashFunction;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.SetLSHIndex;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.VectorLSHIndex;
+import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Embedding;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Pair;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.PairNonComparable;
@@ -55,7 +56,6 @@ public class IndexWriter implements IndexIO
     private final SynchronizedLinker<String, String> linker;
     private final SynchronizedIndex<Id, Entity> entityTable;
     private final SynchronizedIndex<Id, List<String>> entityTableLink;
-    private final SynchronizedIndex<Id, List<Double>> embeddingsIdx;
     private SetLSHIndex typesLSH;
     private VectorLSHIndex embeddingsLSH;
     private final DBDriverBatch<List<Double>, String> embeddingsDB;
@@ -109,7 +109,6 @@ public class IndexWriter implements IndexIO
         this.el = elService;
         this.threads = threads;
         this.linker = SynchronizedLinker.wrap(new EntityLinking(wikiPrefix, uriPrefix));
-        this.embeddingsIdx = SynchronizedIndex.wrap(new EmbeddingsIndex<>());
         this.entityTable = SynchronizedIndex.wrap(new EntityTable());
         this.entityTableLink = SynchronizedIndex.wrap(new EntityTableLink());
         ((EntityTableLink) this.entityTableLink.index()).setDirectory(files.get(0).toFile().getParent() + "/");
@@ -169,7 +168,7 @@ public class IndexWriter implements IndexIO
         writeStats();
         this.tableStats.clear();    // Save memory before writing index objects to disk
         synchronizeIndexes(this.indexDir, this.linker.linker(), this.entityTable.index(), this.entityTableLink.index(),
-                this.embeddingsIdx.index(), this.typesLSH, this.embeddingsLSH);
+                this.typesLSH, this.embeddingsLSH);
         genNeo4jTableMappings();
 
         this.elapsed = System.nanoTime() - startTime;
@@ -196,7 +195,7 @@ public class IndexWriter implements IndexIO
 
         Logger.log(Logger.Level.INFO, "Loaded LSH index 1/2");
         this.embeddingsLSH = new VectorLSHIndex(bucketGroups, bucketsPerGroup, permutations, bandSize, this.tableEntities,
-                this.threads, new Random(0), getEntityLinker(), getEmbeddingsIndex(), HASH_FUNCTION_BOOLEAN, false);
+                this.threads, new Random(0), getEntityLinker(), getEntityTable(), HASH_FUNCTION_BOOLEAN, false);
         Logger.log(Logger.Level.INFO, "Loaded LSH index 2/2");
     }
 
@@ -209,8 +208,7 @@ public class IndexWriter implements IndexIO
      * @param kg KG service
      */
     public static synchronized String indexEntity(String entity, EntityLinking linker, EntityTable entityTable,
-                                                  ELService el, KGService kg, EmbeddingsIndex<?> embeddingsIndex,
-                                                  DBDriverBatch<List<Double>, String> embeddingsDB)
+                                                  ELService el, KGService kg, DBDriverBatch<List<Double>, String> embeddingsDB)
     {
         String uri = linker.mapTo(entity);
 
@@ -226,13 +224,9 @@ public class IndexWriter implements IndexIO
 
                 Id entityId = linker.uriLookup(uri);
                 List<Double> embeddings = embeddingsDB.select(uri.replace("'", "''"));
+                Embedding e = new Embedding(embeddings);
                 entityTable.insert(entityId,
-                        new Entity(uri, entityTypes.stream().map(Type::new).collect(Collectors.toList()), entityPredicates));
-
-                if (embeddings != null)
-                {
-                    embeddingsIndex.insert(entityId, embeddings);
-                }
+                        new Entity(uri, entityTypes.stream().map(Type::new).collect(Collectors.toList()), entityPredicates, e));
             }
         }
 
@@ -245,11 +239,10 @@ public class IndexWriter implements IndexIO
      * @param linker Entity linking indes
      * @param entityTable Entity index
      * @param kg KG service
-     * @param embeddingsIndex Embeddings index
      * @param embeddingsDB Embeddings database
      */
     public static void indexKGEntity(String uri, EntityLinking linker, EntityTable entityTable, KGService kg,
-                                     EmbeddingsIndex<?> embeddingsIndex, DBDriverBatch<List<Double>, String> embeddingsDB)
+                                     DBDriverBatch<List<Double>, String> embeddingsDB)
     {
         if (linker.uriLookup(uri) != null)
         {
@@ -259,17 +252,13 @@ public class IndexWriter implements IndexIO
         List<String> types = kg.searchTypes(uri), predicates = kg.searchPredicates(uri);
         types.removeAll(DISALLOWED_ENTITY_TYPES);
 
-        Entity entity = new Entity(uri, types.stream().map(Type::new).collect(Collectors.toList()), predicates);
-        linker.addMapping(linker.getTableEntityPrefix(), uri);
-
-        Id entityId = linker.uriLookup(uri);
         List<Double> embeddings = embeddingsDB.select(uri.replace("'", "''"));
-        entityTable.insert(entityId, entity);
+        Embedding e = new Embedding(embeddings);
+        Id entityId = linker.uriLookup(uri);
 
-        if (embeddings != null)
-        {
-            embeddingsIndex.insert(entityId, embeddings);
-        }
+        Entity entity = new Entity(uri, types.stream().map(Type::new).collect(Collectors.toList()), predicates, e);
+        linker.addMapping(linker.getTableEntityPrefix(), uri);
+        entityTable.insert(entityId, entity);
     }
 
     /**
@@ -286,7 +275,7 @@ public class IndexWriter implements IndexIO
             String mention = entity.first();
             Pair<Integer, Integer> location = entity.second();
             String uri = indexEntity(mention, ((EntityLinking) this.linker.linker()), ((EntityTable) this.entityTable.index()),
-                    this.el, this.kg, ((EmbeddingsIndex<?>) this.embeddingsIdx.index()), this.embeddingsDB);
+                    this.el, this.kg, this.embeddingsDB);
             List<String> matchesUris = new ArrayList<>();
             this.cellsWithLinks.incrementAndGet();
 
@@ -525,8 +514,7 @@ public class IndexWriter implements IndexIO
 
     public synchronized static void synchronizeIndexes(File indexDir, Linker<String, String> linker,
                                                        Index<Id, Entity> entityTable, Index<Id, List<String>> entityTableLink,
-                                                       Index<Id, List<Double>> embeddingsIdx, SetLSHIndex typesLSH,
-                                                       VectorLSHIndex embeddingsLSH) throws IOException
+                                                       SetLSHIndex typesLSH, VectorLSHIndex embeddingsLSH) throws IOException
     {
         // Entity linker
         ObjectOutputStream outputStream =
@@ -544,12 +532,6 @@ public class IndexWriter implements IndexIO
         // Entity to tables inverted index
         outputStream = new ObjectOutputStream(new FileOutputStream(indexDir + "/" + Configuration.getEntityToTablesFile()));
         outputStream.writeObject(entityTableLink);
-        outputStream.flush();
-        outputStream.close();
-
-        // Embeddings index
-        outputStream = new ObjectOutputStream(new FileOutputStream(indexDir + "/" + Configuration.getEmbeddingsIndexFile()));
-        outputStream.writeObject(embeddingsIdx);
         outputStream.flush();
         outputStream.close();
 
@@ -659,15 +641,6 @@ public class IndexWriter implements IndexIO
     public EntityTableLink getEntityTableLinker()
     {
         return (EntityTableLink) this.entityTableLink.index();
-    }
-
-    /**
-     * Getter to embeddings index
-     * @return Loaded embeddings index
-     */
-    public EmbeddingsIndex<Id> getEmbeddingsIndex()
-    {
-        return (EmbeddingsIndex<Id>) this.embeddingsIdx.index();
     }
 
     /**

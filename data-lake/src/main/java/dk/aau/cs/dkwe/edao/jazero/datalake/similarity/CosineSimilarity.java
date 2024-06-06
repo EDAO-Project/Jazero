@@ -9,6 +9,11 @@ public class CosineSimilarity implements Similarity
 
     private CosineSimilarity(List<Double> l1, List<Double> l2)
     {
+        if (l1.size() != l2.size())
+        {
+            throw new IllegalArgumentException("Vectors are not of the same dimension");
+        }
+
         this.l1 = l1;
         this.l2 = l2;
     }
@@ -18,7 +23,6 @@ public class CosineSimilarity implements Similarity
         return new CosineSimilarity(l1, l2);
     }
 
-    // TODO: Maybe throw exception if the lists are of unequal lengths
     @Override
     public double similarity()
     {

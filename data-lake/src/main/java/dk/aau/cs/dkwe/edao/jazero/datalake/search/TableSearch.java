@@ -4,10 +4,10 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.loader.Stats;
 import dk.aau.cs.dkwe.edao.jazero.datalake.parser.ParsingException;
 import dk.aau.cs.dkwe.edao.jazero.datalake.parser.TableParser;
 import dk.aau.cs.dkwe.edao.jazero.datalake.similarity.JaccardSimilarity;
-import dk.aau.cs.dkwe.edao.jazero.datalake.store.EmbeddingsIndex;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTableLink;
+import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Embedding;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Pair;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph.Entity;
@@ -57,8 +57,6 @@ public class TableSearch extends AbstractSearch
         EMBEDDINGS_NORM, EMBEDDINGS_ABS, EMBEDDINGS_ANG;
     }
 
-    public enum CosineSimilarityFunction {NORM_COS, ABS_COS, ANG_COS}
-
     private final int topK, threads;
     private int embeddingComparisons, nonEmbeddingComparisons,
             embeddingCoverageSuccesses, embeddingCoverageFails;
@@ -75,11 +73,10 @@ public class TableSearch extends AbstractSearch
     private Prefilter prefilter;
 
     public TableSearch(StorageHandler tableStorage, EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
-                       EmbeddingsIndex<Id> embeddingIdx, int topK, int threads, EntitySimilarity entitySim,
-                       boolean singleColumnPerQueryEntity, boolean weightedJaccard, boolean useMaxSimilarityPerColumn,
-                       boolean hungarianAlgorithmSameAlignmentAcrossTuples, SimilarityMeasure similarityMeasure)
+                       int topK, int threads, EntitySimilarity entitySim, boolean singleColumnPerQueryEntity, boolean weightedJaccard,
+                       boolean useMaxSimilarityPerColumn, boolean hungarianAlgorithmSameAlignmentAcrossTuples, SimilarityMeasure similarityMeasure)
     {
-        super(linker, entityTable, entityTableLink, embeddingIdx);
+        super(linker, entityTable, entityTableLink);
         this.topK = topK;
         this.threads = threads;
         this.simProp = entitySim;
@@ -92,11 +89,10 @@ public class TableSearch extends AbstractSearch
     }
 
     public TableSearch(StorageHandler tableStorage, EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
-                       EmbeddingsIndex<Id> embeddingIdx, int topK, int threads, EntitySimilarity entitySim,
-                       boolean singleColumnPerQueryEntity, boolean weightedJaccard, boolean useMaxSimilarityPerColumn,
-                       boolean hungarianAlgorithmSameAlignmentAcrossTuples, SimilarityMeasure similarityMeasure, Prefilter prefilter)
+                       int topK, int threads, EntitySimilarity entitySim, boolean singleColumnPerQueryEntity, boolean weightedJaccard,
+                       boolean useMaxSimilarityPerColumn, boolean hungarianAlgorithmSameAlignmentAcrossTuples, SimilarityMeasure similarityMeasure, Prefilter prefilter)
     {
-        this(tableStorage, linker, entityTable, entityTableLink, embeddingIdx, topK, threads, entitySim, singleColumnPerQueryEntity,
+        this(tableStorage, linker, entityTable, entityTableLink, topK, threads, entitySim, singleColumnPerQueryEntity,
                 weightedJaccard, useMaxSimilarityPerColumn, hungarianAlgorithmSameAlignmentAcrossTuples,
                 similarityMeasure);
         this.prefilter = prefilter;
@@ -490,16 +486,8 @@ public class TableSearch extends AbstractSearch
             return 0.0;
         }
 
-        List<Double> ent1Embeddings = getEmbeddingIndex().find(id1),
-                ent2Embeddings = getEmbeddingIndex().find(id2);
-
-        if (ent1Embeddings == null || ent2Embeddings == null)
-        {
-            return 0.0;
-        }
-
-        double cosineSim = Utils.cosineSimilarity(ent1Embeddings, ent2Embeddings),
-                simScore = 0.0;
+        Embedding e1 = getEntityTable().find(id1).getEmbedding(), e2 = getEntityTable().find(id2).getEmbedding();
+        double cosineSim = e1.cosine(e2), simScore = 0.0;
 
         if (this.simProp == EntitySimilarity.EMBEDDINGS_NORM)
             simScore = (cosineSim + 1.0) / 2.0;
@@ -528,7 +516,7 @@ public class TableSearch extends AbstractSearch
         try
         {
             Id id = getLinker().uriLookup(entity);
-            return id != null && getEmbeddingIndex().find(id) != null;
+            return id != null && getEntityTable().find(id) != null;
         }
 
         catch (IllegalArgumentException exc)

@@ -1,5 +1,7 @@
 package dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph;
 
+import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Embedding;
+
 import java.io.Serializable;
 import java.util.List;
 
@@ -7,24 +9,26 @@ public class Entity implements Comparable<Entity>, Serializable
 {
     private final String uri;
     private final List<Type> types;
-    private List<String> predicates;
+    private final List<String> predicates;
+    private final Embedding embedding;
     private double idf = -1;
 
     public Entity(String uri)
     {
-        this(uri, List.of(), List.of());
+        this(uri, List.of(), List.of(), new Embedding(List.of()));
     }
 
-    public Entity(String uri, List<Type> types, List<String> predicates)
+    public Entity(String uri, List<Type> types, List<String> predicates, Embedding embedding)
     {
         this.uri = uri;
         this.types = types;
         this.predicates = predicates;
+        this.embedding = embedding;
     }
 
-    public Entity(String uri, double idf, List<Type> types, List<String> predicates)
+    public Entity(String uri, double idf, List<Type> types, List<String> predicates, Embedding embedding)
     {
-        this(uri, types, predicates);
+        this(uri, types, predicates, embedding);
         this.idf = idf;
     }
 
@@ -41,6 +45,11 @@ public class Entity implements Comparable<Entity>, Serializable
     public List<String> getPredicates()
     {
         return this.predicates;
+    }
+
+    public Embedding getEmbedding()
+    {
+        return this.embedding;
     }
 
     public double getIDF()
