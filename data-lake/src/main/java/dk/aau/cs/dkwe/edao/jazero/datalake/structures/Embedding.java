@@ -38,4 +38,14 @@ public class Embedding implements Comparable<Embedding>, Serializable
         double cosine = cosine(e);
         return Double.compare(0.0, cosine);
     }
+
+    @Override
+    public boolean equals(Object other)
+    {
+        if (!(other instanceof Embedding))
+            return false;
+
+        Embedding o = (Embedding) other;
+        return this.embedding.equals(o.embedding) && this.dimension == o.dimension;
+    }
 }

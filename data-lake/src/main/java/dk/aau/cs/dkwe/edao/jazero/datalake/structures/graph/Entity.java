@@ -68,7 +68,7 @@ public class Entity implements Comparable<Entity>, Serializable
         if (!(o instanceof Entity other))
             return false;
 
-        return this.uri.equals(other.uri) && this.types.equals(other.types);
+        return this.uri.equals(other.uri) && this.types.equals(other.types) && this.predicates.equals(other.predicates) && this.embedding.equals(other.embedding);
     }
 
     @Override

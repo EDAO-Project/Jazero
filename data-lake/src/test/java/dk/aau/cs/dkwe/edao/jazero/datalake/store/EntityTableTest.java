@@ -1,5 +1,6 @@
 package dk.aau.cs.dkwe.edao.jazero.datalake.store;
 
+import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Embedding;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph.Type;
@@ -14,9 +15,10 @@ public class EntityTableTest
 {
     private final EntityTable entTable = new EntityTable();
     private final Id id1 = Id.alloc(), id2 = Id.alloc(), id3 = Id.alloc();
-    Entity ent1 = new Entity("uri1", List.of(new Type("type1"), new Type("type2"), new Type("type3")), List.of()),
-            ent2 = new Entity("uri2", List.of(new Type("type2"), new Type("type3")), List.of()),
-            ent3 = new Entity("uri3", List.of(new Type("type1"), new Type("type2")), List.of());
+    private final Embedding e = new Embedding(List.of(1.1, 2.2, 3.3));
+    Entity ent1 = new Entity("uri1", List.of(new Type("type1"), new Type("type2"), new Type("type3")), List.of(), this.e),
+            ent2 = new Entity("uri2", List.of(new Type("type2"), new Type("type3")), List.of(), this.e),
+            ent3 = new Entity("uri3", List.of(new Type("type1"), new Type("type2")), List.of(), this.e);
 
     @BeforeEach
     public void init()
