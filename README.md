@@ -31,7 +31,7 @@ This can run in parallel with the index construction in the entity linker.
 docker exec jazero_neo4j /scripts/install.sh
 ```
 
-Once you see a tabular output, restart the Neo4J container and start populating the KG.
+Once the download is complete, restart the Neo4J container and start populating the KG.
 
 ```bash
 docker restart jazero_neo4j
@@ -92,6 +92,13 @@ This includes the entity itself. Below is an example of what an embeddings file 
 https://dbpedia.org/page/Barack_Obama -3.21 13.2122 53.32 -2.23 0.4353 8.231
 https://dbpedia.org/page/Lionel_Messi 2.432 9.3213 -32.231 21.432 -21.022 53.1133
 https://dbpedia.org/page/Eiffel_Tower -34.422 -7.231 5.312 -1.435 0.543 12.440
+```
+
+When loading the embeddings into Jazero, they will be stored in a Postgres instance.
+You can access the embeddings directly in the Postgres instance by running the following command.
+
+```bash
+docker exec -it jazero_pg psql -U jazero embeddings
 ```
 
 ##### Loading Tables and Indexes

@@ -218,15 +218,8 @@ public class IndexWriter implements IndexIO
 
             if (uri != null)
             {
-                List<String> entityTypes = kg.searchTypes(uri), entityPredicates = kg.searchPredicates(uri);
                 linker.addMapping(entity, uri);
-                entityTypes.removeAll(DISALLOWED_ENTITY_TYPES);
-
-                Id entityId = linker.uriLookup(uri);
-                List<Double> embeddings = embeddingsDB.select(uri.replace("'", "''"));
-                Embedding e = new Embedding(embeddings);
-                entityTable.insert(entityId,
-                        new Entity(uri, entityTypes.stream().map(Type::new).collect(Collectors.toList()), entityPredicates, e));
+                indexKGEntity(uri, linker, entityTable, kg, embeddingsDB);
             }
         }
 
@@ -244,7 +237,9 @@ public class IndexWriter implements IndexIO
     public static void indexKGEntity(String uri, EntityLinking linker, EntityTable entityTable, KGService kg,
                                      DBDriverBatch<List<Double>, String> embeddingsDB)
     {
-        if (linker.uriLookup(uri) != null)
+        Id entityId = linker.uriLookup(uri);
+
+        if (entityId != null && entityTable.contains(entityId))
         {
             return;
         }
@@ -254,10 +249,10 @@ public class IndexWriter implements IndexIO
 
         List<Double> embeddings = embeddingsDB.select(uri.replace("'", "''"));
         Embedding e = new Embedding(embeddings);
-        Id entityId = linker.uriLookup(uri);
-
         Entity entity = new Entity(uri, types.stream().map(Type::new).collect(Collectors.toList()), predicates, e);
-        linker.addMapping(linker.getTableEntityPrefix(), uri);
+        linker.addMapping("###BLANK###", uri);  // This depends on the addMapping() implementation and ensures that the URI is assigned an ID
+
+        entityId = linker.uriLookup(uri);
         entityTable.insert(entityId, entity);
     }
 
