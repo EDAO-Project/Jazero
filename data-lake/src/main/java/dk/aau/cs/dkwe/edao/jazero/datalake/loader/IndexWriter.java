@@ -467,7 +467,11 @@ public class IndexWriter implements IndexIO
         {
             Id entityId = idIter.next();
             double idf = Math.log10((double) this.loadedTables.get() / this.entityTableLink.find(entityId).size()) + 1;
-            this.entityTable.find(entityId).setIDF(idf);
+
+            if (this.entityTable.contains(entityId))
+            {
+                this.entityTable.find(entityId).setIDF(idf);
+            }
         }
     }
 
