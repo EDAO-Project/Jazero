@@ -483,15 +483,19 @@ public class IndexWriter implements IndexIO
         while (idIterator.hasNext())
         {
             Id id = idIterator.next();
-            List<Type> entityTypes = this.entityTable.find(id).getTypes();
 
-            for (Type t : entityTypes)
+            if (this.entityTable.contains(id))
             {
-                if (entityTypeFrequency.containsKey(t))
-                    entityTypeFrequency.put(t, entityTypeFrequency.get(t) + 1);
+                List<Type> entityTypes = this.entityTable.find(id).getTypes();
 
-                else
-                    entityTypeFrequency.put(t, 1);
+                for (Type t : entityTypes)
+                {
+                    if (entityTypeFrequency.containsKey(t))
+                        entityTypeFrequency.put(t, entityTypeFrequency.get(t) + 1);
+
+                    else
+                        entityTypeFrequency.put(t, 1);
+                }
             }
         }
 
@@ -501,13 +505,16 @@ public class IndexWriter implements IndexIO
         while (idIterator.hasNext())
         {
             Id id = idIterator.next();
-            this.entityTable.find(id).getTypes().forEach(t -> {
-                if (entityTypeFrequency.containsKey(t))
-                {
-                    double idf = Utils.log2((double) totalEntityCount / entityTypeFrequency.get(t));
-                    t.setIdf(idf);
-                }
-            });
+            if (this.entityTable.contains(id))
+            {
+                this.entityTable.find(id).getTypes().forEach(t -> {
+                    if (entityTypeFrequency.containsKey(t))
+                    {
+                        double idf = Utils.log2((double) totalEntityCount / entityTypeFrequency.get(t));
+                        t.setIdf(idf);
+                    }
+                });
+            }
         }
     }
 
