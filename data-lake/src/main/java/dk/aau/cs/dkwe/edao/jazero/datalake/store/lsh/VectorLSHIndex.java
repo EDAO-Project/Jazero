@@ -134,10 +134,13 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
                     continue;
                 }
 
-                List<Integer> bitVector = bitVector(ent.getEmbedding().toList());
-                keys = createKeys(this.projections.size(), this.bandSize, bitVector, groupSize(), this.hash);
-                this.cache.put(entityId, keys);
-                insertEntity(entityId, keys, tableName);
+                else if (ent != null)
+                {
+                    List<Integer> bitVector = bitVector(ent.getEmbedding().toList());
+                    keys = createKeys(this.projections.size(), this.bandSize, bitVector, groupSize(), this.hash);
+                    this.cache.put(entityId, keys);
+                    insertEntity(entityId, keys, tableName);
+                }
             }
         }
     }
