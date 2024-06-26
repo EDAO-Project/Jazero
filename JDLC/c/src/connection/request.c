@@ -43,16 +43,17 @@ static size_t callback(void *contents, size_t size, size_t n, void *buffer)
 {
     size_t full_size = size * n;
     struct request_response *res = (struct request_response *) buffer;
-    res->msg = (char *) malloc(full_size + 1);
+    res->length += full_size;
+    char *new_buffer = (char *) realloc(res->msg, res->length);
 
-    if (res->msg == NULL)
+    if (new_buffer == NULL)
     {
         return -1;
     }
 
-    memcpy(res->msg, contents, full_size);
-    res->msg[full_size] = '\0';
-    res->length = full_size;
+    res->msg = new_buffer;
+    memcpy(res->msg + (res->length - full_size), contents, full_size);
+    res->msg[res->length] = '\0';
     return full_size;
 }
 
@@ -105,7 +106,7 @@ struct request_response request_perform(struct request req, struct address addr)
 {
     CURL *handle = curl_easy_init();
     char *url = get_url(addr);
-    struct request_response res;
+    struct request_response res = {.length = 0, .msg = (char *) malloc(1)};
     struct curl_slist headers = make_headers(req.props);
     prepare(handle, url, &headers, req, &res);
 
