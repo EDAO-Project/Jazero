@@ -17,6 +17,7 @@
                 "-k, --topk : Top-K value\n" \
                 "-m, --similaritymeasure : Similarity measure between vectors of entity scores ('EUCLIDEAN', 'COSINE')\n" \
                 "-f, --prefilter : Type of LSH pre-filter ('TYPES', 'EMBEDDINGS')\n" \
+                "-qt, --querytime : Maximum amount of seconds allowed to be spend on indexing before query execution (optional and only used during progressive indexing)\n" \
                 "\ninsert, insertembeddings\n" \
                 "-j, --jazerodir : Absolute path to Jazero directory on the machine running Jazero\n" \
                 "\ninsert\n" \
@@ -43,7 +44,7 @@ struct arguments
     enum cosine_function cos_func;
     enum similarity_measure sim_measure;
     enum prefilter filter;
-    int top_k, signature_size, band_size, parse_error;
+    int top_k, signature_size, band_size, parse_error, query_time;
     enum entity_similarity entity_sim;
 };
 
@@ -84,7 +85,7 @@ static response do_load(const char *ip, const char *username, const char *passwo
 
 static response do_search(const char *ip, const char *username, const char *password, const char *query_file,
                           enum entity_similarity entity_sim, enum cosine_function cos_func, int top_k,
-                                  enum similarity_measure measure, enum prefilter filter)
+                                  enum similarity_measure measure, enum prefilter filter, int query_time)
 {
     if (!file_exists(query_file))
     {
@@ -99,7 +100,7 @@ static response do_search(const char *ip, const char *username, const char *pass
         return (response) {.status = REQUEST_ERROR, .msg = "Could not parse JSON query file"};
     }
 
-    return search(ip, u, q, top_k, entity_sim, measure, cos_func, filter);
+    return search(ip, u, q, top_k, entity_sim, measure, cos_func, filter, query_time);
 }
 
 static response do_ping(const char *ip, const char *username, const char *password)
@@ -260,6 +261,10 @@ error_t parse(const char *key, const char *arg, struct arguments *args)
             args->error_msg = "Could not parse passed value for 'similaritymeasure'";
         }
     }
+    else if (check_key(key, "-qt", "--querytime"))
+    {
+        args->query_time = strtol(arg, NULL, 10);
+    }
 
     else if (check_key(key, "-l", "--location"))
     {
@@ -373,7 +378,7 @@ int main(int argc, char *argv[])
 {
     response ret;
     struct arguments args = {.parse_error = 0, .entity_sim = TYPE, .top_k = 100, .sim_measure = EUCLIDEAN,
-            .storage_type = "NATIVE", .table_prefix = "", .kg_prefix = "", .delimiter = " ",
+            .storage_type = "NATIVE", .table_prefix = "", .kg_prefix = "", .delimiter = " ", .query_time = 0,
             .signature_size = 30, .band_size = 10, .filter = NONE};
     args.error_msg = NULL;
     args.host = NULL;
@@ -466,7 +471,7 @@ int main(int argc, char *argv[])
             }
 
             ret = do_search(args.host, args.this_username, args.this_password, args.query_file,
-                            args.entity_sim, args.cos_func, args.top_k,args.sim_measure, args.filter);
+                            args.entity_sim, args.cos_func, args.top_k,args.sim_measure, args.filter, args.query_time);
             break;
 
         case PING:

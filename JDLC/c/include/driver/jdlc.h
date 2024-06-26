@@ -87,7 +87,7 @@ const char *remove_user_body(char *buffer, const char *username);
 const char *load_embeddings_body(char *buffer, const char *file, const char *delimiter);
 const char *load_body(char *buffer, const char *table_dir, const char *table_entity_prefix, const char *kg_prefix);
 const char *search_body(char *buffer, uint32_t top_k, enum entity_similarity entity_sim, enum cosine_function function,
-        enum similarity_measure sim, enum prefilter lsh_prefilter, query q);
+        enum similarity_measure sim, enum prefilter lsh_prefilter, int query_time, query q);
 uint8_t init(jdlc *restrict conn, enum operation op, struct address addr, struct properties headers, const char *body);
 response perform(jdlc conn);
 
