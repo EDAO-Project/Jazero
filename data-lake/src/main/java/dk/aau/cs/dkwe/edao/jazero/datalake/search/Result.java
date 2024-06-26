@@ -124,6 +124,6 @@ public class Result
         object.addProperty("runtime", this.runtime);
         object.addProperty("reduction", this.reduction);
 
-        return object.getAsString();
+        return object.toString();
     }
 }
