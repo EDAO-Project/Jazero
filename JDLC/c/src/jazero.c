@@ -284,7 +284,7 @@ response load(const char *ip, user u, const char *storage_type, const char *tabl
         return mem_error;
     }
 
-    load_body(body, TABLES_MOUNT, table_entity_prefix, kg_entity_prefix);
+    load_body(body, TABLES_MOUNT, table_entity_prefix, kg_entity_prefix, progressive);
 
     char *body_copy = (char *) realloc(body, strlen(body));
 
