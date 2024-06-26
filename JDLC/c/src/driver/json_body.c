@@ -8,10 +8,11 @@ const char *load_embeddings_body(char *buffer, const char *file, const char *del
     return buffer;
 }
 
-const char *load_body(char *buffer, const char *table_dir, const char *table_entity_prefix, const char *kg_prefix)
+const char *load_body(char *buffer, const char *table_dir, const char *table_entity_prefix, const char *kg_prefix, uint8_t progressive)
 {
-    sprintf(buffer, "{\"directory\": \"%s\", \"table-prefix\": \"%s\", \"kg-prefix\": \"%s\"}",
-            table_dir, table_entity_prefix, kg_prefix);
+    char *progressive_str = progressive ? "true": "false";
+    sprintf(buffer, "{\"directory\": \"%s\", \"table-prefix\": \"%s\", \"kg-prefix\": \"%s\", \"progressive\": \"%s\"}",
+            table_dir, table_entity_prefix, kg_prefix, progressive_str);
     return buffer;
 }
 

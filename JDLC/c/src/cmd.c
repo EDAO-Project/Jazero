@@ -27,6 +27,7 @@
                 "-i, --kgentityprefix : Prefix of KG entity IRIs\n" \
                 "-g, --signaturesize : Size of signature or number of permutation/projection vectors\n" \
                 "-b, --bandsize : Size of signature bands\n" \
+                "-prog, --progressive : Enable progressive indexing ('true', 'false')" \
                 "\ninsertembeddings\n" \
                 "-e, --embeddings : Absolute path to embeddings file on the machine running Jazero\n" \
                 "-d, --delimiter : Delimiter in embeddings file (see README)\n" \
@@ -44,7 +45,7 @@ struct arguments
     enum cosine_function cos_func;
     enum similarity_measure sim_measure;
     enum prefilter filter;
-    int top_k, signature_size, band_size, parse_error, query_time;
+    int top_k, signature_size, band_size, parse_error, query_time, progressive;
     enum entity_similarity entity_sim;
 };
 
@@ -67,7 +68,7 @@ static response do_insert_embeddings(const char *ip, const char *username, const
 
 static response do_load(const char *ip, const char *username, const char *password, const char *jazero_dir,
                         const char *table_dir, const char *storage_type, const char *table_prefix, const char *kg_prefix,
-                        int signature_size, int band_size)
+                        int signature_size, int band_size, int progressive)
 {
     if (!file_exists(jazero_dir))
     {
@@ -80,7 +81,7 @@ static response do_load(const char *ip, const char *username, const char *passwo
     }
 
     user u = create_user(username, password);
-    return load(ip, u, storage_type, table_prefix, kg_prefix, signature_size, band_size, jazero_dir, table_dir, 1);
+    return load(ip, u, storage_type, table_prefix, kg_prefix, signature_size, band_size, jazero_dir, table_dir, progressive, 1);
 }
 
 static response do_search(const char *ip, const char *username, const char *password, const char *query_file,
@@ -339,6 +340,25 @@ error_t parse(const char *key, const char *arg, struct arguments *args)
         }
     }
 
+    else if (check_key(key, "-prog", "--progressive"))
+    {
+        if (strcmp(arg, "true") == 0)
+        {
+            args->progressive = 1;
+        }
+
+        else if (strcmp(arg, "false") == 0)
+        {
+            args->progressive = 0;
+        }
+
+        else
+        {
+            args->parse_error = 1;
+            args->error_msg = "Could not parse passed value for 'progressive'";
+        }
+    }
+
     else if (check_key(key, "-u", "--username"))
     {
         args->this_username = (char *) arg;
@@ -460,7 +480,7 @@ int main(int argc, char *argv[])
 
             ret = do_load(args.host, args.this_username, args.this_password, args.jazero_dir,
                           args.table_loc, args.storage_type, args.table_prefix, args.kg_prefix, args.signature_size,
-                          args.band_size);
+                          args.band_size, args.progressive);
             break;
 
         case SEARCH:

@@ -21,8 +21,8 @@ int test_load_embeddings(void)
 int test_load(void)
 {
     char *buffer = (char *) malloc(250);
-    load_body(buffer, "some/dir/", "www", "http://www");
-    const char *expected = "{\"directory\": \"some/dir/\", \"table-prefix\": \"www\", \"kg-prefix\": \"http://www\"}";
+    load_body(buffer, "some/dir/", "www", "http://www", 1);
+    const char *expected = "{\"directory\": \"some/dir/\", \"table-prefix\": \"www\", \"kg-prefix\": \"http://www\", \"progressive\": \"true\"}";
 
     if (strstr(buffer, expected) == NULL)
     {
