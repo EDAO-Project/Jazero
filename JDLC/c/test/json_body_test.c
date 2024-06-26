@@ -54,11 +54,11 @@ int test_search(void)
 
     query q = make_query((const char ***) rows, 2, 3);
     char *buffer = (char *) malloc(1000);
-    search_body(buffer, 10, 1, NORM_COS, EUCLIDEAN, EMBEDDINGS, q);
+    search_body(buffer, 10, 1, NORM_COS, EUCLIDEAN, EMBEDDINGS, 5, q);
     const char *expected = "{\"top-k\": \"10\", \"use_embeddings\": \"true\", \"cosine-function\": \"COSINE_NORM\", "
                            "\"single-column-per-query-entity\": \"true\", \"weighted-jaccard\": \"false\", "
                            "\"use-max-similarity-per-column\": \"true\", \"similarity-measure\": \"EUCLIDEAN\", "
-                           "\"lsh\": \"EMBEDDINGS\", \"query\": \"e11<>e12<>e13#e21<>e22<>e23\"}";
+                           "\"lsh\": \"EMBEDDINGS\", \"query-time\", 5, \"query\": \"e11<>e12<>e13#e21<>e22<>e23\"}";
 
     if (strstr(buffer, expected) == NULL)
     {
