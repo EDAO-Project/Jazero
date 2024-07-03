@@ -24,23 +24,19 @@ public class Result
     private double reduction = 0;
     private static final double MAX_MEM_LIMIT_FACTOR = 0.45;    // In case the query is run locally, the total memory consumption will be double to store the results
 
-    public Result(int k, List<Pair<File, Double>> tableScores, double runtime, Map<String, Stats> tableStats)
+    public Result(int k, List<Pair<File, Double>> tableScores, double runtime, double reduction, Map<String, Stats> tableStats)
     {
         this.k = k;
         this.size = Math.min(k, tableScores.size());
         this.tableScores = tableScores;
         this.stats = tableStats;
         this.runtime = runtime;
-    }
-
-    public Result(int k, Map<String, Stats> tableStats, double runtime, Pair<File, Double> ... tableScores)
-    {
-        this(k, List.of(tableScores), runtime, tableStats);
-    }
-
-    public void setReduction(double reduction)
-    {
         this.reduction = reduction;
+    }
+
+    public Result(int k, Map<String, Stats> tableStats, double runtime, double reduction, Pair<File, Double> ... tableScores)
+    {
+        this(k, List.of(tableScores), runtime, reduction, tableStats);
     }
 
     public int getK()

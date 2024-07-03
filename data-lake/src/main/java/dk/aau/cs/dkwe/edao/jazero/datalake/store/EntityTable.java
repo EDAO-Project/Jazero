@@ -8,7 +8,7 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- * Indexing of entities containing types
+ * Hash index of KG entities
  */
 public class EntityTable implements Index<Id, Entity>, Serializable
 {

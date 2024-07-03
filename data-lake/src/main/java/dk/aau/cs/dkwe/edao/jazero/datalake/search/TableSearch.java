@@ -206,7 +206,7 @@ public class TableSearch extends AbstractSearch
                 Logger.log(Logger.Level.INFO, "Query Entities with missing embedding coverage: " + this.queryEntitiesMissingCoverage + "\n");
             }
 
-            return new Result(this.topK, scores, this.elapsed, this.tableStats);
+            return new Result(this.topK, scores, this.elapsed, this.reduction, this.tableStats);
         }
 
         catch (RuntimeException e)

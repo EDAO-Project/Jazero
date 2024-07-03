@@ -7,6 +7,8 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.connector.service.ELService;
 import dk.aau.cs.dkwe.edao.jazero.datalake.connector.service.KGService;
 import dk.aau.cs.dkwe.edao.jazero.datalake.loader.IndexReader;
 import dk.aau.cs.dkwe.edao.jazero.datalake.loader.IndexWriter;
+import dk.aau.cs.dkwe.edao.jazero.datalake.loader.progressive.Event;
+import dk.aau.cs.dkwe.edao.jazero.datalake.loader.progressive.ProgressiveIndexWriter;
 import dk.aau.cs.dkwe.edao.jazero.datalake.parser.EmbeddingsParser;
 import dk.aau.cs.dkwe.edao.jazero.datalake.search.Prefilter;
 import dk.aau.cs.dkwe.edao.jazero.datalake.search.Result;
@@ -17,6 +19,7 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTableLink;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.SetLSHIndex;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.VectorLSHIndex;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Id;
+import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Pair;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph.Type;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.DynamicTable;
@@ -51,7 +54,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     private static EndpointAnalysis analysis;
     private static final int THREADS = 4;
     private static final File DATA_DIR = new File("/index/mappings/");
-    private boolean indexLoadingInProgress = false, embeddingsLoadingInProgress = false;
+    private boolean indexLoadingInProgress = false, progressiveLoadingInProgress = false, embeddingsLoadingInProgress = false;
+    private static IndexWriter indexer;
 
     @Override
     public void customize(ConfigurableWebServerFactory factory)
@@ -62,18 +66,18 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     public static void main(String[] args)
     {
         FileLogger.log(FileLogger.Service.SDL_Manager, "Starting...");
-        loadIndexes();
+        loadIndexes(true);
 
         FileLogger.log(FileLogger.Service.SDL_Manager, "Started");
         FileLogger.log(FileLogger.Service.SDL_Manager, "SDL Manager available at 0.0.0.0:" + Configuration.getSDLManagerPort());
         SpringApplication.run(DataLake.class, args);
     }
 
-    private static void loadIndexes()
+    private static void loadIndexes(boolean fromDisk)
     {
         analysis = new EndpointAnalysis();
 
-        if (Configuration.areIndexesLoaded())
+        if (fromDisk && Configuration.areIndexesLoaded())
         {
             try
             {
@@ -85,10 +89,6 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 tableLink = indexReader.getEntityTableLink();
                 typesLSH = indexReader.getTypesLSH();
                 embeddingLSH = indexReader.getVectorsLSH();
-
-                typesLSH.useEntityLinker(linker);
-                typesLSH.useEntityTable(entityTable);
-                embeddingLSH.useEntityLinker(linker);
             }
 
             catch (IOException | RuntimeException e)
@@ -97,6 +97,19 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 Configuration.setIndexesLoaded(false);
             }
         }
+
+        else
+        {
+            linker = indexer.getEntityLinker();
+            entityTable = indexer.getEntityTable();
+            tableLink = indexer.getEntityTableLinker();
+            typesLSH = indexer.getTypesLSH();
+            embeddingLSH = indexer.getEmbeddingsLSH();
+        }
+
+        typesLSH.useEntityLinker(linker);
+        typesLSH.useEntityTable(entityTable);
+        embeddingLSH.useEntityLinker(linker);
     }
 
     private static Authenticator.Auth authenticateUser(Map<String, String> headers)
@@ -140,8 +153,9 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      *                  "single-column-per-query-entity": "<BOOLEAN VALUE>",
      *                  "use-max-similarity-per-column": "<BOOLEAN VALUE>",
      *                  ["weighted-jaccard": "<BOOLEAN VALUE>,]
-     *                  ["cosine-function": "NORM_COS|ABS_COS|ANG_COS"]
+     *                  ["cosine-function": "NORM_COS|ABS_COS|ANG_COS",]
      *                  ["lsh": "TYPES|EMBEDDINGS",]
+     *                  ["query-time": <TIME IN SECONDS>]
      *                  "query": "<QUERY STRING>"
      *             }
      * <p>
@@ -149,8 +163,9 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      *             and each tuple element is separated by a diamond (<>).
      * @return JSON array of found tables. Each element is a pair of table ID and score.
      */
+    // TODO: Check if progressive indexing is in progress. If so, retrieve the partially constructed indexes from the ProgressiveIndexWriter class.
     @PostMapping(value = "/search")
-    public ResponseEntity<String> search(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
+    public ResponseEntity<String> search(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body) throws InterruptedException
     {
         if (authenticateUser(headers) == Authenticator.Auth.NOT_AUTH)
         {
@@ -201,6 +216,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         boolean singleColumnPerEntity = Boolean.parseBoolean(body.get("single-column-per-query-entity"));
         boolean useMaxSimilarityPerColumn = Boolean.parseBoolean(body.get("use-max-similarity-per-column"));
         boolean weightedJaccard = false;
+        int queryTime = Integer.parseInt(body.getOrDefault("query-time", "0"));
         String entitySimStr = body.get("entity-similarity");
         TableSearch.SimilarityMeasure similarityMeasure = TableSearch.SimilarityMeasure.valueOf(body.get("similarity-measure"));
         Prefilter prefilter = null;
@@ -293,7 +309,29 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                     singleColumnPerEntity, weightedJaccard, useMaxSimilarityPerColumn, false, similarityMeasure);
         }
 
+        if (this.progressiveLoadingInProgress)
+        {
+            TimeUnit.SECONDS.sleep(queryTime);
+            ((ProgressiveIndexWriter) indexer).pauseIndexing();
+            loadIndexes(false);
+        }
+
         Result result = search.search(query);
+
+        if (this.progressiveLoadingInProgress)
+        {
+            Iterator<Pair<File, Double>> resultIter = result.getResults();
+            ((ProgressiveIndexWriter) indexer).continueIndexing();
+            List<String> resultTableIds = new ArrayList<>(result.getSize());
+
+            while (resultIter.hasNext())
+            {
+                String fileName = resultIter.next().first().getName();
+                resultTableIds.add(fileName.split("\\.")[0]);
+            }
+
+            ((ProgressiveIndexWriter) indexer).triggerEvent(new Event(resultTableIds, Event.Type.SEARCH));
+        }
 
         if (result == null)
         {
@@ -301,7 +339,6 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             return ResponseEntity.internalServerError().body("Result set is null");
         }
 
-        result.setReduction(search.getReduction());
         return ResponseEntity
                 .ok()
                 .contentType(MediaType.APPLICATION_JSON)
@@ -339,7 +376,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      *             {
      *                  "directory": "<DIRECTORY>",
      *                  "table-prefix": "<TABLE PREFIX>",
-     *                  "kg-prefix": "<KG PREFIX>"
+     *                  "kg-prefix": "<KG PREFIX>",
+     *                  ["progressive": "<BOOLEAN VALUE>"]
      *             }
      * <p>
      *             "table-prefix" is the common prefix for table entities, just like kg-prefix. If the prefix differs
@@ -406,6 +444,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             return ResponseEntity.badRequest().body("Missing table entity prefix '" + kgPrefixKey + "' in JSON string");
         }
 
+        boolean isProgressive = Boolean.parseBoolean(body.getOrDefault("progressive", "false"));
         File dir = new File(body.get(dirKey));
         StorageHandler.StorageType storageType = StorageHandler.StorageType.valueOf(headers.get("storage-type"));
         Configuration.setStorageType(storageType);
@@ -441,9 +480,31 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             Configuration.setBandSize(bandSize);
             Logger.log(Logger.Level.INFO, "There are " + filePaths.size() + " files to be processed.");
 
-            IndexWriter indexWriter = new IndexWriter(filePaths, new File(Configuration.getIndexDir()), DATA_DIR, storageType,
+            if (isProgressive)
+            {
+                this.progressiveLoadingInProgress = true;
+                Runnable cleanup = () -> {
+                    this.indexLoadingInProgress = false;
+                    this.progressiveLoadingInProgress = false;
+                    embeddingStore.close();
+                    Configuration.setIndexesLoaded(true);
+                    loadIndexes(false);
+                    FileLogger.log(FileLogger.Service.SDL_Manager, "Progressively loaded " + indexer.loadedTables() + " tables in " +
+                            TimeUnit.SECONDS.convert(indexer.elapsedTime(), TimeUnit.NANOSECONDS) + "s");
+                    analysis.record("insert-progressive", 1);
+                };
+                indexer = new ProgressiveIndexWriter(filePaths, new File(Configuration.getIndexDir()), DATA_DIR,
+                        storageType, kgService, elService, embeddingStore, THREADS, body.get(tablePrefixKey), body.get(kgPrefixKey),
+                        null, cleanup);
+                indexer.performIO();
+                Logger.log(Logger.Level.INFO, "Started progressive loading of " + filePaths.size() + " tables");
+
+                return ResponseEntity.ok("Started progressive loading of " + filePaths.size() + " tables");
+            }
+
+            indexer = new IndexWriter(filePaths, new File(Configuration.getIndexDir()), DATA_DIR, storageType,
                     kgService, elService, embeddingStore, THREADS, body.get(tablePrefixKey), body.get(kgPrefixKey));
-            indexWriter.performIO();
+            indexer.performIO();
             embeddingStore.close();
 
             if (!kgService.insertLinks(DATA_DIR))
@@ -453,29 +514,31 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             }
 
             Set<Type> entityTypes = new HashSet<>();
-            Iterator<Id> idIter = indexWriter.getEntityLinker().uriIds();
+            Iterator<Id> idIter = indexer.getEntityLinker().uriIds();
 
             while (idIter.hasNext())
             {
-                Entity entity = indexWriter.getEntityTable().find(idIter.next());
+                Entity entity = indexer.getEntityTable().find(idIter.next());
 
                 if (entity != null)
                     entityTypes.addAll(entity.getTypes());
             }
 
             totalTime = System.nanoTime() - totalTime;
-            Logger.log(Logger.Level.INFO, "Found an approximate total of " + indexWriter.getApproximateEntityMentions() + " unique entity mentions across " + indexWriter.cellsWithLinks() + " cells \n");
+            Logger.log(Logger.Level.INFO, "Found an approximate total of " + indexer.getApproximateEntityMentions() +
+                    " unique entity mentions across " + indexer.cellsWithLinks() + " cells \n");
             Logger.log(Logger.Level.INFO, "There are in total " + entityTypes.size() + " unique entity types across all discovered entities.");
             Logger.log(Logger.Level.INFO, "Indexing took " +
-                    TimeUnit.SECONDS.convert(indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s");
+                    TimeUnit.SECONDS.convert(indexer.elapsedTime(), TimeUnit.NANOSECONDS) + "s");
             Configuration.setIndexesLoaded(true);
-            loadIndexes();
-            FileLogger.log(FileLogger.Service.SDL_Manager, "Loaded " + indexWriter.loadedTables() + " tables in " + TimeUnit.SECONDS.convert(indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s");
+            loadIndexes(true);
+            FileLogger.log(FileLogger.Service.SDL_Manager, "Loaded " + indexer.loadedTables() + " tables in " +
+                    TimeUnit.SECONDS.convert(indexer.elapsedTime(), TimeUnit.NANOSECONDS) + "s");
             analysis.record("insert", 1);
             this.indexLoadingInProgress = false;
 
-            return ResponseEntity.ok("Loaded tables: " + indexWriter.loadedTables() + "\nIndex time: " +
-                    TimeUnit.SECONDS.convert(indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s\nTotal elapsed time: " +
+            return ResponseEntity.ok("Loaded tables: " + indexer.loadedTables() + "\nIndex time: " +
+                    TimeUnit.SECONDS.convert(indexer.elapsedTime(), TimeUnit.NANOSECONDS) + "s\nTotal elapsed time: " +
                     TimeUnit.SECONDS.convert(totalTime, TimeUnit.NANOSECONDS) + "s");
         }
 

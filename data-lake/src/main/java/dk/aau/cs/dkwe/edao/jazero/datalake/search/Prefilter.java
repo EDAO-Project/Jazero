@@ -81,7 +81,7 @@ public class Prefilter extends AbstractSearch
         }
 
         this.elapsed = System.nanoTime() - start;
-        return new Result(candidates.size(), candidates, this.elapsed, new HashMap<>());
+        return new Result(candidates.size(), candidates, this.elapsed, 0.0, new HashMap<>());
     }
 
     private Set<String> searchFromTable(Table<String> query)

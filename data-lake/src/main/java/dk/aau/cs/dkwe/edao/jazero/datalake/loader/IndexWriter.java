@@ -43,34 +43,34 @@ import java.util.stream.Collectors;
 
 public class IndexWriter implements IndexIO
 {
-    private final List<Path> files;
-    private final File indexDir, dataDir;
-    private final StorageHandler storage;
+    protected List<Path> files;
+    protected final File indexDir, dataDir;
+    protected final StorageHandler storage;
     private final int threads;
-    AtomicLong loadedTables = new AtomicLong(0);
-    private final AtomicInteger  cellsWithLinks = new AtomicInteger(0), tableStatsCollected = new AtomicInteger(0);
-    private final Object lock = new Object(), incrementLock = new Object();
-    private long elapsed = -1;
+    protected AtomicLong loadedTables = new AtomicLong(0);
+    protected final AtomicInteger  cellsWithLinks = new AtomicInteger(0), tableStatsCollected = new AtomicInteger(0);
+    protected final Object lock = new Object(), incrementLock = new Object();
+    protected long elapsed = -1;
     private final KGService kg;
     private final ELService el;
-    private final SynchronizedLinker<String, String> linker;
-    private final SynchronizedIndex<Id, Entity> entityTable;
-    private final SynchronizedIndex<Id, List<String>> entityTableLink;
-    private SetLSHIndex typesLSH;
-    private VectorLSHIndex embeddingsLSH;
+    protected final SynchronizedLinker<String, String> linker;
+    protected final SynchronizedIndex<Id, Entity> entityTable;
+    protected final SynchronizedIndex<Id, List<String>> entityTableLink;
+    protected SetLSHIndex typesLSH;
+    protected VectorLSHIndex embeddingsLSH;
     private final DBDriverBatch<List<Double>, String> embeddingsDB;
-    private final BloomFilter<String> filter = BloomFilter.create(
+    protected final BloomFilter<String> filter = BloomFilter.create(
             Funnels.stringFunnel(Charset.defaultCharset()),
             5_000_000,
             0.01);
-    private final Map<String, Stats> tableStats = new TreeMap<>();
-    private final Set<PairNonComparable<String, Table<String>>> tableEntities = Collections.synchronizedSet(new HashSet<>());
+    protected final Map<String, Stats> tableStats = new TreeMap<>();
+    protected final Set<PairNonComparable<String, Table<String>>> tableEntities = Collections.synchronizedSet(new HashSet<>());
 
     private static final List<String> DISALLOWED_ENTITY_TYPES =
             Arrays.asList("http://www.w3.org/2002/07/owl#Thing", "http://www.wikidata.org/entity/Q5");
     private static final String STATS_DIR = "statistics/";
 
-    private static final HashFunction HASH_FUNCTION_NUMERIC = (obj, num) -> {
+    protected static final HashFunction HASH_FUNCTION_NUMERIC = (obj, num) -> {
         List<Integer> sig = (List<Integer>) obj;
         int sum1 = 0, sum2 = 0, size = sig.size();
 
@@ -82,7 +82,7 @@ public class IndexWriter implements IndexIO
 
         return ((sum2 << 8) | sum1) % num;
     };
-    private static final HashFunction HASH_FUNCTION_BOOLEAN = (obj, num) -> {
+    protected static final HashFunction HASH_FUNCTION_BOOLEAN = (obj, num) -> {
         List<Integer> vector = (List<Integer>) obj;
         int sum = 0, dim = vector.size();
 
@@ -95,7 +95,8 @@ public class IndexWriter implements IndexIO
     };
 
     public IndexWriter(List<Path> files, File indexPath, File dataOutputPath, StorageHandler.StorageType storageType, KGService kgService,
-                       ELService elService, DBDriverBatch<List<Double>, String> embeddingStore, int threads, String wikiPrefix, String uriPrefix)
+                       ELService elService, DBDriverBatch<List<Double>, String> embeddingStore, int threads, String wikiPrefix,
+                       String uriPrefix)
     {
         if (files.isEmpty())
             throw new IllegalArgumentException("Missing files to load");
@@ -175,7 +176,6 @@ public class IndexWriter implements IndexIO
         Logger.log(Logger.Level.INFO, "Done");
         Logger.log(Logger.Level.INFO, "A total of " + this.loadedTables.get() + " tables were loaded");
         Logger.log(Logger.Level.INFO, "Elapsed time: " + this.elapsed / (1e9) + " seconds");
-        Logger.log(Logger.Level.INFO, "Computing IDF weights...");
     }
 
     private void loadLSHIndexes()
@@ -226,6 +226,12 @@ public class IndexWriter implements IndexIO
         return uri;
     }
 
+    protected String indexEntity(String entity)
+    {
+        return indexEntity(entity, ((EntityLinking) this.linker.linker()), ((EntityTable) this.entityTable.index()),
+                this.el, this.kg, this.embeddingsDB);
+    }
+
     /**
      * Indexing of query entity of KG entities
      * @param uri KG entity
@@ -248,7 +254,7 @@ public class IndexWriter implements IndexIO
         types.removeAll(DISALLOWED_ENTITY_TYPES);
 
         List<Double> embeddings = embeddingsDB.select(uri.replace("'", "''"));
-        Embedding e = new Embedding(embeddings);
+        Embedding e = embeddings == null ? null : new Embedding(embeddings);
         Entity entity = new Entity(uri, types.stream().map(Type::new).collect(Collectors.toList()), predicates, e);
         linker.addMapping("###BLANK###", uri);  // This depends on the addMapping() implementation and ensures that the URI is assigned an ID
 
@@ -256,12 +262,17 @@ public class IndexWriter implements IndexIO
         entityTable.insert(entityId, entity);
     }
 
+    protected void indexKGEntity(String uri)
+    {
+        indexKGEntity(uri, ((EntityLinking) this.linker.linker()), ((EntityTable) this.entityTable.index()), this.kg, this.embeddingsDB);
+    }
+
     /**
      * Updates indexes with new entities
      * @param entities Set of entities and their table location
      * @return Mapping from location to KG URI
      */
-    private Map<Pair<Integer, Integer>, List<String>> update(Set<PairNonComparable<String, Pair<Integer, Integer>>> entities, String tableName)
+    protected Map<Pair<Integer, Integer>, List<String>> update(Set<PairNonComparable<String, Pair<Integer, Integer>>> entities, String tableName)
     {
         Map<Pair<Integer, Integer>, List<String>> entityMatches = new HashMap<>();
 
@@ -269,8 +280,7 @@ public class IndexWriter implements IndexIO
         {
             String mention = entity.first();
             Pair<Integer, Integer> location = entity.second();
-            String uri = indexEntity(mention, ((EntityLinking) this.linker.linker()), ((EntityTable) this.entityTable.index()),
-                    this.el, this.kg, this.embeddingsDB);
+            String uri = indexEntity(mention);
             List<String> matchesUris = new ArrayList<>();
             this.cellsWithLinks.incrementAndGet();
 
@@ -453,7 +463,7 @@ public class IndexWriter implements IndexIO
         }
     }
 
-    private void loadIDFs()
+    protected void loadIDFs()
     {
         loadEntityIDFs();
         loadTypeIDFs();
@@ -505,6 +515,7 @@ public class IndexWriter implements IndexIO
         while (idIterator.hasNext())
         {
             Id id = idIterator.next();
+
             if (this.entityTable.contains(id))
             {
                 this.entityTable.find(id).getTypes().forEach(t -> {
@@ -554,7 +565,7 @@ public class IndexWriter implements IndexIO
         outputStream.close();
     }
 
-    private void genNeo4jTableMappings() throws IOException
+    protected void genNeo4jTableMappings() throws IOException
     {
         FileOutputStream outputStream = new FileOutputStream(this.dataDir + "/" + Configuration.getTableToEntitiesFile());
         OutputStreamWriter writer = new OutputStreamWriter(outputStream);

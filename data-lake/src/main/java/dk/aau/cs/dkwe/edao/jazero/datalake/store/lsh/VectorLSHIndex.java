@@ -131,7 +131,6 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
                 if ((keys = this.cache.getIfPresent(entityId)) != null)
                 {
                     insertEntity(entityId, keys, tableName);
-                    continue;
                 }
 
                 else if (ent != null)
