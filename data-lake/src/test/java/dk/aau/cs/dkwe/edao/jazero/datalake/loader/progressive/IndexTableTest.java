@@ -34,21 +34,21 @@ public class IndexTableTest
     public void testGetTable()
     {
         assertNull(this.indexTable.getTable());
-        assertTrue(this.indexTable.index());
+        assertNotNull(this.indexTable.index());
         assertEquals(13, this.indexTable.getTable().rowCount());
     }
 
     @Test
     public void testGetId()
     {
-        assertTrue(this.indexTable.index());
+        assertNotNull(this.indexTable.index());
         assertEquals("table-0832-36.json", this.indexTable.getId());
     }
 
     @Test
     public void testTablePath()
     {
-        assertTrue(this.indexTable.index());
+        assertNotNull(this.indexTable.index());
         assertEquals(this.tableFile.toPath(), this.indexTable.getFilePath());
     }
 
@@ -56,12 +56,12 @@ public class IndexTableTest
     public void testIsIndexed()
     {
         assertFalse(this.indexTable.isIndexed());
-        assertTrue(this.indexTable.index());
+        assertNotNull(this.indexTable.index());
         assertFalse(this.indexTable.isIndexed());
 
         while (this.indexTable.getTable().rowCount() > 0)
         {
-            assertTrue(this.indexTable.index());
+            assertNotNull(this.indexTable.index());
         }
 
         assertTrue(this.indexTable.isIndexed());

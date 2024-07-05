@@ -1,6 +1,7 @@
 package dk.aau.cs.dkwe.edao.jazero.datalake.loader.progressive;
 
 import java.util.Collection;
+import java.util.function.Consumer;
 
 /**
  * Scheduler that select the table of the highest priority to schedule
@@ -36,5 +37,11 @@ public class PriorityScheduler implements Scheduler
         }
 
         return this.queue.popIndexable();
+    }
+
+    @Override
+    public void update(String id, Consumer<Indexable> update)
+    {
+        this.queue.update(id, update);
     }
 }

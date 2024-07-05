@@ -50,12 +50,12 @@ public class PrioritySchedulerQueueTest
     @Test
     public void testUpdate()
     {
-        this.queue.update("path2", (indexable -> indexable.setPriority(3)));
+        this.queue.update("path2.json", (indexable -> indexable.setPriority(3)));
         assertEquals(3, this.queue.countPriorities());
         assertEquals(3, this.queue.countElements());
 
-        this.queue.update("path1", (indexable -> indexable.setPriority(3)));
-        this.queue.update("path3", (indexable) -> indexable.setPriority(3));
+        this.queue.update("path1.json", (indexable -> indexable.setPriority(3)));
+        this.queue.update("path3.json", (indexable) -> indexable.setPriority(3));
         assertEquals(1, this.queue.countPriorities());
         assertEquals(3, this.queue.countElements());
     }
@@ -64,6 +64,6 @@ public class PrioritySchedulerQueueTest
     public void testPopIndexable()
     {
         Indexable popped = this.queue.popIndexable();
-        assertEquals("path3", popped.getId());
+        assertEquals("path3.json", popped.getId());
     }
 }

@@ -10,7 +10,7 @@ public class IndexTable implements Indexable, Comparable<IndexTable>
 {
     private final Path filePath;
     private final String fileId;
-    private int priority;
+    private double priority;
     private Table<String> table = null;
     private int currentRow = 0;
     private final ItemIndexer<Table.Row<String>> indexRow;
@@ -20,7 +20,7 @@ public class IndexTable implements Indexable, Comparable<IndexTable>
         this(filePath, 0, consumeRow);
     }
 
-    public IndexTable(Path filePath, int priority, ItemIndexer<Table.Row<String>> consumeRow)
+    public IndexTable(Path filePath, double priority, ItemIndexer<Table.Row<String>> consumeRow)
     {
         this.filePath = filePath;
         this.fileId = filePath.toFile().getName();
@@ -28,24 +28,28 @@ public class IndexTable implements Indexable, Comparable<IndexTable>
         this.priority = priority;
     }
 
+    /**
+     * Indexes the top row of the table
+     * @return The indexed table row or null
+     */
     @Override
-    public boolean index()
+    public Object index()
     {
         if (this.table == null && !loadTable())
         {
-            throw new RuntimeException("Table '" + this.fileId + "' could not be parsed before being indexed");
+            throw new RuntimeException("Table '" + this.fileId + "' could not be parsed before indexing");
         }
 
         else if (isIndexed())
         {
-            return false;
+            return null;
         }
 
         Table.Row<String> rowToIndex = this.table.getRow(0);
         this.table.removeRow(0);
         this.indexRow.index(this.fileId, this.currentRow++, rowToIndex);
 
-        return true;
+        return rowToIndex;
     }
 
     /**
@@ -53,7 +57,7 @@ public class IndexTable implements Indexable, Comparable<IndexTable>
      * @return Table to index or null if indexing hasn't yet been invoked
      */
     @Override
-    public Object getIndexable()
+    public Table<String> getIndexable()
     {
         return this.table;
     }
@@ -113,7 +117,7 @@ public class IndexTable implements Indexable, Comparable<IndexTable>
     }
 
     @Override
-    public int getPriority()
+    public double getPriority()
     {
         return this.priority;
     }
@@ -123,7 +127,7 @@ public class IndexTable implements Indexable, Comparable<IndexTable>
      * @param priority Priority to be assigned to the currently top row to be indexed
      */
     @Override
-    public void setPriority(int priority)
+    public void setPriority(double priority)
     {
         this.priority = priority;
     }
@@ -141,7 +145,7 @@ public class IndexTable implements Indexable, Comparable<IndexTable>
             return 0;
         }
 
-        int comp = Integer.compare(o.priority, this.priority);
+        int comp = Double.compare(o.priority, this.priority);
 
         if (comp == 0)
         {

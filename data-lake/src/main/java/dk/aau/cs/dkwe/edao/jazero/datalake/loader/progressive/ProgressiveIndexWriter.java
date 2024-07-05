@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * Main class for progressively indexing of tables in an adaptive fashion
@@ -34,7 +35,9 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
     private final Scheduler scheduler;
     private final Map<String, Table<String>> indexedTables = new HashMap<>();
     private final int corpusSize;
-    private int indexedRows = 0;
+    private int indexedRows = 0, largestTable = -1;
+    private double maxPriority = -1.0;
+    private final HashSet<String> insertedIds = new HashSet<>();
     private static final int PRE_LOAD_ROWS_THRES = 2500;
 
     public ProgressiveIndexWriter(List<Path> files, File indexPath, File dataOutputPath, StorageHandler.StorageType storageType,
@@ -73,35 +76,47 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
                 }
 
                 Indexable item = this.scheduler.next();
-                Table.Row<String> indexedRow = ((Table<String>) item.getIndexable()).getRow(0);
-                item.index();
-                this.indexedRows++;
-                // TODO: Change the priority here
+                Table.Row<String> indexedRow = (Table.Row<String>) item.index();
 
-                if (this.indexedRows >= PRE_LOAD_ROWS_THRES)
+                if (indexedRow != null)
+                {
+                    int tableSize = item.getIndexable().rowCount();
+                    double decrement = (double) this.largestTable / tableSize;
+                    item.setPriority(item.getPriority() - decrement);
+                    this.largestTable = Math.max(this.largestTable, tableSize);
+                    this.maxPriority = Math.max(this.maxPriority, item.getPriority() - decrement);
+                    this.indexedRows++;
+
+                    synchronized (this.lock)
+                    {
+                        if (!item.isIndexed())
+                        {
+                            if (!this.indexedTables.containsKey(item.getId()))
+                            {
+                                this.indexedTables.put(item.getId(), new DynamicTable<>());
+                            }
+
+                            this.scheduler.addIndexTable(item);
+                            this.indexedTables.get(item.getId()).addRow(indexedRow);
+                        }
+
+                        else
+                        {
+                            Logger.log(Logger.Level.INFO, "Fully indexed " + super.loadedTables.get() + "/" + this.corpusSize + " tables");
+                        }
+
+                        if (this.insertedIds.contains(item.getId()))
+                        {
+                            super.storage.insert(((IndexTable) item).getFilePath().toFile());
+                            this.insertedIds.add(item.getId());
+                        }
+                    }
+                }
+
+                if (this.indexedRows >= PRE_LOAD_ROWS_THRES)    // TODO: Remove this when HNSW pre-filtering is implemented
                 {
                     Logger.log(Logger.Level.INFO, "Starting to load LSH indexes");
                     preLoadLSH();
-                }
-
-                if (!item.isIndexed())
-                {
-                    if (!this.indexedTables.containsKey(item.getId()))
-                    {
-                        this.indexedTables.put(item.getId(), new DynamicTable<>());
-                    }
-
-                    this.scheduler.addIndexTable(item);
-                    this.indexedTables.get(item.getId()).addRow(indexedRow);
-                }
-
-                else
-                {
-                    synchronized (super.lock)
-                    {
-                        super.storage.insert(((IndexTable) item).getFilePath().toFile());
-                        Logger.log(Logger.Level.INFO, "Fully indexed " + super.loadedTables.get() + "/" + this.corpusSize + " tables");
-                    }
                 }
             }
 
@@ -179,15 +194,14 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
     }
 
     /**
-     * Adds a new table to the scheduler
+     * Adds a new table to the scheduler and assigns the table the currently highest priority
      * @param tablePath Path to the table file
      * @return True if the table was added to the scheduler and false if the table file could not be parsed
      */
     @Override
     public boolean addTable(Path tablePath)
     {
-        // TODO: Compute its correct priority
-        IndexTable tableToIndex = new IndexTable(tablePath, 0, this::indexRow);
+        IndexTable tableToIndex = new IndexTable(tablePath, this.maxPriority, this::indexRow);
         this.scheduler.addIndexTable(tableToIndex);
 
         return true;
@@ -215,6 +229,7 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
     public void pauseIndexing()
     {
         this.isPaused = true;
+        this.isRunning = false;
     }
 
     /**
@@ -224,24 +239,26 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
     public void continueIndexing()
     {
         this.isPaused = false;
+        this.isRunning = true;
         this.schedulerThread.interrupt();
     }
 
     /**
-     * Triggers an event that updates the priorities of indexable tables
-     * @param event Event that describes the type of event and the involved tables
+     * Checks whether the progressive indexing is still running
+     * @return True if progressive indexing is currently running
      */
-    @Override
-    public void triggerEvent(Event event)
-    {
-        switch (event.type())
-        {
-            case INSERTION:
-        }
-    }
-
     public boolean isRunning()
     {
         return this.isRunning;
+    }
+
+    /**
+     * Allows updating indexables externally
+     * @param id ID of indexable to update
+     * @param update Procedure for updating the identified indexable
+     */
+    public void updatePriority(String id, Consumer<Indexable> update)
+    {
+        this.scheduler.update(id, update);
     }
 }

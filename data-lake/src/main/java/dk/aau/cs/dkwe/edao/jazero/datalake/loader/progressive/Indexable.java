@@ -1,11 +1,13 @@
 package dk.aau.cs.dkwe.edao.jazero.datalake.loader.progressive;
 
+import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.Table;
+
 public interface Indexable
 {
-    boolean index();
-    Object getIndexable();
+    Object index();
+    Table<String> getIndexable();
     String getId();
-    int getPriority();
-    void setPriority(int priority);
+    double getPriority();
+    void setPriority(double priority);
     boolean isIndexed();
 }

@@ -284,6 +284,13 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             }
         }
 
+        if (this.progressiveLoadingInProgress)
+        {
+            TimeUnit.SECONDS.sleep(queryTime);
+            ((ProgressiveIndexWriter) indexer).pauseIndexing();
+            loadIndexes(false);
+        }
+
         Table<String> query = parseQuery(body.get("query"));
         Iterator<String> queryIterator = query.iterator();
         StorageHandler storageHandler = new StorageHandler(Configuration.getStorageType());
@@ -309,28 +316,20 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                     singleColumnPerEntity, weightedJaccard, useMaxSimilarityPerColumn, false, similarityMeasure);
         }
 
-        if (this.progressiveLoadingInProgress)
-        {
-            TimeUnit.SECONDS.sleep(queryTime);
-            ((ProgressiveIndexWriter) indexer).pauseIndexing();
-            loadIndexes(false);
-        }
-
         Result result = search.search(query);
 
         if (this.progressiveLoadingInProgress)
         {
             Iterator<Pair<File, Double>> resultIter = result.getResults();
             ((ProgressiveIndexWriter) indexer).continueIndexing();
-            List<String> resultTableIds = new ArrayList<>(result.getSize());
 
             while (resultIter.hasNext())
             {
-                String fileName = resultIter.next().first().getName();
-                resultTableIds.add(fileName.split("\\.")[0]);
+                Pair<File, Double> table = resultIter.next();
+                String id = table.first().getName();
+                double score = table.second();
+                ((ProgressiveIndexWriter) indexer).updatePriority(id, (i) -> i.setPriority(i.getPriority() * (1 + score))); // TODO: Multiple the score with alpha
             }
-
-            ((ProgressiveIndexWriter) indexer).triggerEvent(new Event(resultTableIds, Event.Type.SEARCH));
         }
 
         if (result == null)

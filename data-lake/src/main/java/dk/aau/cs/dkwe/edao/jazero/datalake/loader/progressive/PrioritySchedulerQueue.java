@@ -9,8 +9,8 @@ import java.util.function.Consumer;
  */
 public class PrioritySchedulerQueue implements SchedulerQueue
 {
-    private final TreeMap<Integer, Set<Indexable>> map = new TreeMap<>((e1, e2) -> Integer.compare(e2, e1));
-    private final Map<String, Integer> invIndex = new HashMap<>();
+    private final TreeMap<Double, Set<Indexable>> map = new TreeMap<>((e1, e2) -> Double.compare(e2, e1));
+    private final Map<String, Double> invIndex = new HashMap<>();
 
     /**
      * Add an indexable to the priority queue
@@ -62,7 +62,7 @@ public class PrioritySchedulerQueue implements SchedulerQueue
     {
         if (this.invIndex.containsKey(id))
         {
-            int priority = this.invIndex.get(id);
+            double priority = this.invIndex.get(id);
             Set<Indexable> indexables = this.map.get(priority);
 
             for (Indexable indexable : indexables)

@@ -10,5 +10,4 @@ public interface ProgressiveIndexIO extends IndexIO
     void waitForCompletion();
     void pauseIndexing();
     void continueIndexing();
-    void triggerEvent(Event event);
 }
