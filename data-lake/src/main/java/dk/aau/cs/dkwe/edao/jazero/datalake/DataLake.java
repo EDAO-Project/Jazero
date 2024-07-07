@@ -78,39 +78,42 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     {
         analysis = new EndpointAnalysis();
 
-        if (fromDisk && Configuration.areIndexesLoaded())
+        if (Configuration.areIndexesLoaded())
         {
-            try
+            if (fromDisk)
             {
-                IndexReader indexReader = new IndexReader(new File(Configuration.getIndexDir()), true, true);
-                indexReader.performIO();
+                try
+                {
+                    IndexReader indexReader = new IndexReader(new File(Configuration.getIndexDir()), true, true);
+                    indexReader.performIO();
 
-                linker = indexReader.getLinker();
-                entityTable = indexReader.getEntityTable();
-                tableLink = indexReader.getEntityTableLink();
-                typesLSH = indexReader.getTypesLSH();
-                embeddingLSH = indexReader.getVectorsLSH();
+                    linker = indexReader.getLinker();
+                    entityTable = indexReader.getEntityTable();
+                    tableLink = indexReader.getEntityTableLink();
+                    typesLSH = indexReader.getTypesLSH();
+                    embeddingLSH = indexReader.getVectorsLSH();
+                }
+
+                catch (IOException | RuntimeException e)
+                {
+                    FileLogger.log(FileLogger.Service.SDL_Manager, "Failed loading indexes: " + e.getMessage());
+                    Configuration.setIndexesLoaded(false);
+                }
             }
 
-            catch (IOException | RuntimeException e)
+            else if (indexer != null)
             {
-                FileLogger.log(FileLogger.Service.SDL_Manager, "Failed loading indexes: " + e.getMessage());
-                Configuration.setIndexesLoaded(false);
+                linker = indexer.getEntityLinker();
+                entityTable = indexer.getEntityTable();
+                tableLink = indexer.getEntityTableLinker();
+                typesLSH = indexer.getTypesLSH();
+                embeddingLSH = indexer.getEmbeddingsLSH();
             }
-        }
 
-        else
-        {
-            linker = indexer.getEntityLinker();
-            entityTable = indexer.getEntityTable();
-            tableLink = indexer.getEntityTableLinker();
-            typesLSH = indexer.getTypesLSH();
-            embeddingLSH = indexer.getEmbeddingsLSH();
+            typesLSH.useEntityLinker(linker);
+            typesLSH.useEntityTable(entityTable);
+            embeddingLSH.useEntityLinker(linker);
         }
-
-        typesLSH.useEntityLinker(linker);
-        typesLSH.useEntityTable(entityTable);
-        embeddingLSH.useEntityLinker(linker);
     }
 
     private static Authenticator.Auth authenticateUser(Map<String, String> headers)
