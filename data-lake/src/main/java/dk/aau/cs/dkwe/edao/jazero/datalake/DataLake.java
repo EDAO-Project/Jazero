@@ -8,6 +8,7 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.connector.service.KGService;
 import dk.aau.cs.dkwe.edao.jazero.datalake.loader.IndexReader;
 import dk.aau.cs.dkwe.edao.jazero.datalake.loader.IndexWriter;
 import dk.aau.cs.dkwe.edao.jazero.datalake.loader.progressive.Event;
+import dk.aau.cs.dkwe.edao.jazero.datalake.loader.progressive.PriorityScheduler;
 import dk.aau.cs.dkwe.edao.jazero.datalake.loader.progressive.ProgressiveIndexWriter;
 import dk.aau.cs.dkwe.edao.jazero.datalake.parser.EmbeddingsParser;
 import dk.aau.cs.dkwe.edao.jazero.datalake.search.Prefilter;
@@ -494,7 +495,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 };
                 indexer = new ProgressiveIndexWriter(filePaths, new File(Configuration.getIndexDir()), DATA_DIR,
                         storageType, kgService, elService, embeddingStore, THREADS, body.get(tablePrefixKey), body.get(kgPrefixKey),
-                        null, cleanup);
+                        new PriorityScheduler(), cleanup);
                 indexer.performIO();
                 Logger.log(Logger.Level.INFO, "Started progressive loading of " + filePaths.size() + " tables");
 
