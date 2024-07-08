@@ -64,14 +64,16 @@ public class PrioritySchedulerQueue implements SchedulerQueue
         {
             double priority = this.invIndex.get(id);
             Set<Indexable> indexables = this.map.get(priority);
+            Indexable[] indexableArray = indexables.toArray(new Indexable[0]);
 
-            for (Indexable indexable : indexables)
+            for (int i = 0; i < indexableArray.length; i++)
             {
-                if (indexable.getId().equals(id))
+                if (indexableArray[i].getId().equals(id))
                 {
-                    remove(indexable);
-                    update.accept(indexable);
-                    addIndexable(indexable);
+                    remove(indexableArray[i]);
+                    update.accept(indexableArray[i]);
+                    addIndexable(indexableArray[i]);
+                    break;
                 }
             }
         }
