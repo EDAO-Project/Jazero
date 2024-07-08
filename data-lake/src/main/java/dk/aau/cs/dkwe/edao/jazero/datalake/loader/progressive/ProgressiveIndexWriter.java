@@ -35,7 +35,7 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
     private final Scheduler scheduler;
     private final Map<String, Table<String>> indexedTables = new HashMap<>();
     private final int corpusSize;
-    private int indexedRows = 0, largestTable = -1;
+    private int indexedRows = 0, largestTable = 0;
     private double maxPriority = -1.0;
     private final HashSet<String> insertedIds = new HashSet<>();
     private static final int PRE_LOAD_ROWS_THRES = 2500;
@@ -91,13 +91,7 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
                     {
                         if (!item.isIndexed())
                         {
-                            if (!this.indexedTables.containsKey(item.getId()))
-                            {
-                                this.indexedTables.put(item.getId(), new DynamicTable<>());
-                            }
-
                             this.scheduler.addIndexTable(item);
-                            this.indexedTables.get(item.getId()).addRow(indexedRow);
                         }
 
                         else
@@ -143,8 +137,8 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
         this.indexedTables.forEach((tableId, table) -> tables.add(new PairNonComparable<>(tableId, table)));
 
         super.typesLSH = new SetLSHIndex(permutations, SetLSHIndex.EntitySet.TYPES, bandSize, 2, tables, HASH_FUNCTION_NUMERIC,
-                bucketGroups, bucketsPerGroup, 1, new Random(0), getEntityLinker(), getEntityTable(), false);
-        super.embeddingsLSH = new VectorLSHIndex(bucketGroups, bucketsPerGroup, permutations, bandSize, tables, 1,
+                bucketGroups, bucketsPerGroup, super.threads, new Random(0), getEntityLinker(), getEntityTable(), false);
+        super.embeddingsLSH = new VectorLSHIndex(bucketGroups, bucketsPerGroup, permutations, bandSize, tables, super.threads,
                 new Random(0), getEntityLinker(), getEntityTable(), HASH_FUNCTION_BOOLEAN, false);
     }
 
@@ -171,6 +165,7 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
     private void indexRow(String id, int row, Table.Row<String> rowToindex)
     {
         int entities = rowToindex.size();
+        List<String> indexedRow = new ArrayList<>();
 
         for (int i = 0; i < entities; i++)
         {
@@ -183,6 +178,7 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
                 super.cellsWithLinks.incrementAndGet();
                 ((EntityTableLink) super.entityTableLink.index()).addLocation(entityId, id, List.of(new Pair<>(row, i)));
                 super.filter.put(uri);
+                indexedRow.add(uri);
 
                 if (this.indexedRows > PRE_LOAD_ROWS_THRES)
                 {
@@ -191,6 +187,13 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
                 }
             }
         }
+
+        if (!this.indexedTables.containsKey(id))
+        {
+            this.indexedTables.put(id, new DynamicTable<>());
+        }
+
+        this.indexedTables.get(id).addRow(new Table.Row<>(indexedRow));
     }
 
     /**

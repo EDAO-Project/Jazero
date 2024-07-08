@@ -46,7 +46,7 @@ public class IndexWriter implements IndexIO
     protected List<Path> files;
     protected final File indexDir, dataDir;
     protected final StorageHandler storage;
-    private final int threads;
+    protected final int threads;
     protected AtomicLong loadedTables = new AtomicLong(0);
     protected final AtomicInteger  cellsWithLinks = new AtomicInteger(0), tableStatsCollected = new AtomicInteger(0);
     protected final Object lock = new Object(), incrementLock = new Object();
