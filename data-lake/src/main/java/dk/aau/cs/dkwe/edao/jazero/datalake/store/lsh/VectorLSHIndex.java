@@ -4,6 +4,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTable;
+import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Embedding;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.PairNonComparable;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph.Entity;
@@ -248,14 +249,14 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
             throw new RuntimeException("Entity does not exist in specified EntityLinker object");
         }
 
-        List<Double> embedding = this.entityTable.find(entityId).getEmbedding().toList();
+        Embedding embedding = this.entityTable.find(entityId).getEmbedding();
 
         if (embedding == null)
         {
             return false;
         }
 
-        List<Integer> bitVector = bitVector(embedding);
+        List<Integer> bitVector = bitVector(embedding.toList());
         List<Integer> keys = createKeys(this.projections.size(), this.bandSize, bitVector, groupSize(), this.hash);
         insertEntity(entityId, keys, table);
 

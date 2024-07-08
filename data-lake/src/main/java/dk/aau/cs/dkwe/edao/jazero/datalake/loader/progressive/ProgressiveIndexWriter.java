@@ -38,6 +38,7 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
     private int indexedRows = 0, largestTable = 0;
     private double maxPriority = -1.0;
     private final HashSet<String> insertedIds = new HashSet<>();
+    private boolean areLSHPreLoaded = false;
     private static final int PRE_LOAD_ROWS_THRES = 2500;
 
     public ProgressiveIndexWriter(List<Path> files, File indexPath, File dataOutputPath, StorageHandler.StorageType storageType,
@@ -107,10 +108,11 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
                     }
                 }
 
-                if (this.indexedRows >= PRE_LOAD_ROWS_THRES)    // TODO: Remove this when HNSW pre-filtering is implemented
+                if (!this.areLSHPreLoaded && this.indexedRows >= PRE_LOAD_ROWS_THRES)    // TODO: Remove this when HNSW pre-filtering is implemented
                 {
                     Logger.log(Logger.Level.INFO, "Starting to load LSH indexes");
                     preLoadLSH();
+                    this.areLSHPreLoaded = true;
                 }
             }
 
