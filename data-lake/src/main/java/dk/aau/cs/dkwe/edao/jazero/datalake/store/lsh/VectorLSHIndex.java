@@ -133,7 +133,7 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
                     insertEntity(entityId, keys, tableName);
                 }
 
-                else if (ent != null)
+                else if (ent != null && ent.getEmbedding() != null)
                 {
                     List<Integer> bitVector = bitVector(ent.getEmbedding().toList());
                     keys = createKeys(this.projections.size(), this.bandSize, bitVector, groupSize(), this.hash);
