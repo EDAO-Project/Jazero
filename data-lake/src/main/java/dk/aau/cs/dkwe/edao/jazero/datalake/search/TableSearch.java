@@ -487,6 +487,12 @@ public class TableSearch extends AbstractSearch
         }
 
         Embedding e1 = getEntityTable().find(id1).getEmbedding(), e2 = getEntityTable().find(id2).getEmbedding();
+
+        if (e1 == null || e2 == null)
+        {
+            return 0.0;
+        }
+
         double cosineSim = e1.cosine(e2), simScore = 0.0;
 
         if (this.simProp == EntitySimilarity.EMBEDDINGS_NORM)

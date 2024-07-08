@@ -97,10 +97,10 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
 
                         else
                         {
-                            Logger.log(Logger.Level.INFO, "Fully indexed " + super.loadedTables.get() + "/" + this.corpusSize + " tables");
+                            Logger.log(Logger.Level.INFO, "Fully indexed " + super.loadedTables.incrementAndGet() + "/" + this.corpusSize + " tables");
                         }
 
-                        if (this.insertedIds.contains(item.getId()))
+                        if (!this.insertedIds.contains(item.getId()))
                         {
                             super.storage.insert(((IndexTable) item).getFilePath().toFile());
                             this.insertedIds.add(item.getId());
@@ -148,7 +148,6 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
     {
         try
         {
-            Logger.log(Logger.Level.INFO, "Progressive indexing has completed");
             Logger.log(Logger.Level.INFO, "Collecting IDF weights...");
             loadIDFs();
 
@@ -156,6 +155,7 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
             synchronizeIndexes(super.indexDir, super.linker.linker(), super.entityTable.index(), super.entityTableLink.index(),
                     super.typesLSH, super.embeddingsLSH);
             genNeo4jTableMappings();
+            Logger.log(Logger.Level.INFO, "Progressive indexing has completed");
         }
 
         catch (IOException e)
