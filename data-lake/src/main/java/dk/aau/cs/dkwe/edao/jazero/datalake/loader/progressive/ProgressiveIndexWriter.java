@@ -108,11 +108,12 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
                     }
                 }
 
-                if (!this.areLSHPreLoaded && this.indexedRows >= PRE_LOAD_ROWS_THRES)    // TODO: Remove this when HNSW pre-filtering is implemented
+                if (!this.areLSHPreLoaded && this.indexedRows >= PRE_LOAD_ROWS_THRES)    // TODO: Remove this when HNSW pre-filtering is implemented (consider https://github.com/jelmerk/hnswlib/tree/master or https://medium.com/stepstone-tech/native-like-performance-for-nearest-neighbors-search-using-hnswlib-in-java-applications-f3c4d19b39b5, which allows saving the index on disk, or Elasticsearch, or Neo4J at https://neo4j.com/labs/genai-ecosystem/vector-search/, or USearch, which is compact, fast, and allows saving on disk too)
                 {
                     Logger.log(Logger.Level.INFO, "Starting to load LSH indexes");
                     preLoadLSH();
                     this.areLSHPreLoaded = true;
+                    Logger.log(Logger.Level.INFO, "LSH loading done");
                 }
             }
 
@@ -231,7 +232,7 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
      * Pauses indexing
      */
     @Override
-    public void pauseIndexing()
+    public synchronized void pauseIndexing()
     {
         this.isPaused = true;
         this.isRunning = false;
@@ -241,7 +242,7 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
      * Continues indexing after being paused
      */
     @Override
-    public void continueIndexing()
+    public synchronized void continueIndexing()
     {
         this.isPaused = false;
         this.isRunning = true;
