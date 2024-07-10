@@ -65,6 +65,11 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
         this.linker = linker;
     }
 
+    public void useEntityTable(EntityTable entityTable)
+    {
+        this.entityTable = entityTable;
+    }
+
     private void load(Set<PairNonComparable<String, Table<String>>> tables, int projections)
     {
         ExecutorService executor = Executors.newFixedThreadPool(this.threads);

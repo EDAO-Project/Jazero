@@ -113,6 +113,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             typesLSH.useEntityLinker(linker);
             typesLSH.useEntityTable(entityTable);
             embeddingLSH.useEntityLinker(linker);
+            embeddingLSH.useEntityTable(entityTable);
         }
     }
 
