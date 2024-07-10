@@ -110,10 +110,13 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 embeddingLSH = indexer.getEmbeddingsLSH();
             }
 
-            typesLSH.useEntityLinker(linker);
-            typesLSH.useEntityTable(entityTable);
-            embeddingLSH.useEntityLinker(linker);
-            embeddingLSH.useEntityTable(entityTable);
+            if (Configuration.areIndexesLoaded())
+            {
+                typesLSH.useEntityLinker(linker);
+                typesLSH.useEntityTable(entityTable);
+                embeddingLSH.useEntityLinker(linker);
+                embeddingLSH.useEntityTable(entityTable);
+            }
         }
     }
 
@@ -487,6 +490,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             if (isProgressive)
             {
                 this.progressiveLoadingInProgress = true;
+                Configuration.setIndexesLoaded(true);
                 Runnable cleanup = () -> {
                     this.indexLoadingInProgress = false;
                     this.progressiveLoadingInProgress = false;
