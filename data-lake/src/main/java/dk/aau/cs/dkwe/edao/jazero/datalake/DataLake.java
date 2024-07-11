@@ -171,7 +171,6 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      *             and each tuple element is separated by a diamond (<>).
      * @return JSON array of found tables. Each element is a pair of table ID and score.
      */
-    // TODO: Check if progressive indexing is in progress. If so, retrieve the partially constructed indexes from the ProgressiveIndexWriter class.
     @PostMapping(value = "/search")
     public ResponseEntity<String> search(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body) throws InterruptedException
     {
@@ -336,7 +335,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 Pair<File, Double> table = resultIter.next();
                 String id = table.first().getName();
                 double score = table.second(), alpha = 1;   // TODO: Compute the correct alpha
-                ((ProgressiveIndexWriter) indexer).updatePriority(id, (i) -> i.setPriority(i.getPriority() * (1 + score * alpha)));
+                ((ProgressiveIndexWriter) indexer).updatePriority(id,
+                        (i) -> i.setPriority(i.getPriority() + Math.abs(i.getPriority() * (1 + score * alpha) - i.getPriority())));
             }
         }
 
