@@ -132,7 +132,7 @@ public final class ElementStats
 
                 Id id = linker.uriLookup(entity);
 
-                if (id != null)
+                if (id != null && this.entityTable.contains(id))
                 {
                     Set<String> entityElements = this.entityTable.find(id)
                             .getTypes()
