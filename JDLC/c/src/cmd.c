@@ -27,7 +27,7 @@
                 "-i, --kgentityprefix : Prefix of KG entity IRIs\n" \
                 "-g, --signaturesize : Size of signature or number of permutation/projection vectors\n" \
                 "-b, --bandsize : Size of signature bands\n" \
-                "-prog, --progressive : Enable progressive indexing ('true', 'false')" \
+                "-prog, --progressive : Enable progressive indexing ('true', 'false')\n" \
                 "\ninsertembeddings\n" \
                 "-e, --embeddings : Absolute path to embeddings file on the machine running Jazero\n" \
                 "-d, --delimiter : Delimiter in embeddings file (see README)\n" \
