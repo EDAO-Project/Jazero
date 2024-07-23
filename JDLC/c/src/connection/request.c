@@ -12,6 +12,11 @@ struct request make_request(enum op operation, struct properties props, const ch
         strcpy(copy, body);
     }
 
+    else
+    {
+        strcpy(copy, "");
+    }
+
     return (struct request) {.operation = operation, .props = props, .body = copy};
 }
 
@@ -106,7 +111,7 @@ struct request_response request_perform(struct request req, struct address addr)
 {
     CURL *handle = curl_easy_init();
     char *url = get_url(addr);
-    struct request_response res = {.length = 0, .msg = (char *) malloc(1)};
+    struct request_response res = {.length = 0, .msg = (char *) malloc(1), .status = 200};
     struct curl_slist headers = make_headers(req.props);
     prepare(handle, url, &headers, req, &res);
 
@@ -116,13 +121,8 @@ struct request_response request_perform(struct request req, struct address addr)
     {
         res.status = 400;
         res.msg = "Request failed";
-        free(url);
-        curl_easy_cleanup(handle);
-        curl_global_cleanup();
-        return res;
     }
 
-    res.status = 200;
     free(url);
     curl_easy_cleanup(handle);
     curl_global_cleanup();

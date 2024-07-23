@@ -16,7 +16,7 @@
                 "-s, --scoringtype : Type of entity scoring ('TYPE', 'PREDICATE', 'COSINE_NORM', 'COSINE_ABS', 'COSINE_ANG')\n" \
                 "-k, --topk : Top-K value\n" \
                 "-m, --similaritymeasure : Similarity measure between vectors of entity scores ('EUCLIDEAN', 'COSINE')\n" \
-                "-f, --prefilter : Type of LSH pre-filter ('TYPES', 'EMBEDDINGS')\n" \
+                "-f, --prefilter : Whether to perform search space pre-filtering ('HNSW', 'NONE'), which is by default NONE\n" \
                 "-qt, --querytime : Maximum amount of seconds allowed to be spend on indexing before query execution (optional and only used during progressive indexing)\n" \
                 "\ninsert, insertembeddings\n" \
                 "-j, --jazerodir : Absolute path to Jazero directory on the machine running Jazero\n" \
@@ -323,14 +323,14 @@ error_t parse(const char *key, const char *arg, struct arguments *args)
 
     else if (check_key(key, "-f", "--prefilter"))
     {
-        if (strcmp(arg, "TYPES") == 0)
+        if (strcmp(arg, "TRUE") == 0)
         {
-            args->filter = TYPES;
+            args->filter = HNSW;
         }
 
-        else if (strcmp(arg, "EMBEDDINGS") == 0)
+        else if (strcmp(arg, "FALSE") == 0)
         {
-            args->filter = EMBEDDINGS;
+            args->filter = NONE;
         }
 
         else

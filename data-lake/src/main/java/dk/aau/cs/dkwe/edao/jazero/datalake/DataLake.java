@@ -7,7 +7,6 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.connector.service.ELService;
 import dk.aau.cs.dkwe.edao.jazero.datalake.connector.service.KGService;
 import dk.aau.cs.dkwe.edao.jazero.datalake.loader.IndexReader;
 import dk.aau.cs.dkwe.edao.jazero.datalake.loader.IndexWriter;
-import dk.aau.cs.dkwe.edao.jazero.datalake.loader.progressive.Event;
 import dk.aau.cs.dkwe.edao.jazero.datalake.loader.progressive.PriorityScheduler;
 import dk.aau.cs.dkwe.edao.jazero.datalake.loader.progressive.ProgressiveIndexWriter;
 import dk.aau.cs.dkwe.edao.jazero.datalake.parser.EmbeddingsParser;
@@ -17,6 +16,7 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.search.TableSearch;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTableLink;
+import dk.aau.cs.dkwe.edao.jazero.datalake.store.hnsw.HNSW;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.SetLSHIndex;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.VectorLSHIndex;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Id;
@@ -50,13 +50,13 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     private static EntityLinking linker;
     private static EntityTable entityTable;
     private static EntityTableLink tableLink;
-    private static SetLSHIndex typesLSH;
-    private static VectorLSHIndex embeddingLSH;
+    private static HNSW hnsw;
     private static EndpointAnalysis analysis;
     private static final int THREADS = 4;
     private static final File DATA_DIR = new File("/index/mappings/");
     private boolean indexLoadingInProgress = false, progressiveLoadingInProgress = false, embeddingsLoadingInProgress = false;
     private static IndexWriter indexer;
+    private static int embeddingsDimension = -1;
 
     @Override
     public void customize(ConfigurableWebServerFactory factory)
@@ -90,8 +90,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                     linker = indexReader.getLinker();
                     entityTable = indexReader.getEntityTable();
                     tableLink = indexReader.getEntityTableLink();
-                    typesLSH = indexReader.getTypesLSH();
-                    embeddingLSH = indexReader.getVectorsLSH();
+                    hnsw = indexReader.getHNSW();
                 }
 
                 catch (IOException | RuntimeException e)
@@ -106,16 +105,13 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 linker = indexer.getEntityLinker();
                 entityTable = indexer.getEntityTable();
                 tableLink = indexer.getEntityTableLinker();
-                typesLSH = indexer.getTypesLSH();
-                embeddingLSH = indexer.getEmbeddingsLSH();
             }
 
             if (Configuration.areIndexesLoaded())
             {
-                typesLSH.useEntityLinker(linker);
-                typesLSH.useEntityTable(entityTable);
-                embeddingLSH.useEntityLinker(linker);
-                embeddingLSH.useEntityTable(entityTable);
+                hnsw.setLinker(linker);
+                hnsw.setEntityTable(entityTable);
+                hnsw.setEntityTableLink(tableLink);
             }
         }
     }
@@ -162,7 +158,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      *                  "use-max-similarity-per-column": "<BOOLEAN VALUE>",
      *                  ["weighted-jaccard": "<BOOLEAN VALUE>,]
      *                  ["cosine-function": "NORM_COS|ABS_COS|ANG_COS",]
-     *                  ["lsh": "TYPES|EMBEDDINGS",]
+     *                  ["pre-filter": "HNSW|NONE",]
      *                  ["query-time": <TIME IN SECONDS>]
      *                  "query": "<QUERY STRING>"
      *             }
@@ -276,18 +272,13 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             }
         }
 
-        if (body.containsKey("lsh"))
+        if (body.containsKey("pre-filter"))
         {
-            String lshType = body.get("lsh").toUpperCase();
+            String prefilterType = body.get("pre-filter").toUpperCase();
 
-            if (lshType.equals("TYPES"))
+            if (prefilterType.equals("HNSW"))
             {
-                prefilter = new Prefilter(linker, entityTable, tableLink, typesLSH);
-            }
-
-            else if (lshType.equals("EMBEDDINGS"))
-            {
-                prefilter = new Prefilter(linker, entityTable, tableLink, embeddingLSH);
+                prefilter = new Prefilter(linker, entityTable, tableLink, hnsw);
             }
         }
 
@@ -308,7 +299,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         while (queryIterator.hasNext())
         {
             String entity = queryIterator.next();
-            IndexWriter.indexKGEntity(entity, linker, entityTable, kgService, embeddingsDB);
+            IndexWriter.indexKGEntity(entity, linker, entityTable, hnsw, kgService, embeddingsDB);
         }
 
         if (prefilter != null)
@@ -642,6 +633,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             }
 
             Configuration.setEmbeddingsLoaded(true);
+            Configuration.setEmbeddingsDimension(embeddingsDimension);
             FileLogger.log(FileLogger.Service.SDL_Manager, "Loaded " + batchSizeCount +
                     " entity embeddings corresponding to " + loaded + " mb");
             db.close();
@@ -691,6 +683,9 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             {
                 if (entity != null)
                     vectors.add(new ArrayList<>(embedding));
+
+                if (embeddingsDimension == -1)
+                    embeddingsDimension = embedding.size();
 
                 entity = token.getLexeme();
                 iris.add(entity);
@@ -747,10 +742,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 linker.clear();
                 entityTable.clear();
                 tableLink.clear();
-                typesLSH.clear();
-                embeddingLSH.clear();
-                IndexWriter.synchronizeIndexes(new File(Configuration.getIndexDir()), linker, entityTable, tableLink,
-                        typesLSH, embeddingLSH);
+                hnsw.clear();
+                IndexWriter.synchronizeIndexes(new File(Configuration.getIndexDir()), linker, entityTable, tableLink, hnsw);
             }
 
             Configuration.setIndexesLoaded(false);

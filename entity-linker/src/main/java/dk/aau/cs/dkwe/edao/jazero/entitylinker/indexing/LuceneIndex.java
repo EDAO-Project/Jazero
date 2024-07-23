@@ -66,7 +66,7 @@ public class LuceneIndex implements Index<String, String>, Serializable
     }
 
     @Override
-    public int size()
+    public long size()
     {
         throw new UnsupportedOperationException("Not supported: " + this.getClass().getName());
     }

@@ -6,11 +6,10 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.connector.service.KGService;
 import dk.aau.cs.dkwe.edao.jazero.datalake.loader.IndexWriter;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTableLink;
-import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.SetLSHIndex;
-import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.VectorLSHIndex;
+import dk.aau.cs.dkwe.edao.jazero.datalake.store.hnsw.HNSW;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Pair;
-import dk.aau.cs.dkwe.edao.jazero.datalake.structures.PairNonComparable;
+import dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.DynamicTable;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.Table;
 import dk.aau.cs.dkwe.edao.jazero.datalake.system.Configuration;
@@ -35,11 +34,9 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
     private final Scheduler scheduler;
     private final Map<String, Table<String>> indexedTables = new HashMap<>();
     private final int corpusSize;
-    private int indexedRows = 0, largestTable = 0;
+    private int largestTable = 0;
     private double maxPriority = -1.0;
     private final HashSet<String> insertedIds = new HashSet<>();
-    private boolean areLSHPreLoaded = false;
-    private static final int PRE_LOAD_ROWS_THRES = 2500;
 
     public ProgressiveIndexWriter(List<Path> files, File indexPath, File dataOutputPath, StorageHandler.StorageType storageType,
                                   KGService kgService, ELService elService, DBDriverBatch<List<Double>, String> embeddingStore,
@@ -49,6 +46,9 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
         this.scheduler = scheduler;
         this.cleanupProcess = cleanup;
         this.corpusSize = files.size();
+
+        this.hnsw = new HNSW(Entity::getEmbedding, Configuration.getEmbeddingsDimension(), Integer.MAX_VALUE, HNSW_K, getEntityLinker(),
+                getEntityTable(), getEntityTableLinker(), Configuration.getHNSWFile());
 
         for (Path path : files)
         {
@@ -86,7 +86,6 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
                     item.setPriority(item.getPriority() - decrement);
                     this.largestTable = Math.max(this.largestTable, tableSize);
                     this.maxPriority = Math.max(this.maxPriority, item.getPriority() - decrement);
-                    this.indexedRows++;
 
                     synchronized (this.lock)
                     {
@@ -107,14 +106,6 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
                         }
                     }
                 }
-
-                if (!this.areLSHPreLoaded && this.indexedRows >= PRE_LOAD_ROWS_THRES)    // TODO: Remove this when HNSW pre-filtering is implemented (consider https://github.com/jelmerk/hnswlib/tree/master or https://medium.com/stepstone-tech/native-like-performance-for-nearest-neighbors-search-using-hnswlib-in-java-applications-f3c4d19b39b5, which allows saving the index on disk, or Elasticsearch, or Neo4J at https://neo4j.com/labs/genai-ecosystem/vector-search/, or USearch, which is compact, fast, and allows saving on disk too)
-                {
-                    Logger.log(Logger.Level.INFO, "Starting to load LSH indexes");
-                    preLoadLSH();
-                    this.areLSHPreLoaded = true;
-                    Logger.log(Logger.Level.INFO, "LSH loading done");
-                }
             }
 
             this.cleanupProcess.run();
@@ -126,25 +117,6 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
         this.isRunning = true;
     }
 
-    private void preLoadLSH()
-    {
-        int permutations = Configuration.getPermutationVectors(), bandSize = Configuration.getBandSize();
-        int bucketGroups = permutations / bandSize, bucketsPerGroup = (int) Math.pow(2, bandSize);
-
-        if (permutations % bandSize != 0)
-        {
-            throw new IllegalArgumentException("Number of permutation/projection vectors is not divisible by band size");
-        }
-
-        Set<PairNonComparable<String, Table<String>>> tables = new HashSet<>();
-        this.indexedTables.forEach((tableId, table) -> tables.add(new PairNonComparable<>(tableId, table)));
-
-        super.typesLSH = new SetLSHIndex(permutations, SetLSHIndex.EntitySet.TYPES, bandSize, 2, tables, HASH_FUNCTION_NUMERIC,
-                bucketGroups, bucketsPerGroup, super.threads, new Random(0), getEntityLinker(), getEntityTable(), false);
-        super.embeddingsLSH = new VectorLSHIndex(bucketGroups, bucketsPerGroup, permutations, bandSize, tables, super.threads,
-                new Random(0), getEntityLinker(), getEntityTable(), HASH_FUNCTION_BOOLEAN, false);
-    }
-
     private void finalizeIndexing()
     {
         try
@@ -153,8 +125,7 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
             loadIDFs();
 
             Logger.log(Logger.Level.INFO, "Writing indexes on disk...");
-            synchronizeIndexes(super.indexDir, super.linker.linker(), super.entityTable.index(), super.entityTableLink.index(),
-                    super.typesLSH, super.embeddingsLSH);
+            synchronizeIndexes(super.indexDir, super.linker.linker(), super.entityTable.index(), super.entityTableLink.index(), super.hnsw);
             genNeo4jTableMappings();
             Logger.log(Logger.Level.INFO, "Progressive indexing has completed");
         }
@@ -182,12 +153,6 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
                 ((EntityTableLink) super.entityTableLink.index()).addLocation(entityId, id, List.of(new Pair<>(row, i)));
                 super.filter.put(uri);
                 indexedRow.add(uri);
-
-                if (this.indexedRows > PRE_LOAD_ROWS_THRES)
-                {
-                    this.typesLSH.insert(uri, id);
-                    this.embeddingsLSH.insert(uri, id);
-                }
             }
         }
 

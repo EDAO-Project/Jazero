@@ -621,6 +621,7 @@ public class TableSearch extends AbstractSearch
     private Double aggregateTableSimilarities(Table<String> query, Table<List<Double>> scores, Stats.StatBuilder statBuilder)
     {
         // Compute the weighted vector (i.e. considers IDF scores of query entities) for each query tuple
+        // TODO: Compute this once when initializing the class
         Map<Integer, List<Double>> queryRowToWeightVector = new HashMap<>();
 
         for (int queryRow = 0; queryRow < query.rowCount(); queryRow++)

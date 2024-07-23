@@ -17,14 +17,14 @@ const char *load_body(char *buffer, const char *table_dir, const char *table_ent
 }
 
 const char *search_body(char *buffer, uint32_t top_k, enum entity_similarity entity_sim, enum cosine_function function,
-                        enum similarity_measure sim, enum prefilter lsh_prefilter, int query_time, query q)
+                        enum similarity_measure sim, enum prefilter prefilter, int query_time, query q)
 {
-    const char *cos_func_str = c2str(function), *sim_str = s2str(sim), *prefilter_str = p2str(lsh_prefilter),
+    const char *cos_func_str = c2str(function), *sim_str = s2str(sim), *prefilter_str = p2str(prefilter),
                                 *entity_sim_str = e2str(entity_sim);
     const char *query_str = q2str(q);
     sprintf(buffer, "{\"top-k\": \"%d\", \"entity-similarity\": \"%s\", \"cosine-function\": \"%s\", "
                   "\"single-column-per-query-entity\": \"true\", \"weighted-jaccard\": \"false\", "
-                  "\"use-max-similarity-per-column\": \"true\", \"similarity-measure\": \"%s\", \"lsh\": \"%s\", "
+                  "\"use-max-similarity-per-column\": \"true\", \"similarity-measure\": \"%s\", \"pre-filter\": \"%s\", "
                   "\"query-time\": %d, \"query\": \"%s\"}",
                   top_k, entity_sim_str, cos_func_str, sim_str, prefilter_str, query_time, query_str);
     return buffer;

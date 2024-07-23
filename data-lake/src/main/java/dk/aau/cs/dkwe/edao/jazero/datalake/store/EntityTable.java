@@ -39,7 +39,7 @@ public class EntityTable implements Index<Id, Entity>, Serializable
     }
 
     @Override
-    public int size()
+    public long size()
     {
         return this.idx.size();
     }

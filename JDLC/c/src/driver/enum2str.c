@@ -42,15 +42,10 @@ const char *e2str(enum entity_similarity sim)
 
 const char *p2str(enum prefilter filter)
 {
-    if (filter == TYPES)
+    if (filter == HNSW)
     {
-        return "TYPES";
+        return "HNSW";
     }
 
-    else if (filter == NONE)
-    {
-        return "";
-    }
-
-    return "EMBEDDINGS";
+    return "";
 }

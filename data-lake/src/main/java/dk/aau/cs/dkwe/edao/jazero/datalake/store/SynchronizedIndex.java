@@ -34,7 +34,7 @@ public record SynchronizedIndex<K, V>(Index<K, V> index) implements Index<K, V>,
     }
 
     @Override
-    public int size()
+    public long size()
     {
         return this.index.size();
     }

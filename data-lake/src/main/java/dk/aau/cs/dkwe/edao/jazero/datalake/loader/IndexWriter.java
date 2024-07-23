@@ -10,9 +10,7 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.connector.service.KGService;
 import dk.aau.cs.dkwe.edao.jazero.datalake.parser.ParsingException;
 import dk.aau.cs.dkwe.edao.jazero.datalake.parser.TableParser;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.*;
-import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.HashFunction;
-import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.SetLSHIndex;
-import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.VectorLSHIndex;
+import dk.aau.cs.dkwe.edao.jazero.datalake.store.hnsw.HNSW;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Embedding;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Pair;
@@ -56,8 +54,7 @@ public class IndexWriter implements IndexIO
     protected final SynchronizedLinker<String, String> linker;
     protected final SynchronizedIndex<Id, Entity> entityTable;
     protected final SynchronizedIndex<Id, List<String>> entityTableLink;
-    protected SetLSHIndex typesLSH;
-    protected VectorLSHIndex embeddingsLSH;
+    protected HNSW hnsw;
     private final DBDriverBatch<List<Double>, String> embeddingsDB;
     protected final BloomFilter<String> filter = BloomFilter.create(
             Funnels.stringFunnel(Charset.defaultCharset()),
@@ -69,30 +66,7 @@ public class IndexWriter implements IndexIO
     private static final List<String> DISALLOWED_ENTITY_TYPES =
             Arrays.asList("http://www.w3.org/2002/07/owl#Thing", "http://www.wikidata.org/entity/Q5");
     private static final String STATS_DIR = "statistics/";
-
-    protected static final HashFunction HASH_FUNCTION_NUMERIC = (obj, num) -> {
-        List<Integer> sig = (List<Integer>) obj;
-        int sum1 = 0, sum2 = 0, size = sig.size();
-
-        for (int i = 0; i < size; i++)
-        {
-            sum1 = (sum1 + sig.get(i)) % 255;
-            sum2 = (sum2 + sum1) % 255;
-        }
-
-        return ((sum2 << 8) | sum1) % num;
-    };
-    protected static final HashFunction HASH_FUNCTION_BOOLEAN = (obj, num) -> {
-        List<Integer> vector = (List<Integer>) obj;
-        int sum = 0, dim = vector.size();
-
-        for (int i = 0; i < dim; i++)
-        {
-            sum += vector.get(i) * Math.pow(2, i);
-        }
-
-        return sum % num;
-    };
+    protected static final int HNSW_K = 10000;
 
     public IndexWriter(List<Path> files, File indexPath, File dataOutputPath, StorageHandler.StorageType storageType, KGService kgService,
                        ELService elService, DBDriverBatch<List<Double>, String> embeddingStore, int threads, String wikiPrefix,
@@ -163,13 +137,12 @@ public class IndexWriter implements IndexIO
         loadIDFs();
 
         Logger.log(Logger.Level.INFO, "Building LSH indexes");
-        loadLSHIndexes();
+        loadFilteringIndexes();
 
         Logger.log(Logger.Level.INFO, "Writing indexes and stats on disk...");
         writeStats();
         this.tableStats.clear();    // Save memory before writing index objects to disk
-        synchronizeIndexes(this.indexDir, this.linker.linker(), this.entityTable.index(), this.entityTableLink.index(),
-                this.typesLSH, this.embeddingsLSH);
+        synchronizeIndexes(this.indexDir, this.linker.linker(), this.entityTable.index(), this.entityTableLink.index(), this.hnsw);
         genNeo4jTableMappings();
 
         this.elapsed = System.nanoTime() - startTime;
@@ -178,7 +151,7 @@ public class IndexWriter implements IndexIO
         Logger.log(Logger.Level.INFO, "Elapsed time: " + this.elapsed / (1e9) + " seconds");
     }
 
-    private void loadLSHIndexes()
+    private void loadFilteringIndexes()
     {
         int permutations = Configuration.getPermutationVectors(), bandSize = Configuration.getBandSize();
         int bucketGroups = permutations / bandSize, bucketsPerGroup = (int) Math.pow(2, bandSize);
@@ -188,15 +161,24 @@ public class IndexWriter implements IndexIO
             throw new IllegalArgumentException("Number of permutation/projection vectors is not divisible by band size");
         }
 
-        Logger.log(Logger.Level.INFO, "Loaded LSH index 0/2");
-        this.typesLSH = new SetLSHIndex(permutations, SetLSHIndex.EntitySet.TYPES, bandSize, 2,
-                this.tableEntities, HASH_FUNCTION_NUMERIC, bucketGroups, bucketsPerGroup, this.threads, new Random(0),
-                getEntityLinker(), getEntityTable(), false);
+        int embeddingsDimension = this.entityTable.find(((EntityTable) this.entityTable.index()).allIds().next()).getEmbedding().getDimension();
+        Iterator<Id> ids = ((EntityLinking) this.linker.linker()).uriIds();
+        this.hnsw = new HNSW(Entity::getEmbedding, embeddingsDimension, this.entityTable.size(), HNSW_K,
+                (EntityLinking) this.linker.linker(), (EntityTable) this.entityTable.index(),
+                (EntityTableLink) this.entityTableLink.index(), Configuration.getHNSWFile());
+        Logger.log(Logger.Level.INFO, "Loading HNSW index");
 
-        Logger.log(Logger.Level.INFO, "Loaded LSH index 1/2");
-        this.embeddingsLSH = new VectorLSHIndex(bucketGroups, bucketsPerGroup, permutations, bandSize, this.tableEntities,
-                this.threads, new Random(0), getEntityLinker(), getEntityTable(), HASH_FUNCTION_BOOLEAN, false);
-        Logger.log(Logger.Level.INFO, "Loaded LSH index 2/2");
+        while (ids.hasNext())
+        {
+            Id id = ids.next();
+            Entity entity = this.entityTable.find(id);
+            Set<String> tables = new HashSet<>(this.entityTableLink.find(id));
+
+            if (entity != null)
+            {
+                this.hnsw.insert(entity.getUri(), tables);
+            }
+        }
     }
 
     /**
@@ -207,7 +189,7 @@ public class IndexWriter implements IndexIO
      * @param el Entity linker service
      * @param kg KG service
      */
-    public static synchronized String indexEntity(String entity, EntityLinking linker, EntityTable entityTable,
+    public static synchronized String indexEntity(String entity, EntityLinking linker, EntityTable entityTable, HNSW hnsw,
                                                   ELService el, KGService kg, DBDriverBatch<List<Double>, String> embeddingsDB)
     {
         String uri = linker.mapTo(entity);
@@ -219,7 +201,7 @@ public class IndexWriter implements IndexIO
             if (uri != null)
             {
                 linker.addMapping(entity, uri);
-                indexKGEntity(uri, linker, entityTable, kg, embeddingsDB);
+                indexKGEntity(uri, linker, entityTable, hnsw, kg, embeddingsDB);
             }
         }
 
@@ -229,7 +211,7 @@ public class IndexWriter implements IndexIO
     protected String indexEntity(String entity)
     {
         return indexEntity(entity, ((EntityLinking) this.linker.linker()), ((EntityTable) this.entityTable.index()),
-                this.el, this.kg, this.embeddingsDB);
+                this.hnsw, this.el, this.kg, this.embeddingsDB);
     }
 
     /**
@@ -240,7 +222,7 @@ public class IndexWriter implements IndexIO
      * @param kg KG service
      * @param embeddingsDB Embeddings database
      */
-    public static void indexKGEntity(String uri, EntityLinking linker, EntityTable entityTable, KGService kg,
+    public static void indexKGEntity(String uri, EntityLinking linker, EntityTable entityTable, HNSW hnsw, KGService kg,
                                      DBDriverBatch<List<Double>, String> embeddingsDB)
     {
         Id entityId = linker.uriLookup(uri);
@@ -260,11 +242,12 @@ public class IndexWriter implements IndexIO
 
         entityId = linker.uriLookup(uri);
         entityTable.insert(entityId, entity);
+        hnsw.insert(uri, Collections.emptySet());   // The index does not require a list of tables, it is ignored
     }
 
     protected void indexKGEntity(String uri)
     {
-        indexKGEntity(uri, ((EntityLinking) this.linker.linker()), ((EntityTable) this.entityTable.index()), this.kg, this.embeddingsDB);
+        indexKGEntity(uri, ((EntityLinking) this.linker.linker()), ((EntityTable) this.entityTable.index()), this.hnsw, this.kg, this.embeddingsDB);
     }
 
     /**
@@ -509,7 +492,7 @@ public class IndexWriter implements IndexIO
             }
         }
 
-        int totalEntityCount = this.entityTable.size();
+        long totalEntityCount = this.entityTable.size();
         idIterator = ((EntityLinking) this.linker.linker()).uriIds();
 
         while (idIterator.hasNext())
@@ -531,7 +514,7 @@ public class IndexWriter implements IndexIO
 
     public synchronized static void synchronizeIndexes(File indexDir, Linker<String, String> linker,
                                                        Index<Id, Entity> entityTable, Index<Id, List<String>> entityTableLink,
-                                                       SetLSHIndex typesLSH, VectorLSHIndex embeddingsLSH) throws IOException
+                                                       HNSW hnsw) throws IOException
     {
         // Entity linker
         ObjectOutputStream outputStream =
@@ -552,15 +535,9 @@ public class IndexWriter implements IndexIO
         outputStream.flush();
         outputStream.close();
 
-        // LSH of entity types
-        outputStream = new ObjectOutputStream(new FileOutputStream(indexDir + "/" + Configuration.getTypesLSHIndexFile()));
-        outputStream.writeObject(typesLSH);
-        outputStream.flush();
-        outputStream.close();
-
-        // LSH of entity embeddings
-        outputStream = new ObjectOutputStream(new FileOutputStream(indexDir + "/" + Configuration.getEmbeddingsLSHFile()));
-        outputStream.writeObject(embeddingsLSH);
+        // HNSW
+        outputStream = new ObjectOutputStream(new FileOutputStream(indexDir + "/" + Configuration.getHNSWParamsFile()));
+        outputStream.writeObject(hnsw);
         outputStream.flush();
         outputStream.close();
     }
@@ -661,21 +638,12 @@ public class IndexWriter implements IndexIO
     }
 
     /**
-     * Getter to LSH index of entity types
-     * @return Entity types-based LSH index
+     * Getter to HNSW index
+     * @return HNSW index
      */
-    public SetLSHIndex getTypesLSH()
+    public HNSW getHNSW()
     {
-        return this.typesLSH;
-    }
-
-    /**
-     * Getter to LSH index of entity embeddings
-     * @return Entity embeddings-based LSH index
-     */
-    public VectorLSHIndex getEmbeddingsLSH()
-    {
-        return this.embeddingsLSH;
+        return this.hnsw;
     }
 
     public long getApproximateEntityMentions()

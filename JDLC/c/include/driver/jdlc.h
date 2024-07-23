@@ -53,8 +53,7 @@ const char *e2str(enum entity_similarity sim);
 
 enum prefilter
 {
-    TYPES,
-    EMBEDDINGS,
+    HNSW,
     NONE
 };
 
