@@ -327,7 +327,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 String id = table.first().getName();
                 double score = table.second(), alpha = 1;   // TODO: Compute the correct alpha
                 ((ProgressiveIndexWriter) indexer).updatePriority(id,
-                        (i) -> i.setPriority(i.getPriority() + Math.abs(i.getPriority() * (1 + score * alpha) - i.getPriority())));
+                        (i) -> i.setPriority(i.getPriority() * (1 + score * alpha)));
             }
         }
 
