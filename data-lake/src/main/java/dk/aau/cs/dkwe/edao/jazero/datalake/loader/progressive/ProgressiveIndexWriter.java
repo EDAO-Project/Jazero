@@ -84,7 +84,7 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
                     this.largestTable = Math.max(this.largestTable, tableSize);
                     this.maxPriority = Math.max(this.maxPriority, item.getPriority() - decrement);
 
-                    synchronized (this.lock)
+                    synchronized (super.lock)
                     {
                         if (!item.isIndexed())
                         {

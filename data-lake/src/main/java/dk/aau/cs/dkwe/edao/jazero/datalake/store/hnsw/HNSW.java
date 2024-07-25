@@ -23,7 +23,7 @@ import java.util.function.Function;
  */
 public class HNSW implements Index<String, Set<String>>, Externalizable
 {
-    private Function<Entity, Embedding> embeddingGen;
+    private transient Function<Entity, Embedding> embeddingGen;
     private cloud.unum.usearch.Index hnsw;
     private int embeddingsDim, k;
     private long capacity;
@@ -60,6 +60,11 @@ public class HNSW implements Index<String, Set<String>>, Externalizable
     public void setEntityTableLink(EntityTableLink entityTableLink)
     {
         this.entityTableLink = entityTableLink;
+    }
+
+    public void setEmbeddingGenerator(Function<Entity, Embedding> embeddingGenerator)
+    {
+        this.embeddingGen = embeddingGenerator;
     }
 
     private static float[] toPrimitiveEmbeddings(Embedding embedding)
@@ -206,7 +211,6 @@ public class HNSW implements Index<String, Set<String>>, Externalizable
     public void writeExternal(ObjectOutput out) throws IOException
     {
         this.hnsw.save(this.indexPath);
-        out.writeObject(this.embeddingGen);
         out.writeInt(this.embeddingsDim);
         out.writeInt(this.k);
         out.writeObject(this.indexPath);
@@ -216,7 +220,6 @@ public class HNSW implements Index<String, Set<String>>, Externalizable
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException
     {
         this.capacity = this.hnsw.capacity();
-        this.embeddingGen = (Function<Entity, Embedding>) in.readObject();
         this.embeddingsDim = in.readInt();
         this.k = in.readInt();
         this.indexPath = in.readObject().toString();

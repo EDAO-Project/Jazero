@@ -4,6 +4,7 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTableLink;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.hnsw.HNSW;
+import dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.jazero.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.jazero.datalake.system.Logger;
 
@@ -100,6 +101,7 @@ public class IndexReader implements IndexIO
     private void loadHNSWIndex()
     {
         this.hnsw = (HNSW) readIndex(this.indexDir + "/" + Configuration.getHNSWParamsFile());
+        this.hnsw.setEmbeddingGenerator(Entity::getEmbedding);
     }
 
     private Object readIndex(String file)
