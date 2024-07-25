@@ -100,8 +100,8 @@ public class IndexReader implements IndexIO
 
     private void loadHNSWIndex()
     {
-        this.hnsw = (HNSW) readIndex(this.indexDir + "/" + Configuration.getHNSWParamsFile());
-        this.hnsw.setEmbeddingGenerator(Entity::getEmbedding);
+        this.hnsw = readHNSW();
+        this.hnsw.load();
     }
 
     private Object readIndex(String file)
@@ -125,6 +125,25 @@ public class IndexReader implements IndexIO
         catch (IOException | ClassNotFoundException e)
         {
             Logger.log(Logger.Level.ERROR, "IO error when reading index");
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    private HNSW readHNSW()
+    {
+        try (ObjectInputStream stream = new ObjectInputStream(new FileInputStream(this.indexDir + "/" + Configuration.getHNSWParamsFile())))
+        {
+            int embeddingsDimension = stream.readInt();
+            long capacity = stream.readLong();
+            int neighborhoodSize = stream.readInt();
+            String indexPath = stream.readUTF();
+
+            return new HNSW(Entity::getEmbedding, embeddingsDimension, capacity, neighborhoodSize, null, null, null, indexPath);
+        }
+
+        catch (IOException e)
+        {
+            Logger.log(Logger.Level.ERROR, "IO error when reading HNSW index");
             throw new RuntimeException(e.getMessage());
         }
     }

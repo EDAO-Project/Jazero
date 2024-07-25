@@ -6,13 +6,10 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.connector.service.KGService;
 import dk.aau.cs.dkwe.edao.jazero.datalake.loader.IndexWriter;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTableLink;
-import dk.aau.cs.dkwe.edao.jazero.datalake.store.hnsw.HNSW;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Pair;
-import dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.DynamicTable;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.Table;
-import dk.aau.cs.dkwe.edao.jazero.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.jazero.datalake.system.Logger;
 import dk.aau.cs.dkwe.edao.jazero.storagelayer.StorageHandler;
 

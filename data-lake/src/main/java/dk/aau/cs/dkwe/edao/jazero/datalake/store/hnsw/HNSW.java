@@ -8,10 +8,6 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Embedding;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph.Entity;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -21,7 +17,7 @@ import java.util.function.Function;
  * Hierarchical Navigable Small World (HNSW) index of KG entities by their dense representation
  * The user specifies a generator for the dense representation given an entity
  */
-public class HNSW implements Index<String, Set<String>>, Externalizable
+public class HNSW implements Index<String, Set<String>>
 {
     private transient Function<Entity, Embedding> embeddingGen;
     private cloud.unum.usearch.Index hnsw;
@@ -47,6 +43,8 @@ public class HNSW implements Index<String, Set<String>>, Externalizable
         this.hnsw.reserve(capacity);
     }
 
+    private HNSW() {}
+
     public void setLinker(EntityLinking linker)
     {
         this.linker = linker;
@@ -65,6 +63,26 @@ public class HNSW implements Index<String, Set<String>>, Externalizable
     public void setEmbeddingGenerator(Function<Entity, Embedding> embeddingGenerator)
     {
         this.embeddingGen = embeddingGenerator;
+    }
+
+    public int getEmbeddingsDimension()
+    {
+        return this.embeddingsDim;
+    }
+
+    public long getCapacity()
+    {
+        return this.capacity;
+    }
+
+    public int getNeighborhoodSize()
+    {
+        return this.k;
+    }
+
+    public String getIndexPath()
+    {
+        return this.indexPath;
     }
 
     private static float[] toPrimitiveEmbeddings(Embedding embedding)
@@ -207,23 +225,13 @@ public class HNSW implements Index<String, Set<String>>, Externalizable
         this.hnsw = new cloud.unum.usearch.Index.Config().metric("cos").dimensions(this.embeddingsDim).build();
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException
+    public void save()
     {
         this.hnsw.save(this.indexPath);
-        out.writeInt(this.embeddingsDim);
-        out.writeInt(this.k);
-        out.writeObject(this.indexPath);
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException
+    public void load()
     {
-        this.capacity = this.hnsw.capacity();
-        this.embeddingsDim = in.readInt();
-        this.k = in.readInt();
-        this.indexPath = in.readObject().toString();
-
         this.hnsw = new cloud.unum.usearch.Index.Config().metric("cos").dimensions(this.embeddingsDim).build();
         this.hnsw.reserve(this.capacity);
         this.hnsw.load(this.indexPath);

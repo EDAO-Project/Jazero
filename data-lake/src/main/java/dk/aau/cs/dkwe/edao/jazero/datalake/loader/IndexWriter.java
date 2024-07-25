@@ -61,7 +61,6 @@ public class IndexWriter implements IndexIO
             5_000_000,
             0.01);
     protected final Map<String, Stats> tableStats = new TreeMap<>();
-    protected final Set<PairNonComparable<String, Table<String>>> tableEntities = Collections.synchronizedSet(new HashSet<>());
 
     private static final List<String> DISALLOWED_ENTITY_TYPES =
             Arrays.asList("http://www.w3.org/2002/07/owl#Thing", "http://www.wikidata.org/entity/Q5");
@@ -295,7 +294,6 @@ public class IndexWriter implements IndexIO
 
         synchronized (this.lock)
         {
-            this.tableEntities.add(new PairNonComparable<>(tableName, inputEntities));
             saveStats(table, FilenameUtils.removeExtension(tableName), inputEntities.iterator(), entityMatches);
             this.storage.insert(tablePath.toFile());
         }
@@ -504,10 +502,22 @@ public class IndexWriter implements IndexIO
         outputStream.close();
 
         // HNSW
+        HNSW tmpHNSW = (HNSW) hnsw;
+        outputStream = new ObjectOutputStream(new FileOutputStream(indexDir + "/" + Configuration.getHNSWParamsFile()));
+        outputStream.writeInt(tmpHNSW.getEmbeddingsDimension());
+        outputStream.writeLong(tmpHNSW.getCapacity());
+        outputStream.writeInt(tmpHNSW.getNeighborhoodSize());
+        outputStream.writeUTF(tmpHNSW.getIndexPath());
+        outputStream.flush();
+        outputStream.close();
+        tmpHNSW.save();
+
+        // HNSW
         outputStream = new ObjectOutputStream(new FileOutputStream(indexDir + "/" + Configuration.getHNSWParamsFile()));
         outputStream.writeObject(hnsw);
         outputStream.flush();
         outputStream.close();
+        ((HNSW) hnsw).save();
     }
 
     protected void genNeo4jTableMappings() throws IOException

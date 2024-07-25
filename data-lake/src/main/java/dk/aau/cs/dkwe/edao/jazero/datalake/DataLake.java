@@ -110,6 +110,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 hnsw.setLinker(linker);
                 hnsw.setEntityTable(entityTable);
                 hnsw.setEntityTableLink(tableLink);
+                hnsw.setEmbeddingGenerator(Entity::getEmbedding);
             }
         }
     }
