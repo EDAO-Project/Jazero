@@ -511,13 +511,6 @@ public class IndexWriter implements IndexIO
         outputStream.flush();
         outputStream.close();
         tmpHNSW.save();
-
-        // HNSW
-        outputStream = new ObjectOutputStream(new FileOutputStream(indexDir + "/" + Configuration.getHNSWParamsFile()));
-        outputStream.writeObject(hnsw);
-        outputStream.flush();
-        outputStream.close();
-        ((HNSW) hnsw).save();
     }
 
     protected void genNeo4jTableMappings() throws IOException
