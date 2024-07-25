@@ -25,8 +25,6 @@
                 "-t, --storagetype : Type of storage for inserted table corpus ('NATIVE', 'HDFS' (recommended))\n" \
                 "-p, --tableentityprefix : Prefix of table entity URIs\n" \
                 "-i, --kgentityprefix : Prefix of KG entity IRIs\n" \
-                "-g, --signaturesize : Size of signature or number of permutation/projection vectors\n" \
-                "-b, --bandsize : Size of signature bands\n" \
                 "-prog, --progressive : Enable progressive indexing ('true', 'false')\n" \
                 "\ninsertembeddings\n" \
                 "-e, --embeddings : Absolute path to embeddings file on the machine running Jazero\n" \
@@ -45,7 +43,7 @@ struct arguments
     enum cosine_function cos_func;
     enum similarity_measure sim_measure;
     enum prefilter filter;
-    int top_k, signature_size, band_size, parse_error, query_time, progressive;
+    int top_k, parse_error, query_time, progressive;
     enum entity_similarity entity_sim;
 };
 
@@ -68,7 +66,7 @@ static response do_insert_embeddings(const char *ip, const char *username, const
 
 static response do_load(const char *ip, const char *username, const char *password, const char *jazero_dir,
                         const char *table_dir, const char *storage_type, const char *table_prefix, const char *kg_prefix,
-                        int signature_size, int band_size, int progressive)
+                        int progressive)
 {
     if (!file_exists(jazero_dir))
     {
@@ -81,7 +79,7 @@ static response do_load(const char *ip, const char *username, const char *passwo
     }
 
     user u = create_user(username, password);
-    return load(ip, u, storage_type, table_prefix, kg_prefix, signature_size, band_size, jazero_dir, table_dir, progressive, 1);
+    return load(ip, u, storage_type, table_prefix, kg_prefix, jazero_dir, table_dir, progressive, 1);
 }
 
 static response do_search(const char *ip, const char *username, const char *password, const char *query_file,
@@ -311,16 +309,6 @@ error_t parse(const char *key, const char *arg, struct arguments *args)
         args->delimiter = (char *) arg;
     }
 
-    else if (check_key(key, "-g", "--signaturesize"))
-    {
-        args->signature_size = strtol(arg, NULL, 10);
-    }
-
-    else if (check_key(key, "-b", "--bandsize"))
-    {
-        args->band_size = strtol(arg, NULL, 10);
-    }
-
     else if (check_key(key, "-f", "--prefilter"))
     {
         if (strcmp(arg, "TRUE") == 0)
@@ -399,7 +387,7 @@ int main(int argc, char *argv[])
     response ret;
     struct arguments args = {.parse_error = 0, .entity_sim = TYPE, .top_k = 100, .sim_measure = EUCLIDEAN,
             .storage_type = "NATIVE", .table_prefix = "", .kg_prefix = "", .delimiter = " ", .query_time = 0,
-            .signature_size = 30, .band_size = 10, .filter = NONE};
+            .filter = NONE};
     args.error_msg = NULL;
     args.host = NULL;
     args.jazero_dir = NULL;
@@ -472,15 +460,8 @@ int main(int argc, char *argv[])
                 break;
             }
 
-            else if (args.signature_size < 1 || args.band_size < 1)
-            {
-                ret = (response) {.status = REQUEST_ERROR, .msg = "Error: Signature size of band size must be greater than 1\n"};
-                break;
-            }
-
             ret = do_load(args.host, args.this_username, args.this_password, args.jazero_dir,
-                          args.table_loc, args.storage_type, args.table_prefix, args.kg_prefix, args.signature_size,
-                          args.band_size, args.progressive);
+                          args.table_loc, args.storage_type, args.table_prefix, args.kg_prefix, args.progressive);
             break;
 
         case SEARCH:

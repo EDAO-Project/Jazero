@@ -230,7 +230,7 @@ static inline uint8_t prepare_tables(const char *jazero_table_dir, const char *t
 }
 
 response load(const char *ip, user u, const char *storage_type, const char *table_entity_prefix, const char *kg_entity_prefix,
-              uint16_t signature_size, uint16_t band_size, const char *jazero_dir, const char *table_dir, uint8_t progressive, uint8_t verbose)
+              const char *jazero_dir, const char *table_dir, uint8_t progressive, uint8_t verbose)
 {
     char *table_storage = (char *) malloc(strlen(jazero_dir) + strlen(RELATIVE_TABLES) + 5);
     response mem_error = {.status = JAZERO_ERROR, .msg = "Ran out of memory"};
@@ -269,7 +269,7 @@ response load(const char *ip, user u, const char *storage_type, const char *tabl
 
     print(verbose, "Copy done\n");
 
-    struct properties headers = init_params_load(storage_type, signature_size, band_size);
+    struct properties headers = init_params_load(storage_type);
     jdlc request;
     struct address addr = init_addr(ip, DL_PORT, "/insert");
     char *body = (char *) malloc(1000);

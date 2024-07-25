@@ -79,7 +79,7 @@ extern "C"
 #endif
 
 struct properties init_params_insert_embeddings(void);
-struct properties init_params_load(const char *storage_type, uint16_t signature_size, uint16_t band_size);
+struct properties init_params_load(const char *storage_type);
 struct properties init_params_search(void);
 const char *add_user_body(char *buffer, user new_user);
 const char *remove_user_body(char *buffer, const char *username);
