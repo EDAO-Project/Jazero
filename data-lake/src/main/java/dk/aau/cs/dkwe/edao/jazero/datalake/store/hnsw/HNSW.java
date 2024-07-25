@@ -223,6 +223,9 @@ public class HNSW implements Index<String, Set<String>>, Externalizable
         this.embeddingsDim = in.readInt();
         this.k = in.readInt();
         this.indexPath = in.readObject().toString();
+
+        this.hnsw = new cloud.unum.usearch.Index.Config().metric("cos").dimensions(this.embeddingsDim).build();
+        this.hnsw.reserve(this.capacity);
         this.hnsw.load(this.indexPath);
     }
 }
