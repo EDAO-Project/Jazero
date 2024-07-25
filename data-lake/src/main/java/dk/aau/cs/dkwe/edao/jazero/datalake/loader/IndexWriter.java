@@ -54,7 +54,7 @@ public class IndexWriter implements IndexIO
     protected final SynchronizedLinker<String, String> linker;
     protected final SynchronizedIndex<Id, Entity> entityTable;
     protected final SynchronizedIndex<Id, List<String>> entityTableLink;
-    protected HNSW hnsw;
+    protected final SynchronizedIndex<String, Set<String>> hnsw;
     private final DBDriverBatch<List<Double>, String> embeddingsDB;
     protected final BloomFilter<String> filter = BloomFilter.create(
             Funnels.stringFunnel(Charset.defaultCharset()),
@@ -86,6 +86,8 @@ public class IndexWriter implements IndexIO
         this.linker = SynchronizedLinker.wrap(new EntityLinking(wikiPrefix, uriPrefix));
         this.entityTable = SynchronizedIndex.wrap(new EntityTable());
         this.entityTableLink = SynchronizedIndex.wrap(new EntityTableLink());
+        this.hnsw = SynchronizedIndex.wrap(new HNSW(Entity::getEmbedding, Configuration.getEmbeddingsDimension(), 0, HNSW_K,
+                (EntityLinking) this.linker.linker(), (EntityTable) this.entityTable.index(), (EntityTableLink) this.entityTableLink.index(), Configuration.getHNSWFile()));
         ((EntityTableLink) this.entityTableLink.index()).setDirectory(files.get(0).toFile().getParent() + "/");
     }
 
@@ -135,50 +137,16 @@ public class IndexWriter implements IndexIO
         });
         Logger.log(Logger.Level.INFO, "Collecting IDF weights...");
         loadIDFs();
-
-        Logger.log(Logger.Level.INFO, "Building LSH indexes");
-        loadFilteringIndexes();
-
         Logger.log(Logger.Level.INFO, "Writing indexes and stats on disk...");
         writeStats();
         this.tableStats.clear();    // Save memory before writing index objects to disk
-        synchronizeIndexes(this.indexDir, this.linker.linker(), this.entityTable.index(), this.entityTableLink.index(), this.hnsw);
+        synchronizeIndexes(this.indexDir, this.linker.linker(), this.entityTable.index(), this.entityTableLink.index(), this.hnsw.index());
         genNeo4jTableMappings();
 
         this.elapsed = System.nanoTime() - startTime;
         Logger.log(Logger.Level.INFO, "Done");
         Logger.log(Logger.Level.INFO, "A total of " + this.loadedTables.get() + " tables were loaded");
         Logger.log(Logger.Level.INFO, "Elapsed time: " + this.elapsed / (1e9) + " seconds");
-    }
-
-    private void loadFilteringIndexes()
-    {
-        int permutations = Configuration.getPermutationVectors(), bandSize = Configuration.getBandSize();
-        int bucketGroups = permutations / bandSize, bucketsPerGroup = (int) Math.pow(2, bandSize);
-
-        if (permutations % bandSize != 0)
-        {
-            throw new IllegalArgumentException("Number of permutation/projection vectors is not divisible by band size");
-        }
-
-        int embeddingsDimension = this.entityTable.find(((EntityTable) this.entityTable.index()).allIds().next()).getEmbedding().getDimension();
-        Iterator<Id> ids = ((EntityLinking) this.linker.linker()).uriIds();
-        this.hnsw = new HNSW(Entity::getEmbedding, embeddingsDimension, this.entityTable.size(), HNSW_K,
-                (EntityLinking) this.linker.linker(), (EntityTable) this.entityTable.index(),
-                (EntityTableLink) this.entityTableLink.index(), Configuration.getHNSWFile());
-        Logger.log(Logger.Level.INFO, "Loading HNSW index");
-
-        while (ids.hasNext())
-        {
-            Id id = ids.next();
-            Entity entity = this.entityTable.find(id);
-            Set<String> tables = new HashSet<>(this.entityTableLink.find(id));
-
-            if (entity != null)
-            {
-                this.hnsw.insert(entity.getUri(), tables);
-            }
-        }
     }
 
     /**
@@ -211,7 +179,7 @@ public class IndexWriter implements IndexIO
     protected String indexEntity(String entity)
     {
         return indexEntity(entity, ((EntityLinking) this.linker.linker()), ((EntityTable) this.entityTable.index()),
-                this.hnsw, this.el, this.kg, this.embeddingsDB);
+                (HNSW) this.hnsw.index(), this.el, this.kg, this.embeddingsDB);
     }
 
     /**
@@ -247,7 +215,7 @@ public class IndexWriter implements IndexIO
 
     protected void indexKGEntity(String uri)
     {
-        indexKGEntity(uri, ((EntityLinking) this.linker.linker()), ((EntityTable) this.entityTable.index()), this.hnsw, this.kg, this.embeddingsDB);
+        indexKGEntity(uri, (EntityLinking) this.linker.linker(), (EntityTable) this.entityTable.index(), (HNSW) this.hnsw.index(), this.kg, this.embeddingsDB);
     }
 
     /**
@@ -514,7 +482,7 @@ public class IndexWriter implements IndexIO
 
     public synchronized static void synchronizeIndexes(File indexDir, Linker<String, String> linker,
                                                        Index<Id, Entity> entityTable, Index<Id, List<String>> entityTableLink,
-                                                       HNSW hnsw) throws IOException
+                                                       Index<String, Set<String>> hnsw) throws IOException
     {
         // Entity linker
         ObjectOutputStream outputStream =
@@ -643,7 +611,7 @@ public class IndexWriter implements IndexIO
      */
     public HNSW getHNSW()
     {
-        return this.hnsw;
+        return (HNSW) this.hnsw.index();
     }
 
     public long getApproximateEntityMentions()
