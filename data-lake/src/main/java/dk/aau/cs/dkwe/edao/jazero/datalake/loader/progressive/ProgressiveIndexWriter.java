@@ -47,9 +47,6 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
         this.cleanupProcess = cleanup;
         this.corpusSize = files.size();
 
-        this.hnsw = new HNSW(Entity::getEmbedding, Configuration.getEmbeddingsDimension(), Integer.MAX_VALUE, HNSW_K, getEntityLinker(),
-                getEntityTable(), getEntityTableLinker(), Configuration.getHNSWFile());
-
         for (Path path : files)
         {
             IndexTable it = new IndexTable(path, this::indexRow);

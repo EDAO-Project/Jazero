@@ -87,7 +87,7 @@ public class IndexWriter implements IndexIO
         this.entityTable = SynchronizedIndex.wrap(new EntityTable());
         this.entityTableLink = SynchronizedIndex.wrap(new EntityTableLink());
         this.hnsw = SynchronizedIndex.wrap(new HNSW(Entity::getEmbedding, Configuration.getEmbeddingsDimension(), 0, HNSW_K,
-                (EntityLinking) this.linker.linker(), (EntityTable) this.entityTable.index(), (EntityTableLink) this.entityTableLink.index(), Configuration.getHNSWFile()));
+                getEntityLinker(), getEntityTable(), getEntityTableLinker(), Configuration.getHNSWFile()));
         ((EntityTableLink) this.entityTableLink.index()).setDirectory(files.get(0).toFile().getParent() + "/");
     }
 
