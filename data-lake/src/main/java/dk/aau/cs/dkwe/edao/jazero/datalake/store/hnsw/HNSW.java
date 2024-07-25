@@ -151,6 +151,11 @@ public class HNSW implements Index<String, Set<String>>
         return true;
     }
 
+    /**
+     * Finds tables containing K-nearest neighbors
+     * @param key Query entity
+     * @return Set of tables
+     */
     @Override
     public Set<String> find(String key)
     {
