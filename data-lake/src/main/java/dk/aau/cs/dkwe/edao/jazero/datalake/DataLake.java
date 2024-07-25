@@ -17,8 +17,6 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTableLink;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.hnsw.HNSW;
-import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.SetLSHIndex;
-import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.VectorLSHIndex;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Pair;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph.Entity;
@@ -360,13 +358,9 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     /**
      * POST request to load data lake
      * Make sure to only use this once as it will delete any previously loaded data
-     * 'Signature-Size' is number of permutation/projection vectors to be used in LSH index
-     * 'Band-Size' is size of bands for the LSH signature
      * @param headers Requires:
      *                "Content-Type": "application/json",
      *                "Storage-Type": "native|HDFS",
-     *                "Signature-Size": <INTEGER>,
-     *                "Band-Size": <INTEGER>,
      *                "username": "<USERNAME>",
      *                "password": "<PASSWORD>"
      *
@@ -420,11 +414,6 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         {
             return ResponseEntity.badRequest().body("Storage-Type header must be either '" + StorageHandler.StorageType.NATIVE.name() +
                     "' or '" + StorageHandler.StorageType.HDFS.name() + "'");
-        }
-
-        else if (!headers.containsKey("signature-size") || !headers.containsKey("band-size"))
-        {
-            return ResponseEntity.badRequest().body("Missing LSH parameters ('Signature-Size', 'Band-Size')");
         }
 
         else if (!body.containsKey(dirKey))
@@ -824,7 +813,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             return ResponseEntity.badRequest().body("Table '" + tableId + "' was not deleted. Maybe it doesn't exist?");
         }
 
-        // TODO: Remove also from LSH indexes and re-serialize
+        // TODO: Remove also from HNSW indexes and re-serialize
 
         Logger.log(Logger.Level.INFO, "Removed table '" + tableId + "'");
         FileLogger.log(FileLogger.Service.SDL_Manager, "Table '" + tableId + "' has been removed");
