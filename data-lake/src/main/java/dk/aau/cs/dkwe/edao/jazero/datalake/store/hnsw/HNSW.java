@@ -43,8 +43,6 @@ public class HNSW implements Index<String, Set<String>>
         this.hnsw.reserve(capacity);
     }
 
-    private HNSW() {}
-
     public void setLinker(EntityLinking linker)
     {
         this.linker = linker;

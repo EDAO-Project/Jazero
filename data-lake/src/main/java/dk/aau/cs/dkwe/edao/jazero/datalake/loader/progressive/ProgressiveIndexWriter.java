@@ -226,4 +226,14 @@ public class ProgressiveIndexWriter extends IndexWriter implements ProgressiveIn
     {
         this.scheduler.update(id, update);
     }
+
+    public int getLargestTable()
+    {
+        return this.largestTable;
+    }
+
+    public double getMaxPriority()
+    {
+        return this.maxPriority;
+    }
 }
