@@ -1,5 +1,8 @@
 package dk.aau.cs.dkwe.edao.jazero.datalake.store.hnsw;
 
+import com.stepstone.search.hnswlib.jna.QueryTuple;
+import com.stepstone.search.hnswlib.jna.SpaceName;
+import com.stepstone.search.hnswlib.jna.exception.QueryCannotReturnResultsException;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTableLink;
@@ -8,6 +11,7 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Embedding;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph.Entity;
 
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -20,7 +24,7 @@ import java.util.function.Function;
 public class HNSW implements Index<String, Set<String>>
 {
     private transient Function<Entity, Embedding> embeddingGen;
-    private cloud.unum.usearch.Index hnsw;
+    private com.stepstone.search.hnswlib.jna.Index hnsw;
     private int embeddingsDim, k;
     private long capacity;
     private EntityLinking linker;
@@ -35,12 +39,12 @@ public class HNSW implements Index<String, Set<String>>
         this.embeddingsDim = embeddingsDimension;
         this.capacity = capacity;
         this.k = neighborhoodSize;
-        this.hnsw = new cloud.unum.usearch.Index.Config().metric("cos").dimensions(embeddingsDimension).build();
+        this.hnsw = new com.stepstone.search.hnswlib.jna.Index(SpaceName.COSINE, embeddingsDimension);
         this.linker = linker;
         this.entityTable = entityTable;
         this.entityTableLink = entityTableLink;
         this.indexPath = indexPath;
-        this.hnsw.reserve(capacity);
+        this.hnsw.initialize((int) capacity);
     }
 
     public void setLinker(EntityLinking linker)
@@ -99,7 +103,7 @@ public class HNSW implements Index<String, Set<String>>
     public void setCapacity(long capacity)
     {
         this.capacity = capacity;
-        this.hnsw.reserve(this.capacity);
+        this.hnsw.initialize((int) capacity);
     }
 
     public void setK(int k)
@@ -125,9 +129,12 @@ public class HNSW implements Index<String, Set<String>>
 
         Entity entity = this.entityTable.find(id);
         Embedding embedding = this.embeddingGen.apply(entity);
-        float[] embeddingsArray = toPrimitiveEmbeddings(embedding);
 
-        this.hnsw.add(id.id(), embeddingsArray);
+        if (embedding != null)
+        {
+            float[] embeddingsArray = toPrimitiveEmbeddings(embedding);
+            this.hnsw.addItem(embeddingsArray);
+        }
     }
 
     /**
@@ -145,7 +152,7 @@ public class HNSW implements Index<String, Set<String>>
             return false;
         }
 
-        this.hnsw.remove(id.id());
+        this.hnsw.markDeleted(id.id());
         return true;
     }
 
@@ -164,18 +171,33 @@ public class HNSW implements Index<String, Set<String>>
             return Collections.emptySet();
         }
 
-        Entity entity = this.entityTable.find(id);
-        Embedding embedding = this.embeddingGen.apply(entity);
-        float[] primitiveEmbedding = toPrimitiveEmbeddings(embedding);
-        int[] ids = this.hnsw.search(primitiveEmbedding, this.k);
-        Set<String> tables = new HashSet<>();
-
-        for (int resultId : ids)
+        try
         {
-            tables.addAll(this.entityTableLink.find(new Id(resultId)));
+            Entity entity = this.entityTable.find(id);
+            Embedding embedding = this.embeddingGen.apply(entity);
+
+            if (embedding == null)
+            {
+                return Collections.emptySet();
+            }
+
+            float[] primitiveEmbedding = toPrimitiveEmbeddings(embedding);
+            QueryTuple results = this.hnsw.knnQuery(primitiveEmbedding, this.k);
+            Set<String> tables = new HashSet<>();
+
+            for (int resultId : results.getIds())
+            {
+                tables.addAll(this.entityTableLink.find(new Id(resultId)));
+            }
+
+            return tables;
         }
 
-        return tables;
+        catch (QueryCannotReturnResultsException e)
+        {
+            this.hnsw.setEf(this.hnsw.getEf() * 2);
+            return find(key);
+        }
     }
 
     /**
@@ -193,20 +215,7 @@ public class HNSW implements Index<String, Set<String>>
             return false;
         }
 
-        Entity entity = this.entityTable.find(id);
-        Embedding embedding = this.embeddingGen.apply(entity);
-        float[] primitiveEmbedding = toPrimitiveEmbeddings(embedding);
-        int[] ids = this.hnsw.search(primitiveEmbedding, this.k);
-
-        for (int resultId : ids)
-        {
-            if (this.entityTable.contains(new Id(resultId)))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return find(key).stream().anyMatch(key::equals);
     }
 
     /**
@@ -216,7 +225,7 @@ public class HNSW implements Index<String, Set<String>>
     @Override
     public long size()
     {
-        return this.hnsw.size();
+        return this.hnsw.getLength();
     }
 
     /**
@@ -225,18 +234,16 @@ public class HNSW implements Index<String, Set<String>>
     @Override
     public void clear()
     {
-        this.hnsw = new cloud.unum.usearch.Index.Config().metric("cos").dimensions(this.embeddingsDim).build();
+        this.hnsw.clear();
     }
 
     public void save()
     {
-        this.hnsw.save(this.indexPath);
+        this.hnsw.save(Path.of(this.indexPath));
     }
 
     public void load()
     {
-        this.hnsw = new cloud.unum.usearch.Index.Config().metric("cos").dimensions(this.embeddingsDim).build();
-        this.hnsw.reserve(this.capacity);
-        this.hnsw.load(this.indexPath);
+        this.hnsw.load(Path.of(this.indexPath), (int) this.capacity);
     }
 }
