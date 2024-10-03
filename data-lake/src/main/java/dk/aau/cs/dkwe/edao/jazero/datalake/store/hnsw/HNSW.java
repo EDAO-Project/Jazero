@@ -133,7 +133,7 @@ public class HNSW implements Index<String, Set<String>>
         if (embedding != null)
         {
             float[] embeddingsArray = toPrimitiveEmbeddings(embedding);
-            this.hnsw.addItem(embeddingsArray);
+            this.hnsw.addItem(embeddingsArray, id.id());
         }
     }
 
