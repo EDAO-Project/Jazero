@@ -295,7 +295,6 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         KGService kgService = new KGService(Configuration.getEKGManagerHost(), Configuration.getEKGManagerPort());
         DBDriverBatch<List<Double>, String> embeddingsDB = EmbeddingsFactory.fromConfig(false);
         TableSearch search;
-        hnsw.setCapacity(hnsw.getCapacity() + (long) query.rowCount() * query.columnCount());
 
         while (queryIterator.hasNext())
         {
