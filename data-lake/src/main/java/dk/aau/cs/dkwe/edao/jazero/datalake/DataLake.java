@@ -103,6 +103,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 linker = indexer.getEntityLinker();
                 entityTable = indexer.getEntityTable();
                 tableLink = indexer.getEntityTableLinker();
+                hnsw = indexer.getHNSW();
             }
 
             if (Configuration.areIndexesLoaded())
