@@ -31,7 +31,7 @@
         <dependency>
             <groupId>org.elasticsearch</groupId>
             <artifactId>elasticsearch</artifactId>
-            <version>6.8.9</version>
+            <version>8.15.2</version>
         </dependency>
 
         <dependency> <!-- used for Bloom Filter -->
@@ -80,6 +80,24 @@
             <groupId>com.stepstone.search.hnswlib.jna</groupId>
             <artifactId>hnswlib-jna</artifactId>
             <version>1.4.2</version>
+        </dependency>
+ 
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>3.6.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>5.6.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna-platform</artifactId>
+            <version>5.6.0</version>
         </dependency>
     </dependencies>
 
