@@ -2,8 +2,7 @@ package dk.aau.cs.dkwe.edao.jazero.datalake.store;
 
 import java.io.Serializable;
 
-public record SynchronizedIndex<K, V>(
-        Index<K, V> index) implements Index<K, V>, Serializable
+public record SynchronizedIndex<K, V>(Index<K, V> index) implements Index<K, V>, Serializable
 {
     public static <Key, Value> SynchronizedIndex<Key, Value> wrap(Index<Key, Value> index)
     {
@@ -35,7 +34,7 @@ public record SynchronizedIndex<K, V>(
     }
 
     @Override
-    public int size()
+    public long size()
     {
         return this.index.size();
     }

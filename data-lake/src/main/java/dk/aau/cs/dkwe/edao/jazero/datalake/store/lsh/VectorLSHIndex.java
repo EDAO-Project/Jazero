@@ -4,6 +4,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTable;
+import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Embedding;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Id;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.PairNonComparable;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph.Entity;
@@ -62,6 +63,11 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
     public void useEntityLinker(EntityLinking linker)
     {
         this.linker = linker;
+    }
+
+    public void useEntityTable(EntityTable entityTable)
+    {
+        this.entityTable = entityTable;
     }
 
     private void load(Set<PairNonComparable<String, Table<String>>> tables, int projections)
@@ -131,10 +137,9 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
                 if ((keys = this.cache.getIfPresent(entityId)) != null)
                 {
                     insertEntity(entityId, keys, tableName);
-                    continue;
                 }
 
-                else if (ent != null)
+                else if (ent != null && ent.getEmbedding() != null)
                 {
                     List<Integer> bitVector = bitVector(ent.getEmbedding().toList());
                     keys = createKeys(this.projections.size(), this.bandSize, bitVector, groupSize(), this.hash);
@@ -230,7 +235,7 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
     }
 
     @Override
-    public boolean insert(String entity, String table)
+    public void insert(String entity, String table)
     {
         if (this.linker == null)
         {
@@ -249,18 +254,34 @@ public class VectorLSHIndex extends BucketIndex<Id, String> implements LSHIndex<
             throw new RuntimeException("Entity does not exist in specified EntityLinker object");
         }
 
-        List<Double> embedding = this.entityTable.find(entityId).getEmbedding().toList();
+        Embedding embedding = this.entityTable.find(entityId).getEmbedding();
 
         if (embedding == null)
         {
-            return false;
+            return;
         }
 
-        List<Integer> bitVector = bitVector(embedding);
+        List<Integer> bitVector = bitVector(embedding.toList());
         List<Integer> keys = createKeys(this.projections.size(), this.bandSize, bitVector, groupSize(), this.hash);
         insertEntity(entityId, keys, table);
+    }
 
-        return true;
+    @Override
+    public boolean remove(String key)
+    {
+        throw new UnsupportedOperationException("Operation not supported in LSH");
+    }
+
+    @Override
+    public String find(String key)
+    {
+        throw new UnsupportedOperationException("Operation not supported in LSH");
+    }
+
+    @Override
+    public boolean contains(String key)
+    {
+        throw new UnsupportedOperationException("Operation not supported in LSH");
     }
 
     @Override

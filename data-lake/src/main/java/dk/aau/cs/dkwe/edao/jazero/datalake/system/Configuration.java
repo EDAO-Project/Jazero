@@ -160,6 +160,12 @@ public class Configuration
         if (!props.contains("EmbeddingsLSH"))
             props.setProperty("EmbeddingsLSH", "embeddings_lsh.ser");
 
+        if (!props.contains("HNSWParams"))
+            props.setProperty("HNSWParams", "hnsw_params.ser");
+
+        if (!props.contains("HNSW"))
+            props.setProperty("HNSW", "hnsw.ser");
+
         writeProperties(props);
     }
 
@@ -463,6 +469,16 @@ public class Configuration
         return readProperties().getProperty("EmbeddingsLSH");
     }
 
+    public static String getHNSWParamsFile()
+    {
+        return readProperties().getProperty("HNSWParams");
+    }
+
+    public static String getHNSWFile()
+    {
+        return readProperties().getProperty("HNSW");
+    }
+
     public static void setPermutationVectors(int num)
     {
         addProperty("PermutationVectors", String.valueOf(num));
@@ -491,5 +507,15 @@ public class Configuration
     public static boolean isAdminSet()
     {
         return Boolean.parseBoolean((String) readProperties().getOrDefault("admin", "false"));
+    }
+
+    public static void setEmbeddingsDimension(int dimension)
+    {
+        addProperty("dimension", String.valueOf(dimension));
+    }
+
+    public static int getEmbeddingsDimension()
+    {
+        return Integer.parseInt(readProperties().getProperty("dimension"));
     }
 }

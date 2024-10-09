@@ -3,8 +3,8 @@ package dk.aau.cs.dkwe.edao.jazero.datalake.loader;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTableLink;
-import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.SetLSHIndex;
-import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.VectorLSHIndex;
+import dk.aau.cs.dkwe.edao.jazero.datalake.store.hnsw.HNSW;
+import dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.jazero.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.jazero.datalake.system.Logger;
 
@@ -23,9 +23,8 @@ public class IndexReader implements IndexIO
     private EntityLinking linker;
     private EntityTable entityTable;
     private EntityTableLink entityTableLink;
-    private SetLSHIndex typesLSH;
-    private VectorLSHIndex vectorsLSH;
-    private static final int INDEX_COUNT = 5;
+    private HNSW hnsw;
+    private static final int INDEX_COUNT = 4;
 
     public IndexReader(File indexDir, boolean isMultithreaded, boolean logProgress)
     {
@@ -51,7 +50,7 @@ public class IndexReader implements IndexIO
         Future<?> f1 = threadPoolService.submit(this::loadEntityLinker);
         Future<?> f2 = threadPoolService.submit(this::loadEntityTable);
         Future<?> f3 = threadPoolService.submit(this::loadEntityTableLink);
-        Future<?> f4 = threadPoolService.submit(this::loadLSHIndexes);
+        Future<?> f4 = threadPoolService.submit(this::loadHNSWIndex);
         int completed = -1;
 
         while (!f1.isDone() || !f2.isDone() || !f3.isDone() || !f4.isDone())
@@ -99,10 +98,10 @@ public class IndexReader implements IndexIO
         this.entityTableLink = (EntityTableLink) readIndex(this.indexDir + "/" + Configuration.getEntityToTablesFile());
     }
 
-    private void loadLSHIndexes()
+    private void loadHNSWIndex()
     {
-        this.typesLSH = (SetLSHIndex) readIndex(this.indexDir + "/" + Configuration.getTypesLSHIndexFile());
-        this.vectorsLSH = (VectorLSHIndex) readIndex(this.indexDir + "/" + Configuration.getEmbeddingsLSHFile());
+        this.hnsw = readHNSW();
+        this.hnsw.load();
     }
 
     private Object readIndex(String file)
@@ -130,6 +129,25 @@ public class IndexReader implements IndexIO
         }
     }
 
+    private HNSW readHNSW()
+    {
+        try (ObjectInputStream stream = new ObjectInputStream(new FileInputStream(this.indexDir + "/" + Configuration.getHNSWParamsFile())))
+        {
+            int embeddingsDimension = stream.readInt();
+            long capacity = stream.readLong();
+            int neighborhoodSize = stream.readInt();
+            String indexPath = stream.readUTF();
+
+            return new HNSW(Entity::getEmbedding, embeddingsDimension, capacity, neighborhoodSize, null, null, null, indexPath);
+        }
+
+        catch (IOException e)
+        {
+            Logger.log(Logger.Level.ERROR, "IO error when reading HNSW index");
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
     public EntityLinking getLinker()
     {
         return this.linker;
@@ -145,13 +163,8 @@ public class IndexReader implements IndexIO
         return this.entityTableLink;
     }
 
-    public SetLSHIndex getTypesLSH()
+    public HNSW getHNSW()
     {
-        return this.typesLSH;
-    }
-
-    public VectorLSHIndex getVectorsLSH()
-    {
-        return this.vectorsLSH;
+        return this.hnsw;
     }
 }

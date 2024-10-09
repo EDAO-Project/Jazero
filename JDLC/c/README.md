@@ -14,7 +14,7 @@ Here is the instructions to manually build the tool and generate a static `.a` f
 To build the project, you only need to install CMake and Curl.
 
 ```bash
-apt install cmake curl libcurl4-gnutls-dev -y
+apt install git cmake curl libcurl4-gnutls-dev -y
 ```
 
 ## Building Static Library

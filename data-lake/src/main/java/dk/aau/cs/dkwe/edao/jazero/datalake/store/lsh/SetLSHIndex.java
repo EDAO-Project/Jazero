@@ -418,7 +418,7 @@ public class SetLSHIndex extends BucketIndex<Id, String> implements LSHIndex<Str
      * @return True if the entity could be inserted
      */
     @Override
-    public boolean insert(String entity, String table)
+    public void insert(String entity, String table)
     {
         if (this.linker == null)
         {
@@ -443,7 +443,7 @@ public class SetLSHIndex extends BucketIndex<Id, String> implements LSHIndex<Str
 
             if (entitySignature == -1)
             {
-                return false;
+                return;
             }
 
             List<Integer> bucketKeys = createKeys(this.permutations.size(), this.bandSize,
@@ -456,14 +456,27 @@ public class SetLSHIndex extends BucketIndex<Id, String> implements LSHIndex<Str
                     add(group, bucketKeys.get(group), entityId, table);
                 }
             }
-
-            return true;
         }
 
-        catch (Exception exc)
-        {
-            return false;
-        }
+        catch (Exception ignored) {}
+    }
+
+    @Override
+    public boolean remove(String key)
+    {
+        throw new UnsupportedOperationException("Operation not supported in LSH");
+    }
+
+    @Override
+    public String find(String key)
+    {
+        throw new UnsupportedOperationException("Operation not supported in LSH");
+    }
+
+    @Override
+    public boolean contains(String key)
+    {
+        throw new UnsupportedOperationException("Operation not supported in LSH");
     }
 
     @Override

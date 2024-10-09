@@ -88,6 +88,17 @@ public class SimpleTable<T> implements Table<T>
     }
 
     @Override
+    public void removeRow(int index)
+    {
+        if (index < 0 || index >= this.table.size())
+        {
+            throw new IllegalArgumentException("Index out of range");
+        }
+
+        this.table.remove(index);
+    }
+
+    @Override
     public String toString()
     {
         return toStr();

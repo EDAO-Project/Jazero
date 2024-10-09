@@ -3,8 +3,8 @@ package dk.aau.cs.dkwe.edao.jazero.datalake.search;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTableLink;
-import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.SetLSHIndex;
-import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.VectorLSHIndex;
+import dk.aau.cs.dkwe.edao.jazero.datalake.store.hnsw.HNSW;
+import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.LSHIndex;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Pair;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.DynamicTable;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.Table;
@@ -19,8 +19,8 @@ import java.util.*;
 public class Prefilter extends AbstractSearch
 {
     private long elapsed = -1;
-    private SetLSHIndex setLSH;
-    private VectorLSHIndex vectorsLSH;
+    private LSHIndex<String, String> lsh;
+    private HNSW hnsw;
     private static final int SIZE_THRESHOLD = 8;
     private static final int SPLITS_SIZE = 3;
     private static final int MIN_EXISTS_IN = 2;
@@ -30,20 +30,18 @@ public class Prefilter extends AbstractSearch
         super(linker, entityTable, entityTableLink);
     }
 
-    public Prefilter(EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
-                     SetLSHIndex setLSHIndex)
+    public Prefilter(EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink, LSHIndex<String, String> lshIndex)
     {
         this(linker, entityTable, entityTableLink);
-        this.setLSH = setLSHIndex;
-        this.vectorsLSH = null;
+        this.lsh = lshIndex;
+        this.hnsw = null;
     }
 
-    public Prefilter(EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink,
-                     VectorLSHIndex vectorLSHIndex)
+    public Prefilter(EntityLinking linker, EntityTable entityTable, EntityTableLink entityTableLink, HNSW hnsw)
     {
         this(linker, entityTable, entityTableLink);
-        this.vectorsLSH = vectorLSHIndex;
-        this.setLSH = null;
+        this.hnsw = hnsw;
+        this.lsh = null;
     }
 
     @Override
@@ -81,7 +79,7 @@ public class Prefilter extends AbstractSearch
         }
 
         this.elapsed = System.nanoTime() - start;
-        return new Result(candidates.size(), candidates, this.elapsed, new HashMap<>());
+        return new Result(candidates.size(), candidates, this.elapsed, 0.0, new HashMap<>());
     }
 
     private Set<String> searchFromTable(Table<String> query)
@@ -107,7 +105,8 @@ public class Prefilter extends AbstractSearch
                 }
             }
 
-            candidates.addAll(searchLSH(entities));
+            Set<String> tables = this.hnsw == null ? searchLSH(entities) : searchHNSW(entities);
+            candidates.addAll(tables);
         }
 
         return candidates;
@@ -143,12 +142,19 @@ public class Prefilter extends AbstractSearch
             entityArr[i++] = entity;
         }
 
-        if (this.setLSH != null)
+        return this.lsh.agggregatedSearch(entityArr);
+    }
+
+    private Set<String> searchHNSW(Set<String> entities)
+    {
+        Set<String> tables = new HashSet<>();
+
+        for (String entity : entities)
         {
-            return this.setLSH.agggregatedSearch(entityArr);
+            tables.addAll(this.hnsw.find(entity));
         }
 
-        return this.vectorsLSH.agggregatedSearch(entityArr);
+        return tables;
     }
 
     @Override

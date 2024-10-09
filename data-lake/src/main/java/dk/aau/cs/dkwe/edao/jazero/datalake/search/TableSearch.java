@@ -206,7 +206,7 @@ public class TableSearch extends AbstractSearch
                 Logger.log(Logger.Level.INFO, "Query Entities with missing embedding coverage: " + this.queryEntitiesMissingCoverage + "\n");
             }
 
-            return new Result(this.topK, scores, this.elapsed, this.tableStats);
+            return new Result(this.topK, scores, this.elapsed, this.reduction, this.tableStats);
         }
 
         catch (RuntimeException e)
@@ -487,6 +487,12 @@ public class TableSearch extends AbstractSearch
         }
 
         Embedding e1 = getEntityTable().find(id1).getEmbedding(), e2 = getEntityTable().find(id2).getEmbedding();
+
+        if (e1 == null || e2 == null)
+        {
+            return 0.0;
+        }
+
         double cosineSim = e1.cosine(e2), simScore = 0.0;
 
         if (this.simProp == EntitySimilarity.EMBEDDINGS_NORM)
@@ -615,6 +621,7 @@ public class TableSearch extends AbstractSearch
     private Double aggregateTableSimilarities(Table<String> query, Table<List<Double>> scores, Stats.StatBuilder statBuilder)
     {
         // Compute the weighted vector (i.e. considers IDF scores of query entities) for each query tuple
+        // TODO: Compute this once when initializing the class
         Map<Integer, List<Double>> queryRowToWeightVector = new HashMap<>();
 
         for (int queryRow = 0; queryRow < query.rowCount(); queryRow++)

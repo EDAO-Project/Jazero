@@ -7,6 +7,8 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.connector.service.ELService;
 import dk.aau.cs.dkwe.edao.jazero.datalake.connector.service.KGService;
 import dk.aau.cs.dkwe.edao.jazero.datalake.loader.IndexReader;
 import dk.aau.cs.dkwe.edao.jazero.datalake.loader.IndexWriter;
+import dk.aau.cs.dkwe.edao.jazero.datalake.loader.progressive.PriorityScheduler;
+import dk.aau.cs.dkwe.edao.jazero.datalake.loader.progressive.ProgressiveIndexWriter;
 import dk.aau.cs.dkwe.edao.jazero.datalake.parser.EmbeddingsParser;
 import dk.aau.cs.dkwe.edao.jazero.datalake.search.Prefilter;
 import dk.aau.cs.dkwe.edao.jazero.datalake.search.Result;
@@ -14,9 +16,9 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.search.TableSearch;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityLinking;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTable;
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.EntityTableLink;
-import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.SetLSHIndex;
-import dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh.VectorLSHIndex;
+import dk.aau.cs.dkwe.edao.jazero.datalake.store.hnsw.HNSW;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Id;
+import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Pair;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph.Type;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.DynamicTable;
@@ -46,12 +48,13 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     private static EntityLinking linker;
     private static EntityTable entityTable;
     private static EntityTableLink tableLink;
-    private static SetLSHIndex typesLSH;
-    private static VectorLSHIndex embeddingLSH;
+    private static HNSW hnsw;
     private static EndpointAnalysis analysis;
     private static final int THREADS = 4;
     private static final File DATA_DIR = new File("/index/mappings/");
-    private boolean indexLoadingInProgress = false, embeddingsLoadingInProgress = false;
+    private boolean indexLoadingInProgress = false, progressiveLoadingInProgress = false, embeddingsLoadingInProgress = false;
+    private static IndexWriter indexer;
+    private static int embeddingsDimension = -1;
 
     @Override
     public void customize(ConfigurableWebServerFactory factory)
@@ -62,39 +65,53 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     public static void main(String[] args)
     {
         FileLogger.log(FileLogger.Service.SDL_Manager, "Starting...");
-        loadIndexes();
+        loadIndexes(true);
 
         FileLogger.log(FileLogger.Service.SDL_Manager, "Started");
         FileLogger.log(FileLogger.Service.SDL_Manager, "SDL Manager available at 0.0.0.0:" + Configuration.getSDLManagerPort());
         SpringApplication.run(DataLake.class, args);
     }
 
-    private static void loadIndexes()
+    private static void loadIndexes(boolean fromDisk)
     {
         analysis = new EndpointAnalysis();
 
         if (Configuration.areIndexesLoaded())
         {
-            try
+            if (fromDisk)
             {
-                IndexReader indexReader = new IndexReader(new File(Configuration.getIndexDir()), true, true);
-                indexReader.performIO();
+                try
+                {
+                    IndexReader indexReader = new IndexReader(new File(Configuration.getIndexDir()), true, true);
+                    indexReader.performIO();
 
-                linker = indexReader.getLinker();
-                entityTable = indexReader.getEntityTable();
-                tableLink = indexReader.getEntityTableLink();
-                typesLSH = indexReader.getTypesLSH();
-                embeddingLSH = indexReader.getVectorsLSH();
+                    linker = indexReader.getLinker();
+                    entityTable = indexReader.getEntityTable();
+                    tableLink = indexReader.getEntityTableLink();
+                    hnsw = indexReader.getHNSW();
+                }
 
-                typesLSH.useEntityLinker(linker);
-                typesLSH.useEntityTable(entityTable);
-                embeddingLSH.useEntityLinker(linker);
+                catch (IOException | RuntimeException e)
+                {
+                    FileLogger.log(FileLogger.Service.SDL_Manager, "Failed loading indexes: " + e.getMessage());
+                    Configuration.setIndexesLoaded(false);
+                }
             }
 
-            catch (IOException | RuntimeException e)
+            else if (indexer != null)
             {
-                FileLogger.log(FileLogger.Service.SDL_Manager, "Failed loading indexes: " + e.getMessage());
-                Configuration.setIndexesLoaded(false);
+                linker = indexer.getEntityLinker();
+                entityTable = indexer.getEntityTable();
+                tableLink = indexer.getEntityTableLinker();
+                hnsw = indexer.getHNSW();
+            }
+
+            if (Configuration.areIndexesLoaded())
+            {
+                hnsw.setLinker(linker);
+                hnsw.setEntityTable(entityTable);
+                hnsw.setEntityTableLink(tableLink);
+                hnsw.setEmbeddingGenerator(Entity::getEmbedding);
             }
         }
     }
@@ -140,8 +157,9 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      *                  "single-column-per-query-entity": "<BOOLEAN VALUE>",
      *                  "use-max-similarity-per-column": "<BOOLEAN VALUE>",
      *                  ["weighted-jaccard": "<BOOLEAN VALUE>,]
-     *                  ["cosine-function": "NORM_COS|ABS_COS|ANG_COS"]
-     *                  ["lsh": "TYPES|EMBEDDINGS",]
+     *                  ["cosine-function": "NORM_COS|ABS_COS|ANG_COS",]
+     *                  ["pre-filter": "HNSW|NONE",]
+     *                  ["query-time": <TIME IN SECONDS>]
      *                  "query": "<QUERY STRING>"
      *             }
      * <p>
@@ -150,7 +168,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      * @return JSON array of found tables. Each element is a pair of table ID and score.
      */
     @PostMapping(value = "/search")
-    public ResponseEntity<String> search(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
+    public ResponseEntity<String> search(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body) throws InterruptedException
     {
         if (authenticateUser(headers) == Authenticator.Auth.NOT_AUTH)
         {
@@ -201,6 +219,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         boolean singleColumnPerEntity = Boolean.parseBoolean(body.get("single-column-per-query-entity"));
         boolean useMaxSimilarityPerColumn = Boolean.parseBoolean(body.get("use-max-similarity-per-column"));
         boolean weightedJaccard = false;
+        int queryTime = Integer.parseInt(body.getOrDefault("query-time", "0"));
         String entitySimStr = body.get("entity-similarity");
         TableSearch.SimilarityMeasure similarityMeasure = TableSearch.SimilarityMeasure.valueOf(body.get("similarity-measure"));
         Prefilter prefilter = null;
@@ -253,19 +272,21 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             }
         }
 
-        if (body.containsKey("lsh"))
+        if (body.containsKey("pre-filter"))
         {
-            String lshType = body.get("lsh").toUpperCase();
+            String prefilterType = body.get("pre-filter").toUpperCase();
 
-            if (lshType.equals("TYPES"))
+            if (prefilterType.equals("HNSW"))
             {
-                prefilter = new Prefilter(linker, entityTable, tableLink, typesLSH);
+                prefilter = new Prefilter(linker, entityTable, tableLink, hnsw);
             }
+        }
 
-            else if (lshType.equals("EMBEDDINGS"))
-            {
-                prefilter = new Prefilter(linker, entityTable, tableLink, embeddingLSH);
-            }
+        if (this.progressiveLoadingInProgress)
+        {
+            TimeUnit.SECONDS.sleep(queryTime);
+            ((ProgressiveIndexWriter) indexer).pauseIndexing();
+            loadIndexes(false);
         }
 
         Table<String> query = parseQuery(body.get("query"));
@@ -278,7 +299,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         while (queryIterator.hasNext())
         {
             String entity = queryIterator.next();
-            IndexWriter.indexKGEntity(entity, linker, entityTable, kgService, embeddingsDB);
+            IndexWriter.indexKGEntity(entity, linker, entityTable, hnsw, kgService, embeddingsDB);
         }
 
         if (prefilter != null)
@@ -295,13 +316,28 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
         Result result = search.search(query);
 
+        if (this.progressiveLoadingInProgress)
+        {
+            Iterator<Pair<File, Double>> resultIter = result.getResults();
+            ((ProgressiveIndexWriter) indexer).continueIndexing();
+
+            while (resultIter.hasNext())
+            {
+                Pair<File, Double> table = resultIter.next();
+                String id = table.first().getName();
+                double score = table.second(), alpha = 1;   // TODO: Compute the correct alpha
+                double newPriority = ((ProgressiveIndexWriter) indexer).getMaxPriority() * (1 + score * alpha);
+                ((ProgressiveIndexWriter) indexer).updatePriority(id,
+                        (i) -> i.setPriority(newPriority));
+            }
+        }
+
         if (result == null)
         {
             FileLogger.log(FileLogger.Service.SDL_Manager, "Search result set is null");
             return ResponseEntity.internalServerError().body("Result set is null");
         }
 
-        result.setReduction(search.getReduction());
         return ResponseEntity
                 .ok()
                 .contentType(MediaType.APPLICATION_JSON)
@@ -325,13 +361,9 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     /**
      * POST request to load data lake
      * Make sure to only use this once as it will delete any previously loaded data
-     * 'Signature-Size' is number of permutation/projection vectors to be used in LSH index
-     * 'Band-Size' is size of bands for the LSH signature
      * @param headers Requires:
      *                "Content-Type": "application/json",
      *                "Storage-Type": "native|HDFS",
-     *                "Signature-Size": <INTEGER>,
-     *                "Band-Size": <INTEGER>,
      *                "username": "<USERNAME>",
      *                "password": "<PASSWORD>"
      *
@@ -339,7 +371,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      *             {
      *                  "directory": "<DIRECTORY>",
      *                  "table-prefix": "<TABLE PREFIX>",
-     *                  "kg-prefix": "<KG PREFIX>"
+     *                  "kg-prefix": "<KG PREFIX>",
+     *                  ["progressive": "<BOOLEAN VALUE>"]
      *             }
      * <p>
      *             "table-prefix" is the common prefix for table entities, just like kg-prefix. If the prefix differs
@@ -386,11 +419,6 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                     "' or '" + StorageHandler.StorageType.HDFS.name() + "'");
         }
 
-        else if (!headers.containsKey("signature-size") || !headers.containsKey("band-size"))
-        {
-            return ResponseEntity.badRequest().body("Missing LSH parameters ('Signature-Size', 'Band-Size')");
-        }
-
         else if (!body.containsKey(dirKey))
         {
             return ResponseEntity.badRequest().body("Body must be a JSON string containing a single entry '" + dirKey + "'");
@@ -406,6 +434,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             return ResponseEntity.badRequest().body("Missing table entity prefix '" + kgPrefixKey + "' in JSON string");
         }
 
+        boolean isProgressive = Boolean.parseBoolean(body.getOrDefault("progressive", "false"));
         File dir = new File(body.get(dirKey));
         StorageHandler.StorageType storageType = StorageHandler.StorageType.valueOf(headers.get("storage-type"));
         Configuration.setStorageType(storageType);
@@ -433,17 +462,37 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 Logger.log(Logger.Level.ERROR, "KG is empty. Make sure to load the KG according to README. Continuing...");
             }
 
-            int signatureSize = Integer.parseInt(headers.get("signature-size")), bandSize = Integer.parseInt(headers.get("band-size"));
             Stream<Path> fileStream = Files.find(dir.toPath(), Integer.MAX_VALUE,
                     (filePath, fileAttr) -> fileAttr.isRegularFile() && filePath.getFileName().toString().endsWith(".json"));
             List<Path> filePaths = fileStream.collect(Collectors.toList());
-            Configuration.setPermutationVectors(signatureSize);
-            Configuration.setBandSize(bandSize);
             Logger.log(Logger.Level.INFO, "There are " + filePaths.size() + " files to be processed.");
 
-            IndexWriter indexWriter = new IndexWriter(filePaths, new File(Configuration.getIndexDir()), DATA_DIR, storageType,
+            if (isProgressive)
+            {
+                this.progressiveLoadingInProgress = true;
+                Configuration.setIndexesLoaded(true);
+                Runnable cleanup = () -> {
+                    this.indexLoadingInProgress = false;
+                    this.progressiveLoadingInProgress = false;
+                    embeddingStore.close();
+                    Configuration.setIndexesLoaded(true);
+                    loadIndexes(false);
+                    FileLogger.log(FileLogger.Service.SDL_Manager, "Progressively loaded " + indexer.loadedTables() + " tables in " +
+                            TimeUnit.SECONDS.convert(indexer.elapsedTime(), TimeUnit.NANOSECONDS) + "s");
+                    analysis.record("insert-progressive", 1);
+                };
+                indexer = new ProgressiveIndexWriter(filePaths, new File(Configuration.getIndexDir()), DATA_DIR,
+                        storageType, kgService, elService, embeddingStore, THREADS, body.get(tablePrefixKey), body.get(kgPrefixKey),
+                        new PriorityScheduler(), cleanup);
+                indexer.performIO();
+                Logger.log(Logger.Level.INFO, "Started progressive loading of " + filePaths.size() + " tables");
+
+                return ResponseEntity.ok("Started progressive loading of " + filePaths.size() + " tables");
+            }
+
+            indexer = new IndexWriter(filePaths, new File(Configuration.getIndexDir()), DATA_DIR, storageType,
                     kgService, elService, embeddingStore, THREADS, body.get(tablePrefixKey), body.get(kgPrefixKey));
-            indexWriter.performIO();
+            indexer.performIO();
             embeddingStore.close();
 
             if (!kgService.insertLinks(DATA_DIR))
@@ -453,29 +502,31 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             }
 
             Set<Type> entityTypes = new HashSet<>();
-            Iterator<Id> idIter = indexWriter.getEntityLinker().uriIds();
+            Iterator<Id> idIter = indexer.getEntityLinker().uriIds();
 
             while (idIter.hasNext())
             {
-                Entity entity = indexWriter.getEntityTable().find(idIter.next());
+                Entity entity = indexer.getEntityTable().find(idIter.next());
 
                 if (entity != null)
                     entityTypes.addAll(entity.getTypes());
             }
 
             totalTime = System.nanoTime() - totalTime;
-            Logger.log(Logger.Level.INFO, "Found an approximate total of " + indexWriter.getApproximateEntityMentions() + " unique entity mentions across " + indexWriter.cellsWithLinks() + " cells \n");
+            Logger.log(Logger.Level.INFO, "Found an approximate total of " + indexer.getApproximateEntityMentions() +
+                    " unique entity mentions across " + indexer.cellsWithLinks() + " cells \n");
             Logger.log(Logger.Level.INFO, "There are in total " + entityTypes.size() + " unique entity types across all discovered entities.");
             Logger.log(Logger.Level.INFO, "Indexing took " +
-                    TimeUnit.SECONDS.convert(indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s");
+                    TimeUnit.SECONDS.convert(indexer.elapsedTime(), TimeUnit.NANOSECONDS) + "s");
             Configuration.setIndexesLoaded(true);
-            loadIndexes();
-            FileLogger.log(FileLogger.Service.SDL_Manager, "Loaded " + indexWriter.loadedTables() + " tables in " + TimeUnit.SECONDS.convert(indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s");
+            loadIndexes(true);
+            FileLogger.log(FileLogger.Service.SDL_Manager, "Loaded " + indexer.loadedTables() + " tables in " +
+                    TimeUnit.SECONDS.convert(indexer.elapsedTime(), TimeUnit.NANOSECONDS) + "s");
             analysis.record("insert", 1);
             this.indexLoadingInProgress = false;
 
-            return ResponseEntity.ok("Loaded tables: " + indexWriter.loadedTables() + "\nIndex time: " +
-                    TimeUnit.SECONDS.convert(indexWriter.elapsedTime(), TimeUnit.NANOSECONDS) + "s\nTotal elapsed time: " +
+            return ResponseEntity.ok("Loaded tables: " + indexer.loadedTables() + "\nIndex time: " +
+                    TimeUnit.SECONDS.convert(indexer.elapsedTime(), TimeUnit.NANOSECONDS) + "s\nTotal elapsed time: " +
                     TimeUnit.SECONDS.convert(totalTime, TimeUnit.NANOSECONDS) + "s");
         }
 
@@ -571,6 +622,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             }
 
             Configuration.setEmbeddingsLoaded(true);
+            Configuration.setEmbeddingsDimension(embeddingsDimension);
             FileLogger.log(FileLogger.Service.SDL_Manager, "Loaded " + batchSizeCount +
                     " entity embeddings corresponding to " + loaded + " mb");
             db.close();
@@ -620,6 +672,9 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             {
                 if (entity != null)
                     vectors.add(new ArrayList<>(embedding));
+
+                if (embeddingsDimension == -1)
+                    embeddingsDimension = embedding.size();
 
                 entity = token.getLexeme();
                 iris.add(entity);
@@ -676,10 +731,8 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
                 linker.clear();
                 entityTable.clear();
                 tableLink.clear();
-                typesLSH.clear();
-                embeddingLSH.clear();
-                IndexWriter.synchronizeIndexes(new File(Configuration.getIndexDir()), linker, entityTable, tableLink,
-                        typesLSH, embeddingLSH);
+                hnsw.clear();
+                IndexWriter.synchronizeIndexes(new File(Configuration.getIndexDir()), linker, entityTable, tableLink, hnsw);
             }
 
             Configuration.setIndexesLoaded(false);
@@ -760,7 +813,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             return ResponseEntity.badRequest().body("Table '" + tableId + "' was not deleted. Maybe it doesn't exist?");
         }
 
-        // TODO: Remove also from LSH indexes and re-serialize
+        // TODO: Remove also from HNSW indexes and re-serialize
 
         Logger.log(Logger.Level.INFO, "Removed table '" + tableId + "'");
         FileLogger.log(FileLogger.Service.SDL_Manager, "Table '" + tableId + "' has been removed");

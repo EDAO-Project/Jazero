@@ -2,8 +2,7 @@ package dk.aau.cs.dkwe.edao.jazero.datalake.store;
 
 import java.io.Serializable;
 
-public record SynchronizedLinker<F, T>(
-        Linker<F, T> linker) implements Linker<F, T>, Serializable
+public record SynchronizedLinker<F, T>(Linker<F, T> linker) implements Linker<F, T>, Serializable
 {
     public static <From, To> SynchronizedLinker<From, To> wrap(Linker<From, To> linker)
     {

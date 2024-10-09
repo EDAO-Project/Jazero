@@ -8,13 +8,11 @@ int test_embeddings(void)
 
 int test_load(void)
 {
-    struct properties props = init_params_load("NATIVE", 30, 10);
+    struct properties props = init_params_load("NATIVE");
     char type[6], signature[2], band[2];
-    int8_t ret1 = prop_get(props, "Storage-Type", type),
-            ret2 = prop_get(props, "Signature-Size", signature),
-            ret3 = prop_get(props, "Band-Size", band);
+    int8_t ret = prop_get(props, "Storage-Type", type);
 
-    if (!(ret1 & ret2 & ret3))
+    if (!ret)
     {
         prop_clear(&props);
         return 1;

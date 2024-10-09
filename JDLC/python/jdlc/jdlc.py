@@ -6,11 +6,13 @@ import os
 
 # Connector class
 class Connector:
-    def __init__(self, host):
+    def __init__(self, host, username, password):
         self.__host = 'http://' + host
         self.__sdlPort = 8081
         self.__entityLinkerPort = 8082
         self.__ekgPort = 8083
+        self.__username = username
+        self.__password = password
         self.__TABLES_MOUNT = '/srv/storage'
         self.__RELATIVE_TABLES = '.tables'
 
@@ -19,7 +21,8 @@ class Connector:
 
     def isConnected(self):
         try:
-            sdl = requests.get(self.__host + ':' + str(self.__sdlPort) + '/ping')
+            headers = {'username': self.__username, 'password': self.__password}
+            sdl = requests.get(self.__host + ':' + str(self.__sdlPort) + '/ping', headers = headers)
             entityLinker = requests.get(self.__host + ':' + str(self.__entityLinkerPort) + '/ping')
             ekg = requests.get(self.__host + ':' + str(self.__ekgPort) + '/ping')
 
@@ -32,9 +35,10 @@ class Connector:
         mountedPath = jazeroDir + '/' + self.__RELATIVE_TABLES
         shutil.copyfile(embeddingsFile, mountedPath + '/' + embeddingsFile.split('/')[-1])
 
+        headers = {'Content-Type': 'application/json', 'username': self.__username, 'password': self.__password}
         content = '{"file": "' + self.__TABLES_MOUNT + '/' + embeddingsFile.split('/')[-1] + '", "delimiter": "' + embeddingsDelimiter + '"}'
         j = json.loads(content)
-        req = requests.post(self.__host + ':' + str(self.__sdlPort) + '/embeddings', json = j)
+        req = requests.post(self.__host + ':' + str(self.__sdlPort) + '/embeddings', json = j, headers = headers)
 
         os.remove(mountedPath + '/' + embeddingsFile.split('/')[-1])
 
@@ -48,7 +52,7 @@ class Connector:
     # storageType: Type of storage of tables in Jazero (must be one of 'native' and 'hdfs')
     # tableEntityPrefix: Prefix string of entities in the tables (if not all table entities share the same prefix, don't specify this parameter)
     # kgEntityPrefix: Prefix string of entities in the knowledge graph (if not all KG entities share the same prefix, don't specify this parameter)
-    def insert(self, tablesDir, jazeroDir, storageType, tableEntityPrefix = '', kgEntityPrefix = '', signatureSize = 30, bandSize = 10):
+    def insert(self, tablesDir, jazeroDir, storageType, tableEntityPrefix = '', kgEntityPrefix = '', progressive = False):
         relativeTablesDir = self.__RELATIVE_TABLES
         sharedDir = jazeroDir + "/" + relativeTablesDir
 
@@ -57,8 +61,8 @@ class Connector:
 
         shutil.copytree(tablesDir, sharedDir, dirs_exist_ok = True)
 
-        headers = {'Content-Type': 'application/json', 'Storage-Type': storageType, 'Signature-Size': signatureSize, 'Band-Size': bandSize}
-        content = '{"directory": "' + self.__TABLES_MOUNT + '", "table-prefix": "' + tableEntityPrefix + '", "kg-prefix": "' + kgEntityPrefix + '"}'
+        headers = {'Content-Type': 'application/json', 'username': self.__username, 'password': self.__password, 'Storage-Type': storageType}
+        content = '{"directory": "' + self.__TABLES_MOUNT + '", "table-prefix": "' + tableEntityPrefix + '", "kg-prefix": "' + kgEntityPrefix + '", "progressive": "' + str(progressive).tolower() + '"}'
         j = json.loads(content)
         req = requests.post(self.__host + ':' + str(self.__sdlPort) + '/insert', json = j, headers = headers)
 
@@ -71,14 +75,20 @@ class Connector:
     # scoringType: Entity similarity KG property (must be one of 'TYPES', 'PREDICATES', 'COSINE_NORM', 'COSINE_ABS', 'COSINE_ANG')
     # similarityMeasure: Type of similarity measurement of between vectors of entity scores using a scoring type (must be one of 'EUCLIDEAN', 'COSINE')
     # query: A table query of entity string representations
-    def search(self, topK, scoringType, query, similarityMeasure = 'EUCLIDEAN', prefilter = ''):
+    def search(self, topK, scoringType, query, similarityMeasure = 'EUCLIDEAN', prefilter = False):
+        prefilter_choice = 'NONE'
+
+        if prefilter:
+            prefilter_choice = "HNSW"
+
         cosFunction = scoringType.split('_')[-1] + '_COS'
+        headers =  {'Content-Type': 'application/json', 'username': self.__username, 'password': self.__password}
         content = '{"top-k": "' + str(topK) + '", "entity-similarity": "' + scoringType + '", "cosine-function": "' + cosFunction + \
                   '", "single-column-per-query-entity": "true", "weighted-jaccard": "false", ' + \
-                  '"use-max-similarity-per-column": "true", "similarity-measure": "' + similarityMeasure + '", "lsh": "' + \
-                  prefilter + '", "query": "' + self.__toString(query) + '"}'
+                  '"use-max-similarity-per-column": "true", "similarity-measure": "' + similarityMeasure + '", "pre-filter": "' + \
+                  prefilter_choice + '", "query": "' + self.__toString(query) + '"}'
         j = json.loads(content)
-        req = requests.post(self.__host + ':' + str(self.__sdlPort) + '/search', json = j)
+        req = requests.post(self.__host + ':' + str(self.__sdlPort) + '/search', json = j, headers = headers)
 
         if (req.status_code != 200):
             return 'Failed searching: ' + req.text
@@ -98,7 +108,8 @@ class Connector:
         return strTable
 
     def clear(self):
-        req = requests.get(self.__host + ':' + str(self.__sdlPort) + '/clear')
+        headers = {'username': self.__username, 'password': self.__password}
+        req = requests.get(self.__host + ':' + str(self.__sdlPort) + '/clear', headers = headers)
 
         if (req.status_code != 200):
             return 'Failed removing tables: ' + req.text
@@ -106,7 +117,8 @@ class Connector:
         return req.text
 
     def clear_embeddings(self):
-        req = requests.get(self.__host + ':' + str(self.__sdlPort) + '/clear-embeddings')
+        headers = {'username': self.__username, 'password': self.__password}
+        req = requests.get(self.__host + ':' + str(self.__sdlPort) + '/clear-embeddings', headers = headers)
 
         if (req.status_code != 200):
             return 'Failed clearing embeddings: ' + req.text
@@ -147,6 +159,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser('JDLC Connector')
     parser.add_argument('--host', metavar = 'Host', type = str, help = 'Host of machine on which Jazero is deployed', required = True)
     parser.add_argument('-o', '--operation', metavar = 'Op', type = str, help = 'Jazero operation to perform (ping, search, insert, loadembeddings, clear, clearembeddings)', choices = ['ping', 'search', 'insert', 'loadembeddings', 'clear', 'clearembeddings'], required = True)
+    parser.add_argument('-u', '--username', metavar = 'Username', type = str, help = 'Username of user', required = True)
+    parser.add_argument('-c', '--password', metavar = 'Password', type = str, help = 'Password for user', required = True)
     parser.add_argument('-q', '--query', metavar = 'Query', type = str, help = 'Query file path', required = False)
     parser.add_argument('-sq', '--scoringtype', metavar = 'ScoringType', type = str, help = 'Type of entity scoring (\'TYPES\', \'PREDICATES\', \'COSINE_NORM\', \'COSINE_ABS\', \'COSINE_ANG\')', choices = ['TYPES', 'PREDICATES', 'COSINE_NORM', 'COSINE_ABS', 'COSINE_ANG'], required = False, default = 'TYPE')
     parser.add_argument('-k', '--topk', metavar = 'Top-K', type = str, help = 'Top-K value', required = False, default = '100')
@@ -158,14 +172,13 @@ if __name__ == '__main__':
     parser.add_argument('-kgp', '--kgentityprefix', metavar = 'KGEntityPrefix', type = str, help = 'Prefix of KG entity IRIs', required = False, default = '')
     parser.add_argument('-e', '--embeddings', metavar = 'Embeddings', type = str, help = 'Absolute path to embeddings file on the machine running Jazero', required = False)
     parser.add_argument('-d', '--delimiter', metavar = 'Delimiter', type = str, help = 'Delimiter in embeddings file (see README)', required = False, default = ' ')
-    parser.add_argument('-ss', '--signaturesize', metavar = 'SignatureSize', type = str, help = 'Size of signature or number of permutation/projection vectors', required = False, default = '30')
-    parser.add_argument('-bs', '--bandsize', metavar = 'BandSize', type = str, help = 'Size of signature bands', required = False, default = '10')
-    parser.add_argument('-pf', '--prefilter', metavar = 'Prefilter', type = str, help = 'Type of LSH pre-filter (\'TYPES\', \'EMBEDDINGS\')', required = False, default = '')
-
+    parser.add_argument('-pf', '--prefilter', metavar = 'Prefilter', type = str, help = 'Apply HNSW pre-filtering (\'TRUE\', \'FALSE\')', required = False, default = 'FALSE')
+    parser.add_argument('-prog', '--progressive', metavar = 'Progressive', type = str, help = 'Flag for progressive indexing (\'TRUE\', \'FALSE\')', required = False, default = "FALSE")
+    
     args = parser.parse_args()
     host = args.host
     op = args.operation
-    conn = Connector(host)
+    conn = Connector(host, args.username, args.password)
     output = None
 
     if (not conn.isConnected()):
@@ -181,7 +194,7 @@ if __name__ == '__main__':
         scoringType = args.scoringtype
         topK = int(args.topk)
         similarityMeasure = args.similaritymeasure
-        prefilter = args.prefilter
+        prefilter = args.prefilter == 'TRUE'
         query = []
 
         if (queryFile == None):
@@ -211,8 +224,7 @@ if __name__ == '__main__':
         storageType = args.storagetype
         tableEntityPrefix = args.tableentityprefix
         kgEntityPrefix = args.kgentityprefix
-        signatureSize = args.signaturesize
-        bandSize = args.bandsize
+        progressive = args.progressive
 
         if (location == None):
             print('Missing table corpus location')
@@ -222,7 +234,7 @@ if __name__ == '__main__':
             print('Missing directory of Jazero repository')
             exit(1)
 
-        output = conn.insert(location, jazero, storageType, tableEntityPrefix, kgEntityPrefix, signatureSize, bandSize)
+        output = conn.insert(location, jazero, storageType, tableEntityPrefix, kgEntityPrefix, progressive = progressive)
 
     elif (op == 'loadembeddings'):
         jazero = args.jazerodir

@@ -1,6 +1,7 @@
 package dk.aau.cs.dkwe.edao.jazero.knowledgegraph.connector;
 
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Pair;
+import dk.aau.cs.dkwe.edao.jazero.datalake.system.Logger;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 
@@ -76,7 +77,7 @@ public class Neo4jEndpoint implements AutoCloseable
                 return result.single().get("count").asLong();
             });
 
-            System.out.printf("Neo4j Connection established. Num Nodes: %d \n", numNodes);
+            Logger.log(Logger.Level.INFO, "Neo4j Connection established. Num Nodes: " + numNodes);
         }
     }
 

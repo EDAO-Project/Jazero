@@ -1,15 +1,13 @@
 package dk.aau.cs.dkwe.edao.jazero.datalake.store.lsh;
 
-import java.util.List;
+import dk.aau.cs.dkwe.edao.jazero.datalake.store.Index;
+
 import java.util.Set;
 
-public interface LSHIndex<K, V>
+public interface LSHIndex<K, V> extends Index<K, V>
 {
-    boolean insert(K key, V value);
     Set<V> search(K key);
     Set<V> search(K key, int vote);
     Set<V> agggregatedSearch(K ... keys);
     Set<V> agggregatedSearch(int vote, K ... keys);
-    int size();
-    void clear();
 }

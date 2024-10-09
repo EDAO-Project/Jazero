@@ -1,7 +1,5 @@
 package dk.aau.cs.dkwe.edao.jazero.datalake.system;
 
-import org.joda.time.DateTime;
-
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -37,7 +35,7 @@ public class FileLogger
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFile, true)))
         {
-            Date date = DateTime.now().toDate();
+            Date date = new Date();
             writer.append(service.toString());
             writer.append(" (");
             writer.append(date.toString());
