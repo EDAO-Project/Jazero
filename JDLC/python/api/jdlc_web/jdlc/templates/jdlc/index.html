@@ -1,17 +1,22 @@
+{% load static %}
 <!DOCTYPE html>
 
 <html>
   <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jazero</title>
     <style>
       header {
-        background-color: #333;
-        color: white;
-        padding: 20px;
-      }
-      
-      header img {
-        height: 50px
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #fff;
+        padding: 10px 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        position: fixed;
+        width: 100%;
+        top: 0;
       }
 
       form {
@@ -43,31 +48,193 @@
       button[type="submit"]:hover {
         background-color: #45a049;
       }
+
+      .logo {
+        height: 60px;
+        margin-right: 10px;
+      }
+      
+      .system-name {
+        font-size: 24px;
+        font-weight: bold;
+        color: #333;
+      }
+
+      .header-content {
+        display: flex;
+        align-items: center;
+      }
+
+      .search-bar {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 50px;
+      }
+
+      .search-input {
+        width: 400px;
+        padding: 10px;
+        font-size: 18px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+
+      .search-button {
+        padding: 10px 20px;
+        font-size: 18px;
+        color: #fff;
+        background-color: #333;
+        border: none;
+        border-radius: 4px;
+        margin-left: 10px;
+        cursor: pointer;
+      }
+
+      .search-button:hover {
+        background-color: #555;
+      }
+
+      .switch-container {
+        margin-top: 20px;
+        display: flex;
+        justify-content: column;
+        align-items: center;
+      }
+
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+        margin-bottom: 10px;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 34px;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+      }
+
+      input:checked + .slider {
+        background-color: #2196F3;
+      }
+
+      input:checked + .slider:before {
+        transform: translateX(26px);
+      }
+
+      .option-label {
+        font-size: 18px;
+        color: #333;
+      }
+
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background-color: #f8f8f8;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+
+      table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+      }
+
+      th, td {
+        padding: 10px;
+        text-align: center;
+      }
+
+      .add-button {
+        margin: 10px;
+      }
     </style>
   </head>
   <body>
     <header>
-      <img src="https://bigdataldn.com/wp-content/uploads/2018/05/datalake.png" alt="Thetis logo">
+      <div class="header-content">
+        <a href="/jdlc/">
+          <img src="{% static 'logo.png' %}" alt="Jazero Logo" class="logo">
+        </a>
+        <div class="system-name">Jazero</div>
+      </div>
     </header>
     <form action="/jdlc/result/" method="POST"> {% csrf_token %}
-      <input type="text" placeholder="Query (seperate rows by '#' and row elements by '<>'" id="query" name="query">
-      <p>Use embeddings</p>
-      <label class="switch">
-         <input type="checkbox" value="Embeddings" id="embeddings" name="settings">
-        <span class="slider round"></span>
-      </label>        
-      <p>Weighted Jaccard scoring</p>
-      <label class="switch">
-        <input type="checkbox" value="Weighted_jaccard" id="weighted_jaccard" name="settings">
-        <span class="slider round"></span>
-      </label>
-      <p>Cosine function</p>
-        <select id="cosine_function", name="settings">
-          <option value="NORM_COS">Norm cosine</option>
-          <option value="ABS_COS">Absolute cosine</option>
-          <option value="ANG_COS">Angular cosine</option>
-        </select>
-      <button type="submit">Search</button>
+      <div class="search-bar">
+        <table id="dynamicTable">
+          <tbody>
+            <tr>
+              <td contenteditable="true"></td>
+              <td contenteditable="true"></td>
+              <td contenteditable="true"></td>
+              <button class="add-button" onclick="addColumn()">+</button></td>
+            </tr>
+            <tr>
+              <td contenteditable="true"></td>
+              <td contenteditable="true"></td>
+              <td contenteditable="true"></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td contenteditable="true"></td>
+              <td contenteditable="true"></td>
+              <td contenteditable="true"></td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+        <button class="add-button" onclick="addRow()">+</button>
+        <input type="text" class="search-input" placeholder="Query (seperate rows by '#' and row elements by '<>'" id="query" name="query">
+        <p>Use embeddings</p>
+        <label class="switch">
+           <input type="checkbox" value="Embeddings" id="embeddings" name="settings">
+          <span class="slider round"></span>
+        </label>        
+        <p>Cosine function</p>
+          <select id="cosine_function", name="settings">
+            <option value="NORM_COS">Norm cosine</option>
+            <option value="ABS_COS">Absolute cosine</option>
+            <option value="ANG_COS">Angular cosine</option>
+          </select>
+        <button type="submit" class="search-button">Search</button>
+      </div>
+      <div class="switch-container">
+        <p><b>Entity representation:</b></p>
+        <label class="switch">
+          <input type="checkbox" id="optionSwitch" onchange="updateOption()">
+          <span class="slider"></span>
+        </label>
+        <span class="option-label" id="optionLabel">Entity types</span>
+      </div>
     </form>
     {% if result %}
     <center>
@@ -85,5 +252,34 @@
       <h5>{{ error }}</h5>
     </center>
     {% endif %}
+    <script>
+      function updateOption() {
+        var switchElement = document.getElementById('optionSwitch');
+        var optionLabel = document.getElementById('optionLabel');
+        if (switchElement.checked) {
+          optionLabel.textContent = 'Entity embeddings';
+        } else {
+          optionLabel.textContent = 'Entity types';
+        }
+      }
+
+      function addRow() {
+        const table = document.getElementById('dynamicTable').getElementsByTagName('tbody')[0];
+        const newRow = table.rows[0].cloneNode(true);
+        for (let cell of newRow.cells) {
+          cell.innerHTML = '';
+          cell.contentEditable = 'true';
+        }
+        table.appendChild(newRow);
+      }
+
+      function addColumn() {
+        const table = document.getElementById('dynamicTable');
+        for (let row of table.rows) {
+          const newCell = row.insertCell(row.cells.length - 1);
+          newCell.contentEditable = 'true';
+        }
+      }
+    </script>
   </body>
 </html>

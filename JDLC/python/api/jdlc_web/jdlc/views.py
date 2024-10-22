@@ -6,6 +6,7 @@ from django.core.exceptions import BadRequest
 import os
 from jdlc.jdlc import Connector
 import json
+import sys
 
 def index(request):
     template = loader.get_template('jdlc/index.html')
@@ -19,8 +20,9 @@ def result(request):
         raise BadRequest("Request must be POST")
 
     host = os.environ['JAZERO_HOST']
+    username = os.environ['USER']
+    password = os.environ['PASSWORD']
     use_embeddings = 'Embeddings' in request.POST.getlist('settings')
-    weighted_jaccard = 'Weighted_jaccard' in request.POST.getlist('settings')
     cosine_function = request.POST.getlist('settings')[-1]
     query = request.POST.getlist('query')[-1]
     scoring_type = None
@@ -49,7 +51,7 @@ def result(request):
 
         query_table.append(tuple)
 
-    conn = Connector(host)
+    conn = Connector(host, username, password)
     template = loader.get_template('jdlc/index.html')
     context = {}
 
@@ -59,7 +61,7 @@ def result(request):
         }
 
     else:
-        result = conn.search(100, scoring_type, query_table)
+        result = conn.search(100, scoring_type, query_table, prefilter = True)
         j = json.loads(result)['scores']
         tables = list()
 
@@ -70,5 +72,13 @@ def result(request):
             'k': '100',
             'result': tables
         }
+
+        """for entry in j:
+            tables.append(entry)
+
+        context = {
+            'k': '100',
+            'result': tables
+        }"""
 
     return HttpResponse(template.render(context, request))
