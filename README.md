@@ -173,11 +173,11 @@ docker build -t jazero_web -f JDLC/python/api/Dockerfile JDLC/python
 Then, run a container of Jazero web.
 
 ```bash
-docker run --rm --network="host" -d --name jazero -e JAZERO_HOST=<HOST> jazero_web
+docker run --rm --network="host" -d --name jazero -e JAZERO_HOST=<HOST> -e USER=<USER> -e PASSWORD=<PASSWORD> jazero_web
 ```
 
 You can now access the Jazero web interface <a href="http://127.0.0.1:8084/jdlc/">here</a>.
-Just substitute `<HOST>` with the host name of the running Jazero instance.
+Just substitute `<HOST>` with the host name of the running Jazero instance and `<USER>` and `<PASSWORD>` with the username and password created in Jazero.
 For demonstration purposes, we already have an instance of Jazero running, and it can be accessed using its web interface <a href="">here</a>.
 
 You can stop the Jazero web interface with the following command.
