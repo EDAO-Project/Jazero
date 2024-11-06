@@ -1,0 +1,10 @@
+{
+  "data-lakes": [
+    {
+      "Wikitables": "127.0.0.1"
+    },
+    {
+      "GitTables": "127.0.0.1"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+/* Global style values */
+html {
+    --lumo-font-family: "Courier";
+}
+
+.search-button {
+    border-radius: 15px;
+    border: 3px solid #272222;
+    font-size: 40px;
+    font-weight: bold;
+    color: white;
+}
+
+.drop-down-items {
+    font-weight: bold;
+    color: black;
+}
+
+.drop-down {
+    --lumo-primary-text-color: grey;
+    --lumo-primary-color: grey;
+}
