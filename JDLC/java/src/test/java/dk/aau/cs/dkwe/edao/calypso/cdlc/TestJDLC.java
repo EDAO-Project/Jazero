@@ -4,12 +4,12 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
 
-public class TestCDLC
+public class TestJDLC
 {
     @Test
     public void testIsConnected()
     {
-        CDLC connector = new CDLC();
+        JDLC connector = new JDLC();
         assertFalse(connector.isConnected());
     }
 }

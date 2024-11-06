@@ -8,12 +8,9 @@ RUN apt-get install openjdk-17-jre openjdk-17-jdk maven -y
 
 WORKDIR /home
 
-RUN mkdir communication
-RUN mkdir storage
-RUN mkdir data-lake
-COPY communication communication
-COPY storage storage
-COPY data-lake data-lake
+COPY communication/ communication/
+COPY storage/ storage/
+COPY data-lake/ data-lake/
 
 WORKDIR communication
 RUN mvn clean install -DskipTests

@@ -23,19 +23,19 @@ import java.util.*;
  * Jazero Data Lake Connector (CDLC)
  * Connector class to communicate with Jazerp
  */
-public class CDLC implements Connector
+public class JDLC implements Connector
 {
     private static final String RELATIVE_MOUNT = "knowledge-graph/neo4j";
 
     /**
      * Host becomes localhost for this constructor
      */
-    public CDLC()
+    public JDLC()
     {
         Configuration.reloadConfiguration();
     }
 
-    public CDLC(String host)
+    public JDLC(String host)
     {
         Configuration.setSDLManagerHost(host);
     }
