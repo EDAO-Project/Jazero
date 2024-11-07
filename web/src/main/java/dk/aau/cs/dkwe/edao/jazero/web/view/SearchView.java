@@ -2,7 +2,6 @@ package dk.aau.cs.dkwe.edao.jazero.web.view;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Html;
-import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -22,7 +21,6 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import dk.aau.cs.dkwe.edao.jazero.web.util.ConfigReader;
 
 import java.util.*;
-import java.util.List;
 
 @Route(value = "")
 public class SearchView extends Div
