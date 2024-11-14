@@ -23,7 +23,7 @@ public class ELService extends Service
 {
     public ELService(String host, int port)
     {
-        super(host, port);
+        super(host, port, true);
     }
 
     public String link(String tableEntity)

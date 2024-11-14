@@ -38,7 +38,7 @@ public class DBpediaLookupEntityLinker implements EntityLink<String, String>
             Communicator comm = ServiceCommunicator.init("lookup.dbpedia.org", mapping, true);
 
             DocumentBuilder docBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-            Document doc = docBuilder.parse((String) comm.receive());
+            Document doc = docBuilder.parse((String) comm.receive().getResponse());
             NodeList list = doc.getElementsByTagName("ArrayOfResults");
 
             if (list.getLength() == 0)

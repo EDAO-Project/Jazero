@@ -19,7 +19,7 @@ public class KGService extends Service
 {
     public KGService(String host, int port)
     {
-        super(host, port);
+        super(host, port, true);
     }
 
     private Response performSend(String content, String mapping, String malformedUrlMsg, String ioExceptionMsg, boolean throwExceptions)
@@ -120,7 +120,7 @@ public class KGService extends Service
         try
         {
             Communicator comm = ServiceCommunicator.init(getHost(), getPort(), "size");
-            return Long.parseLong((String) comm.receive());
+            return Long.parseLong((String) comm.receive().getResponse());
         }
 
         catch (MalformedURLException e)
@@ -157,7 +157,7 @@ public class KGService extends Service
         {
             Map<String, Set<String>> subGraph = new HashMap<>();
             Communicator comm = ServiceCommunicator.init(getHost(), getPort(), "sub-kg");
-            JsonElement parsed = JsonParser.parseString((String) comm.receive());
+            JsonElement parsed = JsonParser.parseString((String) comm.receive().getResponse());
             JsonArray array = parsed.getAsJsonObject().getAsJsonArray("entities").getAsJsonArray();
 
             for (JsonElement element : array)

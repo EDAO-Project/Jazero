@@ -53,8 +53,21 @@ public class TableSearch extends AbstractSearch
 
     public enum EntitySimilarity
     {
-        JACCARD_TYPES, JACCARD_PREDICATES,
-        EMBEDDINGS_NORM, EMBEDDINGS_ABS, EMBEDDINGS_ANG;
+        JACCARD_TYPES("TYPES"), JACCARD_PREDICATES("PREDICATES"),
+        EMBEDDINGS_NORM("EMBEDDINGS"), EMBEDDINGS_ABS("EMBEDDINGS"), EMBEDDINGS_ANG("EMBEDDINGS");
+
+        private final String representation;
+
+        private EntitySimilarity(String str)
+        {
+            this.representation = str;
+        }
+
+        @Override
+        public String toString()
+        {
+            return this.representation;
+        }
     }
 
     private final int topK, threads;

@@ -10,12 +10,12 @@ public abstract class Service
     private final String host;
     private final int port;
 
-    protected Service(String host, int port)
+    protected Service(String host, int port, boolean testConnection)
     {
         this.host = host;
         this.port = port;
 
-        if (!testConnection())
+        if (testConnection && !testConnection())
         {
             throw new RuntimeException("Could not connect to service '" + this.host + ":" + this.port +
                 "'. Make sure the service is running.");

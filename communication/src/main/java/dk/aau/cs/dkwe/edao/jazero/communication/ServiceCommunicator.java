@@ -84,13 +84,13 @@ public class ServiceCommunicator implements Communicator
     }
 
     @Override
-    public synchronized Object receive() throws IOException
+    public synchronized Response receive() throws IOException
     {
         return receive(new HashMap<>());
     }
 
     @Override
-    public synchronized Object receive(Map<String, String> headers) throws IOException
+    public synchronized Response receive(Map<String, String> headers) throws IOException
     {
         HttpURLConnection connection = (HttpURLConnection) this.url.openConnection();
 
@@ -100,8 +100,10 @@ public class ServiceCommunicator implements Communicator
         }
 
         Object response = read(connection.getInputStream());
+        int responseCode = connection.getResponseCode();
         connection.disconnect();
-        return response;
+
+        return new Response(responseCode, response);
     }
 
     private static Object read(InputStream stream) throws IOException

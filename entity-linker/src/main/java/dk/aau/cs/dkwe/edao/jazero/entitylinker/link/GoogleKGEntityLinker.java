@@ -34,7 +34,7 @@ public class GoogleKGEntityLinker implements EntityLink<String, String>
             String mapping = "/v1/entities:search?query=" + entity.replace(' ', '_') +
                     "&key=" + apiKey + "&limit=1&indent=True";
             Communicator comm = ServiceCommunicator.init("kgsearch.googleapis.com", mapping, true);
-            JsonElement json = JsonParser.parseString((String) comm.receive());
+            JsonElement json = JsonParser.parseString((String) comm.receive().getResponse());
 
             if (json == null || !json.getAsJsonObject().has("itemListElement"))
             {

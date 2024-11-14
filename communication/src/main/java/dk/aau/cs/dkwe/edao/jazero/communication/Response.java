@@ -5,7 +5,7 @@ public class Response
     private final int responseCode;
     private final Object content;
 
-    Response(int responseCode, Object response)
+    public Response(int responseCode, Object response)
     {
         this.responseCode = responseCode;
         this.content = response;
