@@ -13,7 +13,8 @@ RUN chmod +x mvnw_unix
 
 RUN mkdir web/
 ADD .mvn/ .mvn/
-ADD config.json web/
+ADD dependencies/ dependencies/
+ADD config.json .
 ADD pom.xml .
 ADD src/ src/
 

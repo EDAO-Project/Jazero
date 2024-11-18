@@ -18,9 +18,20 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.internal.Pair;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import dk.aau.cs.dkwe.edao.connector.DataLakeService;
+import dk.aau.cs.dkwe.edao.jazero.communication.Response;
+import dk.aau.cs.dkwe.edao.jazero.datalake.search.Result;
+import dk.aau.cs.dkwe.edao.jazero.datalake.search.TableSearch;
+import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.DynamicTable;
+import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.Table;
+import dk.aau.cs.dkwe.edao.jazero.datalake.system.User;
 import dk.aau.cs.dkwe.edao.jazero.web.util.ConfigReader;
+import dk.aau.cs.dkwe.edao.structures.Query;
+import dk.aau.cs.dkwe.edao.structures.TableQuery;
 
+import java.io.File;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Route(value = "")
 public class SearchView extends Div
@@ -29,11 +40,10 @@ public class SearchView extends Div
     private final List<List<StringBuilder>> query = new ArrayList<>();
     private final Section querySection = new Section();
     private final Grid<Pair<String, Integer>> entityCounts = new Grid<>();
-    private final List<?> results = new ArrayList<>();
+    private final List<dk.aau.cs.dkwe.edao.jazero.datalake.structures.Pair<File, Double>> results = new ArrayList<>();
     private Component resultComponent = null;
     private static int TEXTFIELD_WIDTH = 300;
     private static final int TEXTFIELD_HEIGHT = 25;
-    private static final Map<String, String> dataLakeHosts = ConfigReader.getDataLakes();
 
     public SearchView()
     {
@@ -189,7 +199,7 @@ public class SearchView extends Div
         VerticalLayout middleColumnLayout = new VerticalLayout();
         ComboBox<String> dataLakes = new ComboBox<>("Data lake");
         Checkbox prefilterBox = new Checkbox("Pre-filter", false);
-        dataLakes.setItems(dataLakeHosts.keySet());
+        dataLakes.setItems(ConfigReader.dataLakes());
         dataLakes.setRenderer(new ComponentRenderer<>(item -> {
             Span span = new Span(item);
             span.addClassNames("drop-down-items");
@@ -343,15 +353,72 @@ public class SearchView extends Div
             return;
         }
 
-        String dataLakeHost = ConfigReader.getDataLakes().get(dataLake);
+        String dataLakeIp = ConfigReader.getIp(dataLake),
+                username = ConfigReader.getUsername(dataLake),
+                password = ConfigReader.getPassword(dataLake);
+        User user = new User(username, password, true);
+        TableSearch.EntitySimilarity similarity;
+        Query query = parseQuery();
 
-        System.out.println("Top-K: " + topK);
-        System.out.println("Similarity: " + entitySimilarity);
-        System.out.println("Data lake: " + dataLake);
-        System.out.println("Data lake host: " + dataLakeHost);
-        System.out.println("Pre-filter: " + prefilter);
+        if (entitySimilarity.equals("Embeddings"))
+        {
+            similarity = TableSearch.EntitySimilarity.EMBEDDINGS_ABS;
+        }
 
-        refreshResults();
+        else if (entitySimilarity.equals("RDF types"))
+        {
+            similarity = TableSearch.EntitySimilarity.JACCARD_TYPES;
+        }
+
+        else if (entitySimilarity.equals("Predicates"))
+        {
+            similarity = TableSearch.EntitySimilarity.JACCARD_PREDICATES;
+        }
+
+        else
+        {
+            // TODO: Throw error
+            System.out.println("Not recognized: (" + entitySimilarity + ")");
+            similarity = null;
+        }
+
+        try
+        {
+            DataLakeService dl = new DataLakeService(dataLakeIp, user);
+            Response pingResponse = dl.ping();
+
+            if (pingResponse.getResponseCode() != 200)
+            {
+                // TODO: Handle connection error
+                System.out.println("Connection error");
+            }
+
+            Result result = dl.search(query, topK, similarity, prefilter);
+            Iterator<dk.aau.cs.dkwe.edao.jazero.datalake.structures.Pair<File, Double>> resultsIter = result.getResults();
+
+            while (resultsIter.hasNext())
+            {
+                this.results.add(resultsIter.next());
+            }
+
+            refreshResults();
+        }
+
+        catch (RuntimeException e)
+        {
+            // TODO: Handle search error
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    private Query parseQuery()
+    {
+        List<List<String>> queryAsList = this.query.stream().map(row -> row.stream()
+                .map(StringBuilder::toString)
+                .collect(Collectors.toList())).toList();
+        Table<String> queryAsTable = new DynamicTable<>(queryAsList);
+
+        return new TableQuery(queryAsTable);
     }
 
     private void refreshResults()

@@ -1,10 +1,20 @@
 {
   "data-lakes": [
     {
-      "Wikitables": "127.0.0.1"
+      "name": "Wikitables",
+      "ip": "127.0.0.1",
+      "login": {
+        "username": "admin",
+        "password": "1234"
+      }
     },
     {
-      "GitTables": "127.0.0.1"
+      "name": "GitTables",
+      "ip": "127.0.0.1",
+      "login": {
+        "username": "admin",
+        "password": "1234"
+      }
     }
   ]
 }
