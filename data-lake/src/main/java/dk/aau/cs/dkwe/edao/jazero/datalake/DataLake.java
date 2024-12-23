@@ -915,7 +915,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
     @GetMapping("/count")
     public ResponseEntity<String> getEntityCount(@RequestHeader Map<String, String> headers)
     {
-        if (authenticateUser(headers) != Authenticator.Auth.READ)
+        if (authenticateUser(headers) == Authenticator.Auth.NOT_AUTH)
         {
             return ResponseEntity.badRequest().body("User does not have read privileges");
         }
