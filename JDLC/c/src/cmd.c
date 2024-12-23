@@ -6,8 +6,8 @@
 #include <string.h>
 
 #define USAGE "usage: jdlc [option] ...\n" \
-                "-o, --operation : Jazero operation to perform (search, insert, insertembeddings, ping, clear, clearembeddings, adduser, removeuser)\n" \
-                "\nping, search, insert, insertembeddings, clear, clearembeddings, adduser, removeuser\n" \
+                "-o, --operation : Jazero operation to perform (search, insert, insertembeddings, ping, clear, clearembeddings, adduser, removeuser, count)\n" \
+                "\nping, search, insert, insertembeddings, clear, clearembeddings, adduser, removeuser, count\n" \
                 "-h, --host : Host of machine on which Jazero is deployed\n" \
                 "-u, --username : Username of this user\n" \
                 "-c, --password : Password for this user\n" \
@@ -34,11 +34,13 @@
                 "-nc, --newpassword : Password of new user\n" \
                 "\nremoveuser\n" \
                 "-ou, --oldusername : Username of user to remove\n" \
+                "\ncount\n" \
+                "-n, --count : URI of entity to retrieve count of in data lake tables" \
 
 struct arguments
 {
     char *host, *query_file, *table_loc, *jazero_dir, *storage_type, *table_prefix, *kg_prefix, *embeddings_file,
-            *delimiter, *error_msg, *this_username, *this_password, *new_username, *new_password, *old_username;
+            *delimiter, *error_msg, *this_username, *this_password, *new_username, *new_password, *old_username, *uri;
     enum operation op;
     enum cosine_function cos_func;
     enum similarity_measure sim_measure;
@@ -137,6 +139,12 @@ static response do_remove_user(const char *ip, const char *username, const char 
     return remove_user(ip, u, old_username);
 }
 
+static response do_count(char *ip, const char *username, const char *password, const char *uri)
+{
+    user u = create_user(username, password);
+    return count(ip, u, uri);
+}
+
 error_t parse(const char *key, const char *arg, struct arguments *args)
 {
     if (check_key(key, "-h", "--host"))
@@ -184,6 +192,11 @@ error_t parse(const char *key, const char *arg, struct arguments *args)
         else if (strcmp(arg, "removeuser") == 0)
         {
             args->op = REMOVE_USER;
+        }
+
+        else if (strcmp(arg, "count") == 0)
+        {
+            args->op = COUNT;
         }
 
         else
@@ -372,6 +385,11 @@ error_t parse(const char *key, const char *arg, struct arguments *args)
         args->old_username = (char *) arg;
     }
 
+    else if (check_key(key, "-n", "--count"))
+    {
+        args->uri = (char *) arg;
+    }
+
     else
     {
         args->parse_error = 1;
@@ -393,6 +411,7 @@ int main(int argc, char *argv[])
     args.jazero_dir = NULL;
     args.query_file = NULL;
     args.table_loc = NULL;
+    args.uri = NULL;
 
     for (int arg = 1; arg < argc; arg += 2)
     {
@@ -505,6 +524,16 @@ int main(int argc, char *argv[])
             }
 
             ret = do_remove_user(args.host, args.this_username, args.this_password, args.old_username);
+            break;
+
+        case COUNT:
+            if (args.uri == NULL)
+            {
+                ret = (response) {.status = REQUEST_ERROR, .msg = "Missing URI of entity"};
+                break;
+            }
+
+            ret = do_count(args.host, args.this_username, args.this_password, args.uri);
             break;
 
         default:

@@ -905,4 +905,35 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
         return ResponseEntity.ok("User '" + admin.username() + "' has been set as admin");
     }
+
+    /**
+     * Returns the number of times a given entity exists in the data lake
+     * @param headers Must contain an entry '"entity": <URI>' which is the argument containing the entity for which to retrieve the count
+     *                Must also contain the user credentials with read privileges
+     * @return Count of the given entity in the data lake
+     */
+    @GetMapping("/count")
+    public ResponseEntity<String> getEntityCount(@RequestHeader Map<String, String> headers)
+    {
+        if (authenticateUser(headers) != Authenticator.Auth.READ)
+        {
+            return ResponseEntity.badRequest().body("User does not have read privileges");
+        }
+
+        else if (indexLoadingInProgress || progressiveLoadingInProgress)
+        {
+            return ResponseEntity.badRequest().body("Indexes are currently being loaded");
+        }
+
+        String entity = headers.get("entity");
+        Id entityId = linker.uriLookup(entity);
+
+        if (entityId == null)
+        {
+            return ResponseEntity.ok("0");
+        }
+
+        int count = tableLink.find(entityId).size();
+        return ResponseEntity.ok(String.valueOf(count));
+    }
 }

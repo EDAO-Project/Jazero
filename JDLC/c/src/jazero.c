@@ -438,3 +438,26 @@ response remove_user(const char *ip, user u, const char *old_username)
 
     return res;
 }
+
+response count(const char *ip, user u, const char *uri)
+{
+    jdlc request;
+    struct properties headers = init_params_search();
+    struct address addr = init_addr(ip, DL_PORT, "/count");
+    prop_insert(&headers, "username", u.username, strlen(u.username));
+    prop_insert(&headers, "password", u.password, strlen(u.password));
+    prop_insert(&headers, "entity", uri, strlen(uri));
+
+    if (!init(&request, COUNT, addr, headers, NULL))
+    {
+        prop_clear(&headers);
+        addr_clear(addr);
+        return (response) {.status = JAZERO_ERROR, .msg = "Could not initialize Jazero COUNT request"};
+    }
+
+    response res = perform(request);
+    addr_clear(addr);
+    prop_clear(&headers);
+
+    return res;
+}
