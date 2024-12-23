@@ -261,4 +261,32 @@ public class DataLakeService extends Service implements DataLake
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * Returns the number of tables containing an entity
+     * Note that the results is orthogonal to the accuracy of the entity linker
+     * @param uri URI of entity to count
+     * @return Number of data lake tables containing an entity
+     */
+    @Override
+    public Response count(String uri)
+    {
+        this.headers.put("entity", uri);
+
+        try
+        {
+            Communicator comm = ServiceCommunicator.init(getHost(), DL_PORT, "count");
+            return comm.receive(this.headers);
+        }
+
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        finally
+        {
+            this.headers.remove("entity");
+        }
+    }
 }
