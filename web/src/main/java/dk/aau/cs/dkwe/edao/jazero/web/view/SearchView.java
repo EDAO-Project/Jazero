@@ -28,6 +28,7 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.system.User;
 import dk.aau.cs.dkwe.edao.jazero.web.util.ConfigReader;
 import dk.aau.cs.dkwe.edao.structures.Query;
 import dk.aau.cs.dkwe.edao.structures.TableQuery;
+import org.springframework.web.servlet.View;
 
 import java.io.File;
 import java.util.*;
@@ -41,11 +42,13 @@ public class SearchView extends Div
     private final Section querySection = new Section();
     private final Grid<Pair<String, Integer>> entityCounts = new Grid<>();
     private final List<dk.aau.cs.dkwe.edao.jazero.datalake.structures.Pair<File, Double>> results = new ArrayList<>();
+    private final View error;
     private Component resultComponent = null;
+    private String dataLake = null;
     private static int TEXTFIELD_WIDTH = 300;
     private static final int TEXTFIELD_HEIGHT = 25;
 
-    public SearchView()
+    public SearchView(View error)
     {
         this.layout.setDefaultHorizontalComponentAlignment(FlexComponent.Alignment.CENTER);
 
@@ -54,6 +57,7 @@ public class SearchView extends Div
         add(this.layout);
         getStyle().set("background-color", "#FEC69B");
         setHeightFull();
+        this.error = error;
     }
 
     private Component buildHeader()
@@ -206,11 +210,12 @@ public class SearchView extends Div
             return span;
         }));
         dataLakes.setClassName("combo-box");
+        dataLakes.addValueChangeListener(event -> this.dataLake = dataLakes.getValue());
         middleColumnLayout.add(dataLakes, prefilterBox);
 
         VerticalLayout rightColumnLayout = new VerticalLayout();
         Button searchButton = new Button("Search", event -> search(topKField.getValue(), entitySimilarities.getValue(),
-                dataLakes.getValue(), prefilterBox.getValue()));
+                this.dataLake, prefilterBox.getValue()));
         searchButton.setWidth("200px");
         searchButton.setHeight("80px");
         searchButton.getStyle().set("background-color", "#57AF34");
@@ -341,9 +346,46 @@ public class SearchView extends Div
         return contents;
     }
 
+    private Dialog errorDialog(String message)
+    {
+        Dialog errorDialog = new Dialog("Error");
+        VerticalLayout layout = new VerticalLayout();
+        H4 h4Message = new H4(message);
+        layout.add(h4Message);
+        errorDialog.add(layout);
+
+        Button closeButton = new Button(new Icon("lumo", "cross"), event -> errorDialog.close());
+        errorDialog.getHeader().add(closeButton);
+        this.layout.add(errorDialog);
+
+        return errorDialog;
+    }
+
     private int count(String entity)
     {
-        return 0;
+        if (this.dataLake == null)
+        {
+            Dialog errorDialog = errorDialog("Please select a data lake");
+            errorDialog.open();
+
+            return -1;
+        }
+
+        try
+        {
+            String dlHost = ConfigReader.getIp(this.dataLake), username = ConfigReader.getUsername(this.dataLake),
+                    password = ConfigReader.getPassword(this.dataLake);
+            DataLakeService dl = new DataLakeService(dlHost, new User(username, password, true));
+            return Integer.parseInt((String) dl.count(entity).getResponse());
+        }
+
+        catch (RuntimeException e)
+        {
+            Dialog errorDialog = errorDialog(e.getMessage());
+            errorDialog.open();
+
+            return -1;
+        }
     }
 
     private void search(int topK, String entitySimilarity, String dataLake, boolean prefilter)
@@ -377,9 +419,7 @@ public class SearchView extends Div
 
         else
         {
-            // TODO: Throw error
-            System.out.println("Not recognized: (" + entitySimilarity + ")");
-            similarity = null;
+            throw new RuntimeException("Not recognized: (" + entitySimilarity + ")");
         }
 
         try
@@ -389,8 +429,7 @@ public class SearchView extends Div
 
             if (pingResponse.getResponseCode() != 200)
             {
-                // TODO: Handle connection error
-                System.out.println("Connection error");
+                throw new RuntimeException("Connection error");
             }
 
             Result result = dl.search(query, topK, similarity, prefilter);
@@ -406,8 +445,8 @@ public class SearchView extends Div
 
         catch (RuntimeException e)
         {
-            // TODO: Handle search error
-            System.out.println("Error: " + e.getMessage());
+            Dialog errorDialog = errorDialog(e.getMessage());
+            errorDialog.open();
         }
     }
 
