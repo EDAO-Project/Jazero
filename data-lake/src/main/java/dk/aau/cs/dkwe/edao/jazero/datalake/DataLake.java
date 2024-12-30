@@ -338,6 +338,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             return ResponseEntity.internalServerError().body("Result set is null");
         }
 
+        analysis.record("search", 1);
         return ResponseEntity
                 .ok()
                 .contentType(MediaType.APPLICATION_JSON)
@@ -744,6 +745,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             return ResponseEntity.internalServerError().body("Failed updating cleared indexes to disk: " + e.getMessage());
         }
 
+        analysis.record("clear", 1);
         return ResponseEntity.ok("Removed all tables and cleared all indexes successfully");
     }
 
@@ -776,6 +778,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             Configuration.setEmbeddingsLoaded(false);
             Logger.log(Logger.Level.INFO, "Done");
             FileLogger.log(FileLogger.Service.SDL_Manager, "Cleared all embeddings");
+            analysis.record("clear-embeddings", 1);
 
             return ResponseEntity.ok("Embeddings from DB have been cleared");
         }
@@ -817,6 +820,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
         Logger.log(Logger.Level.INFO, "Removed table '" + tableId + "'");
         FileLogger.log(FileLogger.Service.SDL_Manager, "Table '" + tableId + "' has been removed");
+        analysis.record("remove-table", 1);
 
         return ResponseEntity.ok("Table '" + tableId + "' was deleted successfully");
     }
@@ -849,6 +853,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         auth.allow(new User(newUsername, newPassword, false));
         Logger.log(Logger.Level.INFO, "Added user '" + newUsername + "'");
         FileLogger.log(FileLogger.Service.SDL_Manager, "New user '" + newUsername + "' was added");
+        analysis.record("add-user", 1);
 
         return ResponseEntity.ok("User '" + newUsername + "' has been added");
     }
@@ -874,6 +879,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         auth.disallow(oldUsername);
         Logger.log(Logger.Level.INFO, "Removed user '" + oldUsername + "'");
         FileLogger.log(FileLogger.Service.SDL_Manager, "User '" + oldUsername + "' was removed");
+        analysis.record("remove-user", 1);
 
         return ResponseEntity.ok("User '" + oldUsername + "' has been removed");
     }
@@ -902,6 +908,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         Configuration.setAdmin();
         Logger.log(Logger.Level.INFO, "Admin has been set");
         FileLogger.log(FileLogger.Service.SDL_Manager, "Admin has been set");
+        analysis.record("set-admin", 1);
 
         return ResponseEntity.ok("User '" + admin.username() + "' has been set as admin");
     }
@@ -934,6 +941,9 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         }
 
         int count = tableLink.find(entityId).size();
+        analysis.record("count", 1);
+        Logger.log(Logger.Level.INFO, "Count of '" + entity + "' is " + count);
+
         return ResponseEntity.ok(String.valueOf(count));
     }
 }
