@@ -124,6 +124,15 @@ class Connector:
             return 'Failed clearing embeddings: ' + req.text
 
         return req.text
+    
+    def count(self, uri):
+        headers = {'username': self.__username, 'password': self.__password, 'entity': uri}
+        req = requests.get(self.__host + ':' + str(self.__sdlPort) + '/count', headers = headers)
+
+        if (req.status_code != 200):
+            return 'Failed retrieving count for \'' + uri + '\''
+        
+        return req.text
 
 # Use --host to specify host and -o for operation
 # Operations:
@@ -158,7 +167,7 @@ class Connector:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('JDLC Connector')
     parser.add_argument('--host', metavar = 'Host', type = str, help = 'Host of machine on which Jazero is deployed', required = True)
-    parser.add_argument('-o', '--operation', metavar = 'Op', type = str, help = 'Jazero operation to perform (ping, search, insert, loadembeddings, clear, clearembeddings)', choices = ['ping', 'search', 'insert', 'loadembeddings', 'clear', 'clearembeddings'], required = True)
+    parser.add_argument('-o', '--operation', metavar = 'Op', type = str, help = 'Jazero operation to perform (ping, search, insert, loadembeddings, clear, clearembeddings, count)', choices = ['ping', 'search', 'insert', 'loadembeddings', 'clear', 'clearembeddings'], required = True)
     parser.add_argument('-u', '--username', metavar = 'Username', type = str, help = 'Username of user', required = True)
     parser.add_argument('-c', '--password', metavar = 'Password', type = str, help = 'Password for user', required = True)
     parser.add_argument('-q', '--query', metavar = 'Query', type = str, help = 'Query file path', required = False)
@@ -174,7 +183,8 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--delimiter', metavar = 'Delimiter', type = str, help = 'Delimiter in embeddings file (see README)', required = False, default = ' ')
     parser.add_argument('-pf', '--prefilter', metavar = 'Prefilter', type = str, help = 'Apply HNSW pre-filtering (\'TRUE\', \'FALSE\')', required = False, default = 'FALSE')
     parser.add_argument('-prog', '--progressive', metavar = 'Progressive', type = str, help = 'Flag for progressive indexing (\'TRUE\', \'FALSE\')', required = False, default = "FALSE")
-    
+    parser.add_argument('-n', '--count', metavar = 'Count', type = str, help = 'URI of entity to retrieve count for', required = False)
+
     args = parser.parse_args()
     host = args.host
     op = args.operation
@@ -256,5 +266,9 @@ if __name__ == '__main__':
 
     elif (op == 'clearembeddings'):
         output = conn.clear_embeddings()
+    
+    elif (op == 'count'):
+        uri = args.count
+        output = conn.count(uri)
 
     print(output)
