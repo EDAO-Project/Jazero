@@ -1,26 +1,25 @@
 package dk.aau.cs.dkwe.edao.jazero.datalake.search;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
+import com.google.gson.*;
 import dk.aau.cs.dkwe.edao.jazero.datalake.loader.Stats;
 import dk.aau.cs.dkwe.edao.jazero.datalake.parser.ParsingException;
 import dk.aau.cs.dkwe.edao.jazero.datalake.parser.TableParser;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Pair;
+import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.SimpleTable;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.Table;
 
 import java.io.*;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class Result
 {
-    private final int k, size;
-    private final List<Pair<File, Double>> tableScores;
+    private int k, size;
+    private List<Pair<File, Double>> tableScores;
+    private List<Pair<Double, Table<String>>> resultTables;
+    private boolean limitedByMemory = false;
     private final Map<String, Stats> stats;
-    private final double runtime;
+    private double runtime;
     private double reduction = 0;
     private static final double MAX_MEM_LIMIT_FACTOR = 0.45;    // In case the query is run locally, the total memory consumption will be double to store the results
 
@@ -32,11 +31,13 @@ public class Result
         this.stats = tableStats;
         this.runtime = runtime;
         this.reduction = reduction;
+        this.resultTables = null;
     }
 
-    public Result(int k, Map<String, Stats> tableStats, double runtime, double reduction, Pair<File, Double> ... tableScores)
+    private Result(String json)
     {
-        this(k, List.of(tableScores), runtime, reduction, tableStats);
+        this.resultTables = parseTables(json);
+        this.stats = Map.of();
     }
 
     public int getK()
@@ -47,6 +48,16 @@ public class Result
     public int getSize()
     {
         return this.size;
+    }
+
+    public double getRuntime()
+    {
+        return this.runtime;
+    }
+
+    public double getReduction()
+    {
+        return this.reduction;
     }
 
     public Iterator<Pair<File, Double>> getResults()
@@ -67,28 +78,26 @@ public class Result
     @Override
     public String toString()
     {
+        List<Pair<Double, Table<String>>> tables = getTables();
         JsonObject object = new JsonObject();
         JsonArray array = new JsonArray(getK());
-        Iterator<Pair<File, Double>> scores = getResults();
-        double availableMemory = Runtime.getRuntime().freeMemory() * MAX_MEM_LIMIT_FACTOR;
-        AtomicLong usedMemory = new AtomicLong(0);
 
-        while (scores.hasNext())
+        for (Pair<Double, Table<String>> score : tables)
         {
-            if (usedMemory.get() > availableMemory)
+            Table<String> table = score.second();
+            JsonObject jsonScore = new JsonObject();
+            JsonArray jsonHeaders = new JsonArray();
+
+            for (String header : table.getColumnLabels())
             {
-                object.addProperty("message", "Result set was limited due to not enough memory");
-                break;
+                jsonHeaders.add(header);
             }
 
-            Pair<File, Double> score = scores.next();
-            JsonObject jsonScore = new JsonObject();
-            String tableId = score.first().getName();
-            jsonScore.add("table ID", new JsonPrimitive(tableId));
+            jsonScore.add("table ID", new JsonPrimitive(table.getId()));
+            jsonScore.add("headers", jsonHeaders);
 
             try
             {
-                Table<String> table = TableParser.parse(score.first());
                 int rowCount = table.rowCount();
                 JsonArray rows = new JsonArray(rowCount);
 
@@ -100,17 +109,14 @@ public class Result
                         JsonObject cellObject = new JsonObject();
                         cellObject.addProperty("text", cell);
                         column.add(cellObject);
-                        usedMemory.setPlain(usedMemory.get() + 5 + cell.length());
                     });
 
                     rows.add(column);
-                    usedMemory.setPlain(usedMemory.get() + 10);
                 }
 
                 jsonScore.add("table", rows);
-                jsonScore.add("score", new JsonPrimitive(score.second()));
+                jsonScore.add("score", new JsonPrimitive(score.first()));
                 array.add(jsonScore);
-                usedMemory.setPlain(usedMemory.get() + 25 + tableId.length());
             }
 
             catch (ParsingException e) {}
@@ -120,6 +126,126 @@ public class Result
         object.addProperty("runtime", this.runtime);
         object.addProperty("reduction", this.reduction);
 
+        if (this.limitedByMemory)
+        {
+            object.addProperty("message", "Result set was limited due to not enough memory");
+        }
+
         return object.toString();
+    }
+
+    private List<Pair<Double, Table<String>>> parseTables()
+    {
+        Iterator<Pair<File, Double>> scores = getResults();
+        double availableMemory = Runtime.getRuntime().freeMemory() * MAX_MEM_LIMIT_FACTOR;
+        AtomicLong usedMemory = new AtomicLong(0);
+        List<Pair<Double, Table<String>>> tables = new ArrayList<>();
+
+        while (scores.hasNext())
+        {
+            if (usedMemory.get() > availableMemory)
+            {
+                this.limitedByMemory = true;
+                return tables;
+            }
+
+            Pair<File, Double> score = scores.next();
+            String tableId = score.first().getName();
+            Table<String> parsedTable = TableParser.parse(score.first());
+            Table<String> table = new SimpleTable<>(tableId, parsedTable.toList(), parsedTable.getColumnLabels());
+            int rowCount = table.rowCount();
+            tables.add(new Pair<>(score.second(), table));
+
+            for (int rowIdx = 0; rowIdx < rowCount; rowIdx++)
+            {
+                Table.Row<String> row = table.getRow(rowIdx);
+                row.forEach(cell -> usedMemory.setPlain(usedMemory.get() + 5 + cell.length()));
+                usedMemory.setPlain(usedMemory.get() + 25 + tableId.length());
+            }
+        }
+
+        return tables;
+    }
+
+    private List<Pair<Double, Table<String>>> parseTables(String json)
+    {
+        JsonElement jsonResult = JsonParser.parseString(json);
+        double runtime = jsonResult.getAsJsonObject().get("runtime").getAsDouble(),
+                reduction = jsonResult.getAsJsonObject().get("reduction").getAsDouble();
+        JsonArray jsonResultArray = jsonResult.getAsJsonObject().getAsJsonArray("scores");
+        this.runtime = runtime;
+        this.reduction = reduction;
+        this.k = jsonResultArray.size();
+
+        List<Pair<File, Double>> results = new ArrayList<>(this.k);
+        List<Pair<Double, Table<String>>> tables = new ArrayList<>(this.k);
+        double availableMemory = Runtime.getRuntime().freeMemory() * MAX_MEM_LIMIT_FACTOR;
+        AtomicLong usedMemory = new AtomicLong(0);
+
+        for (JsonElement element : jsonResultArray)
+        {
+            String tableId = element.getAsJsonObject().get("table ID").getAsString();
+            File tableFile = new File(tableId);
+            double score = element.getAsJsonObject().get("score").getAsDouble();
+            results.add(new Pair<>(tableFile, score));
+
+            if (usedMemory.get() < availableMemory)
+            {
+                List<List<String>> tableAsList = new ArrayList<>();
+                JsonArray jsonTableRows = element.getAsJsonObject().getAsJsonArray("table");
+
+                for (JsonElement row : jsonTableRows)
+                {
+                    List<String> rowAsList = new ArrayList<>();
+                    JsonArray cells = row.getAsJsonArray();
+
+                    for (JsonElement cell : cells)
+                    {
+                        String text = cell.getAsJsonObject().get("text").getAsString();
+                        rowAsList.add(text);
+                        usedMemory.setPlain(usedMemory.get() + 25 + text.length());
+                    }
+
+                    tableAsList.add(rowAsList);
+                    usedMemory.setPlain(usedMemory.get() + 25 + tableId.length());
+                }
+
+                JsonArray jsonHeaders = element.getAsJsonObject().getAsJsonArray("headers");
+                String[] headers = new String[jsonHeaders.size()];
+                int i = 0;
+
+                for (JsonElement header : jsonHeaders)
+                {
+                    headers[i++] = header.getAsString();
+                }
+
+                Table<String> table = new SimpleTable<>(tableId, tableAsList, headers);
+                tables.add(new Pair<>(score, table));
+            }
+
+            else
+            {
+                this.limitedByMemory = true;
+            }
+        }
+
+        this.tableScores = results;
+        this.size = tables.size();
+        return tables;
+    }
+
+    public List<Pair<Double, Table<String>>> getTables()
+    {
+        if (this.resultTables == null)
+        {
+            this.resultTables = parseTables();
+        }
+
+        return this.resultTables;
+    }
+
+    public static Result fromJson(String json)
+    {
+        return new Result(json);
     }
 }

@@ -1,5 +1,9 @@
 package dk.aau.cs.dkwe.edao.jazero.web.view;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.button.Button;
@@ -17,6 +21,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.internal.Pair;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.theme.lumo.LumoIcon;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import dk.aau.cs.dkwe.edao.connector.DataLakeService;
 import dk.aau.cs.dkwe.edao.jazero.communication.Response;
@@ -30,8 +35,9 @@ import dk.aau.cs.dkwe.edao.structures.Query;
 import dk.aau.cs.dkwe.edao.structures.TableQuery;
 import org.springframework.web.servlet.View;
 
-import java.io.File;
+import java.io.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Route(value = "")
@@ -41,23 +47,31 @@ public class SearchView extends Div
     private final List<List<StringBuilder>> query = new ArrayList<>();
     private final Section querySection = new Section();
     private final Grid<Pair<String, Integer>> entityCounts = new Grid<>();
-    private final List<dk.aau.cs.dkwe.edao.jazero.datalake.structures.Pair<File, Double>> results = new ArrayList<>();
+    private Result result;
     private final View error;
+    private Component searchComponent;
     private Component resultComponent = null;
     private String dataLake = null;
     private static int TEXTFIELD_WIDTH = 300;
     private static final int TEXTFIELD_HEIGHT = 25;
+    private static final boolean debug = true;
 
     public SearchView(View error)
     {
         this.layout.setDefaultHorizontalComponentAlignment(FlexComponent.Alignment.CENTER);
 
-        Component header = buildHeader(), searchBar = buildSearchBar();
-        this.layout.add(header, searchBar);
-        add(this.layout);
-        getStyle().set("background-color", "#FEC69B");
-        setHeightFull();
+        Component header = buildHeader(), selectDL = buildSelectDataLake(), searchBar = buildSearchBar();
+        this.searchComponent = searchBar;
+        this.layout.add(header, selectDL, searchBar);
+        this.searchComponent.setVisible(false);
         this.error = error;
+
+        Scroller mainScroller = new Scroller(this.layout);
+        mainScroller.setWidthFull();
+        mainScroller.setHeightFull();
+        add(mainScroller);
+        getStyle().set("background-color", "#0000");
+        setHeightFull();
     }
 
     private Component buildHeader()
@@ -90,6 +104,30 @@ public class SearchView extends Div
         return header;
     }
 
+    private Component buildSelectDataLake()
+    {
+        VerticalLayout layout = new VerticalLayout();
+        H2 label = new H2("Select Data Lake");
+        ComboBox<String> dataLakes = new ComboBox<>("Data lake");
+        dataLakes.setItems(ConfigReader.dataLakes());
+        dataLakes.setRenderer(new ComponentRenderer<>(item -> {
+            Span span = new Span(item);
+            span.addClassNames("drop-down-items");
+            return span;
+        }));
+        dataLakes.setClassName("combo-box");
+        dataLakes.addValueChangeListener(event -> {
+            this.dataLake = dataLakes.getValue();
+            this.searchComponent.setVisible(true);
+        });
+        layout.add(label, dataLakes);
+        layout.getStyle().set("margin-top", "150px");
+        layout.addClassNames(LumoUtility.AlignItems.CENTER, LumoUtility.AlignContent.CENTER,
+                LumoUtility.JustifyContent.CENTER);
+
+        return layout;
+    }
+
     private Component buildSearchBar()
     {
         Component tableInput = buildTableQueryInputComponent();
@@ -102,7 +140,7 @@ public class SearchView extends Div
         VerticalLayout searchBarLayout = new VerticalLayout(queryTableLayout, actionComponent);
         searchBarLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
         searchBarLayout.setAlignItems(FlexComponent.Alignment.CENTER);
-        searchBarLayout.getStyle().set("margin-top", "200px");
+        searchBarLayout.getStyle().set("margin-top", "50px");
 
         return searchBarLayout;
     }
@@ -200,19 +238,7 @@ public class SearchView extends Div
         topKField.setStepButtonsVisible(true);
         leftColumnLayout.add(entitySimilarities, topKField);
 
-        VerticalLayout middleColumnLayout = new VerticalLayout();
-        ComboBox<String> dataLakes = new ComboBox<>("Data lake");
         Checkbox prefilterBox = new Checkbox("Pre-filter", false);
-        dataLakes.setItems(ConfigReader.dataLakes());
-        dataLakes.setRenderer(new ComponentRenderer<>(item -> {
-            Span span = new Span(item);
-            span.addClassNames("drop-down-items");
-            return span;
-        }));
-        dataLakes.setClassName("combo-box");
-        dataLakes.addValueChangeListener(event -> this.dataLake = dataLakes.getValue());
-        middleColumnLayout.add(dataLakes, prefilterBox);
-
         VerticalLayout rightColumnLayout = new VerticalLayout();
         Button searchButton = new Button("Search", event -> search(topKField.getValue(), entitySimilarities.getValue(),
                 this.dataLake, prefilterBox.getValue()));
@@ -220,9 +246,9 @@ public class SearchView extends Div
         searchButton.setHeight("80px");
         searchButton.getStyle().set("background-color", "#57AF34");
         searchButton.setClassName("search-button");
-        rightColumnLayout.add(searchButton);
+        rightColumnLayout.add(prefilterBox, searchButton);
 
-        return new HorizontalLayout(leftColumnLayout, middleColumnLayout, rightColumnLayout);
+        return new HorizontalLayout(leftColumnLayout, rightColumnLayout);
     }
 
     private void addRow()
@@ -312,12 +338,17 @@ public class SearchView extends Div
 
     private void updateEntityCounts()
     {
+        this.entityCounts.getStyle().set("background-color", "#DBDBDB");
         this.entityCounts.setHeight("200px");
         this.entityCounts.removeAllColumns();
         this.entityCounts.addComponentColumn(item -> {
             VerticalLayout layout = new VerticalLayout();
-            layout.add(new Html("<div><b>Entity</b>" + item.getFirst() + "</div>"));
-            layout.add(new Html("<div><b>Count</b>" + item.getSecond() + "</div>"));
+            Html entity = new Html("<div><b>Entity</b>" + item.getFirst() + "</div>"),
+                    count = new Html("<div><b>Count</b>" + item.getSecond() + "</div>");
+            entity.getStyle().set("background-color", "#DBDBDB");
+            count.getStyle().set("background-color", "#DBDBDB");
+            layout.add(entity, count);
+            layout.getStyle().set("background-color", "#DBDBDB");
 
             return layout;
         }).setHeader("Entity counts").setVisible(false);
@@ -424,6 +455,13 @@ public class SearchView extends Div
 
         try
         {
+            if (debug)
+            {
+                this.result = parseDebugResult();
+                refreshResults();
+                return;
+            }
+
             DataLakeService dl = new DataLakeService(dataLakeIp, user);
             Response pingResponse = dl.ping();
 
@@ -432,14 +470,7 @@ public class SearchView extends Div
                 throw new RuntimeException("Connection error");
             }
 
-            Result result = dl.search(query, topK, similarity, prefilter);
-            Iterator<dk.aau.cs.dkwe.edao.jazero.datalake.structures.Pair<File, Double>> resultsIter = result.getResults();
-
-            while (resultsIter.hasNext())
-            {
-                this.results.add(resultsIter.next());
-            }
-
+            this.result = dl.search(query, topK, similarity, prefilter);
             refreshResults();
         }
 
@@ -458,6 +489,27 @@ public class SearchView extends Div
         Table<String> queryAsTable = new DynamicTable<>(queryAsList);
 
         return new TableQuery(queryAsTable);
+    }
+
+    private Result parseDebugResult()
+    {
+        try (BufferedReader reader = new BufferedReader(new FileReader("debug_output.json")))
+        {
+            int c;
+            StringBuilder builder = new StringBuilder();
+
+            while ((c = reader.read()) != -1)
+            {
+                builder.append((char) c);
+            }
+
+            return Result.fromJson(builder.toString());
+        }
+
+        catch (IOException e)
+        {
+            return new Result(0, List.of(), -1.0, -1.0, Map.of());
+        }
     }
 
     private void refreshResults()
@@ -482,8 +534,9 @@ public class SearchView extends Div
         VerticalLayout resultLayout = new VerticalLayout();
         HorizontalLayout resultHeader = new HorizontalLayout(), subHeader = new HorizontalLayout();
         Section resultSection = new Section();
+        Component resultsList = buildResultsList();
         H1 resultLabel = new H1("Results");
-        H2 topKLabel = new H2("Top-" + this.results.size());
+        H2 topKLabel = new H2("Top-" + this.result.getSize());
         Dialog stats = statsDialog();
         Button clearButton = new Button("Clear", event -> clearResults()),
                 statsButton = new Button("Statistics", event -> stats.open());
@@ -492,10 +545,9 @@ public class SearchView extends Div
         clearButton.getStyle().set("--vaadin-button-text-color", "white");
         statsButton.getStyle().set("background-color", "#00669E");
         statsButton.getStyle().set("--vaadin-button-text-color", "white");
-        // TODO: Add results here to resultLayout
         resultHeader.add(resultLabel, clearButton);
         subHeader.add(topKLabel, stats, statsButton);
-        resultLayout.add(resultHeader, subHeader);
+        resultLayout.add(resultHeader, subHeader, resultsList);
         clearResults();
         resultSection.add(resultLayout);
         resultSection.getStyle().set("background-color", "#2C85B6");
@@ -510,7 +562,8 @@ public class SearchView extends Div
     {
         Dialog dialog = new Dialog("Statistics");
         VerticalLayout layout = new VerticalLayout();
-        H4 runtime = new H4("Runtime: 0s"), reduction = new H4("Reduction: 0%");
+        H4 runtime = new H4("Runtime: " + this.result.getRuntime() + "s"),
+                reduction = new H4("Reduction: " + this.result.getReduction() + "%");
         layout.add(runtime, reduction);
         dialog.add(layout);
 
@@ -518,5 +571,54 @@ public class SearchView extends Div
         dialog.getHeader().add(closeButton);
 
         return dialog;
+    }
+
+    private Component buildResultsList()
+    {
+        VerticalLayout layout = new VerticalLayout();
+        int rank = 1;
+
+        for (var resultTable : this.result.getTables())
+        {
+            double score = resultTable.first();
+            Table<String> table = resultTable.second();
+            H3 rankLabel = new H3(rank++ + ".");
+            H3 tableIdLabel = new H3(table.getId());
+            H4 scoreLabel = new H4("Score: " + score);
+            Icon tableIcon = VaadinIcon.TABLE.create();
+            tableIcon.setSize("100px");
+
+            Button iconButton = new Button(tableIcon, event -> {
+                Dialog resultDialog = new Dialog(table.getId());
+                VerticalLayout dialogLayout = new VerticalLayout(resultTableGrid(table));
+                Button closeButton = new Button(new Icon("lumo", "cross"), buttonEvent -> resultDialog.close());
+                resultDialog.add(dialogLayout);
+                resultDialog.getHeader().add(closeButton);
+                resultDialog.setHeight("1500px");
+                resultDialog.setWidth("4000px");
+                resultDialog.open();
+            });
+            iconButton.setHeight("50px");
+
+            VerticalLayout tableLayout = new VerticalLayout(tableIdLabel, scoreLabel, iconButton);
+            HorizontalLayout resultLayout = new HorizontalLayout(rankLabel, tableLayout);
+            layout.add(resultLayout);
+        }
+
+        return layout;
+    }
+
+    private static Component resultTableGrid(Table<String> table)
+    {
+        Grid<List<String>> grid = new Grid<>();
+        grid.setItems(table.toList());
+
+        for (int i = 0; i < table.getColumnLabels().length; i++)
+        {
+            int index = i;
+            grid.addColumn(row -> row.get(index)).setHeader(table.getColumnLabels()[index]);
+        }
+
+        return grid;
     }
 }

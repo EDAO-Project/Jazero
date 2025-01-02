@@ -7,16 +7,12 @@ import dk.aau.cs.dkwe.edao.jazero.communication.ServiceCommunicator;
 import dk.aau.cs.dkwe.edao.jazero.datalake.connector.service.Service;
 import dk.aau.cs.dkwe.edao.jazero.datalake.search.Result;
 import dk.aau.cs.dkwe.edao.jazero.datalake.search.TableSearch;
-import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Pair;
 import dk.aau.cs.dkwe.edao.jazero.datalake.system.User;
 import dk.aau.cs.dkwe.edao.structures.Query;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class DataLakeService extends Service implements DataLake
@@ -130,21 +126,7 @@ public class DataLakeService extends Service implements DataLake
                 throw new RuntimeException("Search request failed. Received response code " + response.getResponseCode() + ".");
             }
 
-            JsonElement jsonResult = JsonParser.parseString((String) response.getResponse());
-            double runtime = jsonResult.getAsJsonObject().get("runtime").getAsDouble(),
-                    reduction = jsonResult.getAsJsonObject().get("reduction").getAsDouble();
-            JsonArray jsonResultArray = jsonResult.getAsJsonObject().getAsJsonArray("scores");
-            List<Pair<File, Double>> results = new ArrayList<>(k);
-
-            for (JsonElement element : jsonResultArray)
-            {
-                String tableId = element.getAsJsonObject().get("table ID").getAsString();
-                File tableFile = new File(tableId);
-                double score = element.getAsJsonObject().get("score").getAsDouble();
-                results.add(new Pair<>(tableFile, score));
-            }
-
-            return new Result(k, results, runtime, reduction, new HashMap<>());
+            return Result.fromJson((String) response.getResponse());
         }
 
         catch (IOException e)

@@ -196,3 +196,6 @@ mvn clean install
 ```
 
 Now, do the same for the `storage` module, as the `data-lake` module depends on this.
+
+When updating the code of `data-lake`, `mvn clean package` and move `data-lake/target/data-lake-1.0-SNAPSHOT.jar` to `web/dependencies/data-lake-1.0.jar`.
+Similarly, when building `communication/`, move `communication/target/commnication-1.0-SNAPSHOT.jar` to `web/dependencies/communication-1.0.jar` and `JDLC/java/target/jazero-1.0.jar` to `web/dependencies/jazero-1.0.jar`.

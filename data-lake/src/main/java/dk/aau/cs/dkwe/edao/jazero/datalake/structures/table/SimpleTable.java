@@ -7,9 +7,11 @@ public class SimpleTable<T> implements Table<T>
 {
     private final List<Row<T>> table;
     private final List<String> labels;
+    private String id;
 
     public SimpleTable(String ... columnLabels)
     {
+        this.id = "";
         this.labels = List.of(columnLabels);
         this.table = new ArrayList<>();
     }
@@ -22,6 +24,24 @@ public class SimpleTable<T> implements Table<T>
         {
             this.table.add(new Row<>(row));
         }
+    }
+
+    public SimpleTable(String id, String ... columnLabels)
+    {
+        this(columnLabels);
+        this.id = id;
+    }
+
+    public SimpleTable(String id, List<List<T>> table, String ... columnLabels)
+    {
+        this(table, columnLabels);
+        this.id = id;
+    }
+
+    @Override
+    public String getId()
+    {
+        return this.id;
     }
 
     @Override
@@ -129,5 +149,26 @@ public class SimpleTable<T> implements Table<T>
         }
 
         return true;
+    }
+
+    @Override
+    public int compareTo(Table<String> other)
+    {
+        return Integer.compare(rowCount(), other.rowCount());
+    }
+
+    @Override
+    public List<List<T>> toList()
+    {
+        List<List<T>> table = new ArrayList<>();
+
+        for (Row<T> row : this.table)
+        {
+            List<T> listRow = new ArrayList<>();
+            row.forEach(listRow::add);
+            table.add(listRow);
+        }
+
+        return table;
     }
 }

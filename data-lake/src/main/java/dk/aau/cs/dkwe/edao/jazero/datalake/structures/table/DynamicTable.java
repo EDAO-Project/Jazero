@@ -12,9 +12,11 @@ public class DynamicTable<T> implements Table<T>
 {
     private final List<Row<T>> table;
     private final List<String> labels;
+    private String id;
 
     public DynamicTable(List<String> columnLabels)
     {
+        this.id = "";
         this.labels = columnLabels;
         this.table = new Vector<>();    // Vector does the synchronization for us
     }
@@ -37,6 +39,36 @@ public class DynamicTable<T> implements Table<T>
     public DynamicTable(List<List<T>> table, String ... columnLabels)
     {
         this(table, List.of(columnLabels));
+    }
+
+    public DynamicTable(String id, List<String> columnLabels)
+    {
+        this(columnLabels);
+        this.id = id;
+    }
+
+    public DynamicTable(String id, String ... columnLabels)
+    {
+        this(columnLabels);
+        this.id = id;
+    }
+
+    public DynamicTable(String id, List<List<T>> table, List<String> columnLabels)
+    {
+        this(table, columnLabels);
+        this.id = id;
+    }
+
+    public DynamicTable(String id, List<List<T>> table, String ... columnLabels)
+    {
+        this(table, columnLabels);
+        this.id = id;
+    }
+
+    @Override
+    public String getId()
+    {
+        return this.id;
     }
 
     @Override
@@ -144,5 +176,26 @@ public class DynamicTable<T> implements Table<T>
         }
 
         return true;
+    }
+
+    @Override
+    public int compareTo(Table<String> other)
+    {
+        return Integer.compare(rowCount(), other.rowCount());
+    }
+
+    @Override
+    public List<List<T>> toList()
+    {
+        List<List<T>> table = new ArrayList<>();
+
+        for (Row<T> row : this.table)
+        {
+            List<T> listRow = new ArrayList<>();
+            row.forEach(listRow::add);
+            table.add(listRow);
+        }
+
+        return table;
     }
 }

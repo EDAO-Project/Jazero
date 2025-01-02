@@ -14,6 +14,22 @@ public class SynchronizedTable<T> extends SimpleTable<T> implements Table<T>
         super(table, columnLabels);
     }
 
+    public SynchronizedTable(String id, String ... columnLabels)
+    {
+        super(id, columnLabels);
+    }
+
+    public SynchronizedTable(String id, List<List<T>> table, String ... columnLabels)
+    {
+        super(id, table, columnLabels);
+    }
+
+    @Override
+    public String getId()
+    {
+        return getId();
+    }
+
     @Override
     public synchronized Row<T> getRow(int index)
     {
@@ -67,5 +83,17 @@ public class SynchronizedTable<T> extends SimpleTable<T> implements Table<T>
     public boolean equals(Object o)
     {
         return super.equals(o);
+    }
+
+    @Override
+    public int compareTo(Table<String> other)
+    {
+        return super.compareTo(other);
+    }
+
+    @Override
+    public List<List<T>> toList()
+    {
+        return super.toList();
     }
 }

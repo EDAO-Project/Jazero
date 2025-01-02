@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public interface Table<T> extends Iterable<T>
+public interface Table<T> extends Iterable<T>, Comparable<Table<String>>
 {
     Row<T> getRow(int index);
     Column<T> getColumn(int index);
@@ -14,6 +14,8 @@ public interface Table<T> extends Iterable<T>
     int rowCount();
     int columnCount();
     void removeRow(int index);
+    String getId();
+    List<List<T>> toList();
 
     default String toStr()
     {
