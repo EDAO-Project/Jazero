@@ -2,6 +2,7 @@ package dk.aau.cs.dkwe.edao.jazero.web;
 
 import com.vaadin.flow.component.page.AppShellConfigurator;
 import com.vaadin.flow.component.page.Push;
+import com.vaadin.flow.server.AppShellSettings;
 import com.vaadin.flow.theme.Theme;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -25,6 +26,12 @@ public class Main implements AppShellConfigurator
     public Clock clock()
     {
         return Clock.systemUTC();
+    }
+
+    @Override
+    public void configurePage(AppShellSettings settings)
+    {
+        settings.addFavIcon("icon", "images/logo.png", "16x16");
     }
 
     public static void main(String[] args)

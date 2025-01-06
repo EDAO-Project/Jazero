@@ -1,9 +1,5 @@
 package dk.aau.cs.dkwe.edao.jazero.web.view;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.button.Button;
@@ -21,7 +17,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.internal.Pair;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.theme.lumo.LumoIcon;
+import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import dk.aau.cs.dkwe.edao.connector.DataLakeService;
 import dk.aau.cs.dkwe.edao.jazero.communication.Response;
@@ -30,6 +26,7 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.search.TableSearch;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.DynamicTable;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.Table;
 import dk.aau.cs.dkwe.edao.jazero.datalake.system.User;
+import dk.aau.cs.dkwe.edao.jazero.web.Main;
 import dk.aau.cs.dkwe.edao.jazero.web.util.ConfigReader;
 import dk.aau.cs.dkwe.edao.structures.Query;
 import dk.aau.cs.dkwe.edao.structures.TableQuery;
@@ -37,7 +34,6 @@ import org.springframework.web.servlet.View;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Route(value = "")
@@ -47,31 +43,31 @@ public class SearchView extends Div
     private final List<List<StringBuilder>> query = new ArrayList<>();
     private final Section querySection = new Section();
     private final Grid<Pair<String, Integer>> entityCounts = new Grid<>();
-    private Result result;
+    private final Main main;
     private final View error;
+    private Result result;
     private Component searchComponent;
     private Component resultComponent = null;
     private String dataLake = null;
-    private static int TEXTFIELD_WIDTH = 300;
+    private static final int TEXTFIELD_WIDTH = 300;
     private static final int TEXTFIELD_HEIGHT = 25;
     private static final boolean debug = true;
 
-    public SearchView(View error)
+    public SearchView(View error, Main main)
     {
         this.layout.setDefaultHorizontalComponentAlignment(FlexComponent.Alignment.CENTER);
 
         Component header = buildHeader(), selectDL = buildSelectDataLake(), searchBar = buildSearchBar();
         this.searchComponent = searchBar;
-        this.layout.add(header, selectDL, searchBar);
         this.searchComponent.setVisible(false);
         this.error = error;
 
-        Scroller mainScroller = new Scroller(this.layout);
-        mainScroller.setWidthFull();
-        mainScroller.setHeightFull();
-        add(mainScroller);
+        Div mainPage = new Div(selectDL, searchBar);
+        this.layout.add(header, mainPage);
+        add(this.layout);
         getStyle().set("background-color", "#0000");
         setHeightFull();
+        this.main = main;
     }
 
     private Component buildHeader()
@@ -82,23 +78,17 @@ public class SearchView extends Div
         header.setAlignItems(FlexComponent.Alignment.CENTER);
         header.getStyle().set("padding", "5px");
         header.getStyle().set("border-bottom", "1px solid #ccc");
-        header.getStyle().set("background-image", "url('/images/cover.png')");
         header.getStyle().set("background-size", "cover");
         header.getStyle().set("height", "150px");
-        header.getStyle().set("position", "fixed");
-        header.getStyle().set("top", "0");
-        header.getStyle().set("left", "0");
-        header.getStyle().set("right", "0");
 
         Image logo = new Image("images/logo.png", "Jazero Logo");
-        logo.setHeight("100px");
+        logo.setHeight("120px");
 
         Div systemName = new Div();
         systemName.setText("Jazero");
         systemName.getStyle().set("font-size", "100px");
         systemName.getStyle().set("font-weight", "bold");
         systemName.getStyle().set("margin-left", "10px");
-        systemName.getStyle().set("color", "white");
         header.add(logo, systemName);
 
         return header;
@@ -121,7 +111,7 @@ public class SearchView extends Div
             this.searchComponent.setVisible(true);
         });
         layout.add(label, dataLakes);
-        layout.getStyle().set("margin-top", "150px");
+        layout.getStyle().set("margin-top", "100px");
         layout.addClassNames(LumoUtility.AlignItems.CENTER, LumoUtility.AlignContent.CENTER,
                 LumoUtility.JustifyContent.CENTER);
 
@@ -338,17 +328,13 @@ public class SearchView extends Div
 
     private void updateEntityCounts()
     {
-        this.entityCounts.getStyle().set("background-color", "#DBDBDB");
         this.entityCounts.setHeight("200px");
         this.entityCounts.removeAllColumns();
         this.entityCounts.addComponentColumn(item -> {
             VerticalLayout layout = new VerticalLayout();
             Html entity = new Html("<div><b>Entity</b>" + item.getFirst() + "</div>"),
                     count = new Html("<div><b>Count</b>" + item.getSecond() + "</div>");
-            entity.getStyle().set("background-color", "#DBDBDB");
-            count.getStyle().set("background-color", "#DBDBDB");
             layout.add(entity, count);
-            layout.getStyle().set("background-color", "#DBDBDB");
 
             return layout;
         }).setHeader("Entity counts").setVisible(false);
@@ -540,13 +526,16 @@ public class SearchView extends Div
         Dialog stats = statsDialog();
         Button clearButton = new Button("Clear", event -> clearResults()),
                 statsButton = new Button("Statistics", event -> stats.open());
+        Button downloadResultsButton = new Button(downloadResult());
         clearButton.getStyle().set("margin-left", "100px");
         clearButton.getStyle().set("background-color", "#FD7B7C");
         clearButton.getStyle().set("--vaadin-button-text-color", "white");
         statsButton.getStyle().set("background-color", "#00669E");
         statsButton.getStyle().set("--vaadin-button-text-color", "white");
+        downloadResultsButton.getStyle().set("background-color", "#82EC9E");
+        downloadResultsButton.getStyle().set("--vaadin-button-text-color", "white");
         resultHeader.add(resultLabel, clearButton);
-        subHeader.add(topKLabel, stats, statsButton);
+        subHeader.add(topKLabel, stats, statsButton, downloadResultsButton);
         resultLayout.add(resultHeader, subHeader, resultsList);
         clearResults();
         resultSection.add(resultLayout);
@@ -620,5 +609,14 @@ public class SearchView extends Div
         }
 
         return grid;
+    }
+
+    private Anchor downloadResult()
+    {
+        StreamResource resource = new StreamResource("results.json", () -> new ByteArrayInputStream(this.result.toString().getBytes()));
+        Anchor anchor = new Anchor(resource, "Download results");
+        anchor.getElement().setAttribute("download", true);
+
+        return anchor;
     }
 }
