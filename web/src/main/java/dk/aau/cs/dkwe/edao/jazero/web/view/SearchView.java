@@ -13,6 +13,7 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.*;
 import com.vaadin.flow.component.textfield.IntegerField;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.internal.Pair;
@@ -50,7 +51,6 @@ public class SearchView extends Div
     private Component resultComponent = null;
     private String dataLake = null;
     private static final int TEXTFIELD_WIDTH = 300;
-    private static final int TEXTFIELD_HEIGHT = 25;
     private static final boolean debug = true;
 
     public SearchView(View error, Main main)
@@ -65,7 +65,6 @@ public class SearchView extends Div
         Div mainPage = new Div(selectDL, searchBar);
         this.layout.add(header, mainPage);
         add(this.layout);
-        getStyle().set("background-color", "#0000");
         setHeightFull();
         this.main = main;
     }
@@ -111,7 +110,6 @@ public class SearchView extends Div
             this.searchComponent.setVisible(true);
         });
         layout.add(label, dataLakes);
-        layout.getStyle().set("margin-top", "100px");
         layout.addClassNames(LumoUtility.AlignItems.CENTER, LumoUtility.AlignContent.CENTER,
                 LumoUtility.JustifyContent.CENTER);
 
@@ -120,93 +118,66 @@ public class SearchView extends Div
 
     private Component buildSearchBar()
     {
-        Component tableInput = buildTableQueryInputComponent();
-        HorizontalLayout queryTableLayout = new HorizontalLayout(tableInput);
-        queryTableLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
-        queryTableLayout.setAlignItems(FlexComponent.Alignment.CENTER);
-
+        VerticalLayout layout = new VerticalLayout();
+        HorizontalLayout queryLayout = new HorizontalLayout();
+        Component queryInput = buildQueryInput();
+        Component entityCounts = buildEntityCounts();
         Component actionComponent = buildSearchComponent();
+        queryLayout.add(queryInput, entityCounts);
+        layout.add(queryLayout, actionComponent);
 
-        VerticalLayout searchBarLayout = new VerticalLayout(queryTableLayout, actionComponent);
-        searchBarLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
-        searchBarLayout.setAlignItems(FlexComponent.Alignment.CENTER);
-        searchBarLayout.getStyle().set("margin-top", "50px");
-
-        return searchBarLayout;
+        return layout;
     }
 
-    private Component buildTableQueryInputComponent()
+    private Component buildQueryInput()
     {
-        int rows = 3, columns = 3;
         FlexLayout tableLayout = new FlexLayout();
+        HorizontalLayout header = new HorizontalLayout();
         H2 label = new H2("Input Query");
-        HorizontalLayout addColumnLayout = new HorizontalLayout();
-        VerticalLayout addRowLayout = new VerticalLayout();
-        tableLayout.setFlexWrap(FlexLayout.FlexWrap.WRAP);
-        addColumnLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
-        addColumnLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         label.addClassNames(LumoUtility.FontWeight.BOLD);
-
-        for (int i = 0; i < rows; i++)
-        {
-            List<StringBuilder> column = new ArrayList<>();
-
-            for (int j = 0; j < columns; j++)
-            {
-                column.add(new StringBuilder());
-            }
-
-            this.query.add(column);
-        }
-
+        initializeQueryTable();
         buildQueryTable();
 
         Scroller queryScroller = new Scroller(new Div(this.querySection));
-        queryScroller.getStyle().set("border", "2px solid #191817");
-        queryScroller.setWidth(1.08 * columns * TEXTFIELD_WIDTH + "px");
-        queryScroller.setHeight(2.35 * rows * TEXTFIELD_HEIGHT + "px");
+        Icon addRowIcon = new Icon(VaadinIcon.CHEVRON_DOWN), removeRowIcon = new Icon(VaadinIcon.CHEVRON_UP),
+                addColumnIcon = new Icon(VaadinIcon.CHEVRON_RIGHT), removeColumnIcon = new Icon(VaadinIcon.CHEVRON_LEFT);
+        addRowIcon.setColor("#3D423F");
+        removeRowIcon.setColor("#3D423F");
+        addColumnIcon.setColor("#3D423F");
+        removeColumnIcon.setColor("#3D423F");
+        queryScroller.setWidth("1200px");
+        queryScroller.setMaxWidth("1200px");
 
-        Icon plusIconAddRow = new Icon(VaadinIcon.PLUS), minusIconRemoveRow = new Icon(VaadinIcon.MINUS),
-                plusIconAddColumn = new Icon(VaadinIcon.PLUS), minusIconRemoveColumn = new Icon(VaadinIcon.MINUS);
-        plusIconAddRow.setColor("#3D423F");
-        minusIconRemoveRow.setColor("#3D423F");
-        plusIconAddColumn.setColor("#3D423F");
-        minusIconRemoveColumn.setColor("#3D423F");
+        Button addRowButton = new Button(new HorizontalLayout(addRowIcon, new H4("Add row")), item -> addRow());
+        Button removeRowButton = new Button(new HorizontalLayout(removeRowIcon, new H4("Remove row")), item -> removeRow());
+        Button addColumnButton = new Button(new HorizontalLayout(addColumnIcon, new H4("Add column")), item -> addColumn());
+        Button removeColumnButton = new Button(new HorizontalLayout(removeColumnIcon, new H4("Remove column")), item -> removeColumn());
+        Button clearQueryButton = new Button("Clear query", event -> clearQueryTable());
+        addRowButton.getStyle().set("background-color", "#D1D5D9");
+        removeRowButton.getStyle().set("background-color", "#D1D5D9");
+        addColumnButton.getStyle().set("background-color", "#D1D5D9");
+        removeColumnButton.getStyle().set("background-color", "#D1D5D9");
+        clearQueryButton.getStyle().set("margin-left", "100px");
+        clearQueryButton.getStyle().set("background-color", "#FD7B7C");
+        clearQueryButton.getStyle().set("--vaadin-button-text-color", "white");
+        header.add(label, clearQueryButton);
 
-        HorizontalLayout changeRowLayout = new HorizontalLayout();
-        Button addRowButton = new Button(plusIconAddRow, item -> addRow());
-        Button removeRowButton = new Button(minusIconRemoveRow, item -> removeRow());
-        addRowButton.setWidth(((columns * TEXTFIELD_WIDTH) * 2 / 3) + "px");
-        addRowButton.getStyle().set("background-color", "#ABB6B1");
-        removeRowButton.setWidth(((columns * TEXTFIELD_WIDTH) / 3) + "px");
-        removeRowButton.getStyle().set("background-color", "#ABB6B1");
-        changeRowLayout.getStyle().set("margin-top", "-10px");
-        changeRowLayout.add(addRowButton, removeRowButton);
-        changeRowLayout.setAlignItems(FlexComponent.Alignment.CENTER);
-        changeRowLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
-        changeRowLayout.addClassNames(LumoUtility.AlignItems.CENTER, LumoUtility.AlignContent.CENTER,
-                LumoUtility.JustifyContent.CENTER);
-
-        VerticalLayout changeColumnLayout = new VerticalLayout();
-        Button addColumnButton = new Button(plusIconAddColumn, item -> addColumn());
-        Button removeColumnButton = new Button(minusIconRemoveColumn, item -> removeColumn());
-        VerticalLayout entityCountsLayout = new VerticalLayout();
-        H3 entityCountsLabel = new H3("Entity counts");
-        entityCountsLabel.addClassNames(LumoUtility.FontWeight.BOLD);
-        addColumnButton.setHeight(((TEXTFIELD_HEIGHT * rows) * 2 / 3) + "px");
-        addColumnButton.getStyle().set("background-color", "#ABB6B1");
-        removeColumnButton.setHeight(((rows * TEXTFIELD_HEIGHT) / 3) + "ps");
-        removeColumnButton.getStyle().set("background-color", "#ABB6B1");
-        changeColumnLayout.add(addColumnButton, removeColumnButton);
-        changeColumnLayout.setWidth("100px");
-        updateEntityCounts();
-        entityCountsLayout.setWidth("700px");
-        entityCountsLayout.add(entityCountsLabel, this.entityCounts);
-        addColumnLayout.add(queryScroller, changeColumnLayout, entityCountsLayout);
-        addRowLayout.add(addColumnLayout, changeRowLayout);
-        tableLayout.add(label, addRowLayout);
+        HorizontalLayout rowButtonsLayout = new HorizontalLayout(addRowButton, removeRowButton);
+        VerticalLayout columnButtonsLayout = new VerticalLayout(addColumnButton, removeColumnButton);
+        HorizontalLayout horizontalCell = new HorizontalLayout(queryScroller, columnButtonsLayout);
+        VerticalLayout verticalCell = new VerticalLayout(header, horizontalCell, rowButtonsLayout);
+        tableLayout.add(verticalCell);
 
         return tableLayout;
+    }
+
+    private Component buildEntityCounts()
+    {
+        H3 label = new H3("Entity counts");
+        label.addClassNames(LumoUtility.FontWeight.BOLD);
+        updateEntityCounts();
+
+        return new VerticalLayout(label, this.entityCounts);
     }
 
     private Component buildSearchComponent()
@@ -294,7 +265,7 @@ public class SearchView extends Div
     private void buildQueryTable()
     {
         VerticalLayout tableRowLayout = new VerticalLayout();
-        int rows = this.query.size(), textFieldWidth = 300, textFieldHeight = 25;
+        int rows = this.query.size();
 
         for (int row = 0; row < rows; row++)
         {
@@ -306,10 +277,9 @@ public class SearchView extends Div
                 int rowCoordinate = row, columnCoordinate = column;
                 String cellContent = this.query.get(row).get(column).toString();
                 TextField textField = new TextField("", cellContent, "");
-                textField.setWidth(textFieldWidth + "px");
-                textField.setHeight(textFieldHeight + "px");
-                textField.getStyle().set("margin", "1px");
-                textField.getStyle().set("background-color", "#DADCDF");
+                textField.setWidth(TEXTFIELD_WIDTH + "px");
+                textField.getStyle().set("background-color", "#EFF0F2");
+                textField.getStyle().set("font-family", "Courier New");
                 textField.addValueChangeListener(event -> {
                     String content = event.getValue();
                     int oldContentLength = this.query.get(rowCoordinate).get(columnCoordinate).length();
@@ -326,9 +296,57 @@ public class SearchView extends Div
         this.querySection.add(tableRowLayout);
     }
 
+    private void initializeQueryTable()
+    {
+        int rows = 3, columns = 2;
+
+        for (int i = 0; i < rows; i++)
+        {
+            List<StringBuilder> column = new ArrayList<>();
+
+            for (int j = 0; j < columns; j++)
+            {
+                column.add(new StringBuilder());
+            }
+
+            this.query.add(column);
+        }
+    }
+
+    private void clearQueryTable()
+    {
+        this.query.clear();
+        updateEntityCounts();
+        initializeQueryTable();
+        buildQueryTable();
+    }
+
+    private void setQuery(Table<String> table)
+    {
+        int rows = table.rowCount();
+        this.query.clear();
+
+        // TODO: Remove non-entity column and row without entities
+        for (int row = 0; row < rows; row++)
+        {
+            Table.Row<String> tableRow = table.getRow(row);
+            int columns = tableRow.size();
+            List<StringBuilder> columnItems = new ArrayList<>();
+
+            for (int column = 0; column < columns; column++)
+            {
+                columnItems.add(new StringBuilder(table.getRow(row).get(column)));
+            }
+
+            this.query.add(columnItems);
+        }
+
+        updateEntityCounts();
+        buildQueryTable();
+    }
+
     private void updateEntityCounts()
     {
-        this.entityCounts.setHeight("200px");
         this.entityCounts.removeAllColumns();
         this.entityCounts.addComponentColumn(item -> {
             VerticalLayout layout = new VerticalLayout();
@@ -338,9 +356,20 @@ public class SearchView extends Div
 
             return layout;
         }).setHeader("Entity counts").setVisible(false);
-        this.entityCounts.addColumn(Pair::getFirst).setHeader("Entity");
-        this.entityCounts.addColumn(Pair::getSecond).setHeader("Count");
-        this.entityCounts.setItems(tableContents());
+
+        try
+        {
+            this.entityCounts.addColumn(Pair::getFirst).setHeader("Entity");
+            this.entityCounts.addColumn(Pair::getSecond).setHeader("Count");
+            this.entityCounts.setItems(tableContents());
+            this.entityCounts.setWidth("600px");
+        }
+
+        catch (RuntimeException e)
+        {
+            Dialog errorDialog = errorDialog(e.getMessage());
+            errorDialog.open();
+        }
     }
 
     private Set<Pair<String, Integer>> tableContents()
@@ -388,21 +417,10 @@ public class SearchView extends Div
             return -1;
         }
 
-        try
-        {
-            String dlHost = ConfigReader.getIp(this.dataLake), username = ConfigReader.getUsername(this.dataLake),
-                    password = ConfigReader.getPassword(this.dataLake);
-            DataLakeService dl = new DataLakeService(dlHost, new User(username, password, true));
-            return Integer.parseInt((String) dl.count(entity).getResponse());
-        }
-
-        catch (RuntimeException e)
-        {
-            Dialog errorDialog = errorDialog(e.getMessage());
-            errorDialog.open();
-
-            return -1;
-        }
+        String dlHost = ConfigReader.getIp(this.dataLake), username = ConfigReader.getUsername(this.dataLake),
+                password = ConfigReader.getPassword(this.dataLake);
+        DataLakeService dl = new DataLakeService(dlHost, new User(username, password, true));
+        return Integer.parseInt((String) dl.count(entity).getResponse());
     }
 
     private void search(int topK, String entitySimilarity, String dataLake, boolean prefilter)
@@ -526,8 +544,9 @@ public class SearchView extends Div
         Dialog stats = statsDialog();
         Button clearButton = new Button("Clear", event -> clearResults()),
                 statsButton = new Button("Statistics", event -> stats.open());
-        Button downloadResultsButton = new Button(downloadResult());
-        clearButton.getStyle().set("margin-left", "100px");
+        Button downloadResultsButton =
+                new Button(downloadContent("results.json", "Download result", this.result.toString().getBytes()));
+        clearButton.getStyle().set("margin-left", "20px");
         clearButton.getStyle().set("background-color", "#FD7B7C");
         clearButton.getStyle().set("--vaadin-button-text-color", "white");
         statsButton.getStyle().set("background-color", "#00669E");
@@ -535,13 +554,16 @@ public class SearchView extends Div
         downloadResultsButton.getStyle().set("background-color", "#82EC9E");
         downloadResultsButton.getStyle().set("--vaadin-button-text-color", "white");
         resultHeader.add(resultLabel, clearButton);
-        subHeader.add(topKLabel, stats, statsButton, downloadResultsButton);
-        resultLayout.add(resultHeader, subHeader, resultsList);
+        subHeader.add(statsButton, downloadResultsButton);
+        resultLayout.add(resultHeader, subHeader, topKLabel, resultsList);
+        resultLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
+        resultLayout.addClassNames(LumoUtility.AlignItems.CENTER, LumoUtility.JustifyContent.CENTER, LumoUtility.Display.FLEX);
         clearResults();
         resultSection.add(resultLayout);
-        resultSection.getStyle().set("background-color", "#2C85B6");
 
         Scroller scroller = new Scroller(new Div(resultSection));
+        scroller.getStyle().set("border-top", "2px solid #ccc");
+        scroller.setWidthFull();
         scroller.addClassNames(LumoUtility.AlignItems.CENTER, LumoUtility.JustifyContent.CENTER, LumoUtility.Display.FLEX);
 
         return scroller;
@@ -552,7 +574,7 @@ public class SearchView extends Div
         Dialog dialog = new Dialog("Statistics");
         VerticalLayout layout = new VerticalLayout();
         H4 runtime = new H4("Runtime: " + this.result.getRuntime() + "s"),
-                reduction = new H4("Reduction: " + this.result.getReduction() + "%");
+                reduction = new H4("Search space reduction: " + this.result.getReduction() + "%");
         layout.add(runtime, reduction);
         dialog.add(layout);
 
@@ -574,27 +596,66 @@ public class SearchView extends Div
             H3 rankLabel = new H3(rank++ + ".");
             H3 tableIdLabel = new H3(table.getId());
             H4 scoreLabel = new H4("Score: " + score);
-            Icon tableIcon = VaadinIcon.TABLE.create();
-            tableIcon.setSize("100px");
+            Div tableSnippet = new Div(tableSnippet(table));
+            tableSnippet.addClickListener(event -> {
+                Button downloadTableButton = new Button(downloadContent("table.txt", "Download table",
+                        table.toStr().getBytes()));
+                downloadTableButton.getStyle().set("background-color", "#82EC9E");
+                downloadTableButton.getStyle().set("--vaadin-button-text-color", "white");
+                downloadTableButton.getStyle().set("margin-left", "100px");
 
-            Button iconButton = new Button(tableIcon, event -> {
-                Dialog resultDialog = new Dialog(table.getId());
+                HorizontalLayout header = new HorizontalLayout(new H2(table.getId()), downloadTableButton);
+                Dialog resultDialog = new Dialog(header);
                 VerticalLayout dialogLayout = new VerticalLayout(resultTableGrid(table));
                 Button closeButton = new Button(new Icon("lumo", "cross"), buttonEvent -> resultDialog.close());
                 resultDialog.add(dialogLayout);
                 resultDialog.getHeader().add(closeButton);
-                resultDialog.setHeight("1500px");
                 resultDialog.setWidth("4000px");
                 resultDialog.open();
             });
-            iconButton.setHeight("50px");
 
-            VerticalLayout tableLayout = new VerticalLayout(tableIdLabel, scoreLabel, iconButton);
+            Button toQueryButton = new Button("Use as query", event -> setQuery(resultTable.second()));
+            toQueryButton.getStyle().set("--vaadin-button-text-color", "white");
+            toQueryButton.getStyle().set("background-color", "#636363");
+
+            VerticalLayout tableLayout = new VerticalLayout(tableIdLabel, scoreLabel, tableSnippet, toQueryButton);
             HorizontalLayout resultLayout = new HorizontalLayout(rankLabel, tableLayout);
             layout.add(resultLayout);
         }
 
         return layout;
+    }
+
+    private static Component tableSnippet(Table<String> table)
+    {
+        int rows = Integer.min(table.rowCount(), 2), columns = Integer.min(table.columnCount(), 3);
+        Grid<List<String>> snippetGrid = new Grid<>();
+        List<List<String>> snippetTable = new ArrayList<>();
+
+        for (int row = 0; row < rows; row++)
+        {
+            List<String> tableRow = new ArrayList<>();
+
+            for (int column = 0; column < columns; column++)
+            {
+                tableRow.add(table.getRow(row).get(column));
+            }
+
+            snippetTable.add(tableRow);
+        }
+
+        snippetGrid.setItems(snippetTable);
+
+        for (int column = 0; column < columns; column++)
+        {
+            int i = column;
+            snippetGrid.addColumn(row -> row.get(i)).setHeader(table.getColumnLabels()[i]);
+        }
+
+        snippetGrid.setHeight("150px");
+        snippetGrid.setWidth("500px");
+
+        return snippetGrid;
     }
 
     private static Component resultTableGrid(Table<String> table)
@@ -605,16 +666,17 @@ public class SearchView extends Div
         for (int i = 0; i < table.getColumnLabels().length; i++)
         {
             int index = i;
+            System.out.println("i = " + i + ", length = " + table.getColumnLabels().length);
             grid.addColumn(row -> row.get(index)).setHeader(table.getColumnLabels()[index]);
         }
 
         return grid;
     }
 
-    private Anchor downloadResult()
+    private static Anchor downloadContent(String outputFile, String label, byte[] content)
     {
-        StreamResource resource = new StreamResource("results.json", () -> new ByteArrayInputStream(this.result.toString().getBytes()));
-        Anchor anchor = new Anchor(resource, "Download results");
+        StreamResource resource = new StreamResource(outputFile, () -> new ByteArrayInputStream(content));
+        Anchor anchor = new Anchor(resource, label);
         anchor.getElement().setAttribute("download", true);
 
         return anchor;
