@@ -71,7 +71,7 @@ public class BM25 implements KeywordSearch, Closeable
 
         catch (ParseException | IOException e)
         {
-            return new KeywordResult(List.of());
+            return new KeywordResult();
         }
     }
 

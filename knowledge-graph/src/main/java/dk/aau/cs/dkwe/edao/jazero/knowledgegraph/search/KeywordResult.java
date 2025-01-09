@@ -9,7 +9,7 @@ import java.util.List;
 
 public final class KeywordResult
 {
-    private List<Pair<String, Double>> results;
+    private final List<Pair<String, Double>> results;
 
     public KeywordResult(List<Pair<String, Double>> results)
     {
