@@ -7,9 +7,7 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph.Type;
 import dk.aau.cs.dkwe.edao.jazero.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.jazero.datalake.system.Logger;
 import dk.aau.cs.dkwe.edao.jazero.knowledgegraph.connector.Neo4jEndpoint;
-import dk.aau.cs.dkwe.edao.jazero.knowledgegraph.middleware.Neo4JHandler;
-import dk.aau.cs.dkwe.edao.jazero.knowledgegraph.middleware.Neo4JReader;
-import dk.aau.cs.dkwe.edao.jazero.knowledgegraph.middleware.Neo4JWriter;
+import dk.aau.cs.dkwe.edao.jazero.knowledgegraph.middleware.*;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.server.ConfigurableWebServerFactory;
@@ -18,9 +16,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -115,6 +115,35 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(json.toString());
+    }
+
+    @GetMapping("/entities")
+    public ResponseEntity<String> readEntities(@RequestHeader Map<String, String> header)
+    {
+        File kgDir = new File(Neo4JHandler.getKgDir());
+        JsonArray entities = new JsonArray();
+
+        for (File kgFile : Objects.requireNonNull(kgDir.listFiles()))
+        {
+            try
+            {
+                RDFReader reader = new NTReader(kgFile);
+
+                for (String entity : reader.readSubjects())
+                {
+                    entities.add(entity);
+                }
+            }
+
+            catch (IOException ignored) {}
+        }
+
+        JsonObject entitiesJson = new JsonObject();
+        entitiesJson.add("entities", entities);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(entitiesJson.toString());
     }
 
     /**

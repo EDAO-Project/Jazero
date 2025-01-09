@@ -15,4 +15,9 @@ public abstract class Neo4JHandler
     {
         return new Neo4jEndpoint(CONFIG_FILE);
     }
+
+    public static String getKgDir()
+    {
+        return KG_DIR;
+    }
 }
