@@ -68,7 +68,7 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
 
         catch (IOException e)
         {
-            throw new RuntimeException("Could not create connection to Neo4J: " + e.getMessage());
+            throw new RuntimeException("Neo4J or BM25 exception: " + e.getMessage());
         }
 
         catch (InterruptedException e)

@@ -27,9 +27,9 @@ import java.util.List;
 public class BM25 implements KeywordSearch, Closeable
 {
     private Directory dir;
-    private DirectoryReader dirReader;
-    private IndexSearcher searcher;
-    private QueryParser parser;
+    private DirectoryReader dirReader = null;
+    private IndexSearcher searcher = null;
+    private QueryParser parser = null;
     private Analyzer analyzer;
     private IndexWriterConfig config = null;
     private IndexWriter writer = null;
@@ -40,10 +40,7 @@ public class BM25 implements KeywordSearch, Closeable
     public BM25(String indexDir) throws IOException
     {
         this.dir = FSDirectory.open(new File(indexDir).toPath());
-        this.dirReader = DirectoryReader.open(this.dir);
-        this.searcher = new IndexSearcher(this.dirReader);
         this.analyzer = new StandardAnalyzer();
-        this.parser = new QueryParser(STR_FIELD, this.analyzer);
     }
 
     @Override
@@ -51,6 +48,13 @@ public class BM25 implements KeywordSearch, Closeable
     {
         try
         {
+            if (this.searcher == null)
+            {
+                this.dirReader = DirectoryReader.open(this.dir);
+                this.searcher = new IndexSearcher(this.dirReader);
+                this.parser = new QueryParser(STR_FIELD, this.analyzer);
+            }
+
             Query query = this.parser.parse(keywordQuery);
             List<Pair<String, Double>> rankedResults = new ArrayList<>();
             ScoreDoc[] hits = this.searcher.search(query, TOP_K).scoreDocs;
@@ -145,6 +149,7 @@ public class BM25 implements KeywordSearch, Closeable
         {
             this.analyzer.close();
             this.writer.close();
+            this.dir.close();
         }
 
         catch (IOException ignored) {}
