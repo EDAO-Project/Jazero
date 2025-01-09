@@ -40,6 +40,7 @@ public class BM25 implements KeywordSearch, Closeable
     public BM25(String indexDir) throws IOException
     {
         this.dir = FSDirectory.open(new File(indexDir).toPath());
+        this.analyzer = new StandardAnalyzer();
     }
 
     @Override
@@ -81,7 +82,7 @@ public class BM25 implements KeywordSearch, Closeable
         {
             int count = 0, entityCount = entities.size();
             this.config = new IndexWriterConfig(this.analyzer);
-            this.writer = new IndexWriter(this.dir, config);
+            this.writer = new IndexWriter(this.dir, this.config);
 
             for (String entity : entities)
             {
