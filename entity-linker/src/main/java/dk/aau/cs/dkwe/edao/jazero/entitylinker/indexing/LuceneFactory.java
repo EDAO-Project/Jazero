@@ -21,9 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 public class LuceneFactory
 {
@@ -41,7 +39,6 @@ public class LuceneFactory
         IndexWriterConfig config = new IndexWriterConfig(analyzer);
         IndexWriter writer = new IndexWriter(directory, config);
         double prog = 0.0, filesCount = kgDir.listFiles() == null ? 0 : kgDir.listFiles().length;
-        Set<String> entities = new HashSet<>();
 
         if (verbose)
         {
@@ -58,7 +55,7 @@ public class LuceneFactory
 
             try
             {
-                entities.addAll(loadEntities(kgFile));
+                loadEntities(kgFile, writer);
             }
 
             catch (IOException e)
@@ -70,25 +67,13 @@ public class LuceneFactory
             }
         }
 
-        entities.forEach(uri -> {
-            try
-            {
-                Document doc = new Document();
-                doc.add(new Field(LuceneIndex.URI_FIELD, uri, TextField.TYPE_STORED));
-                doc.add(new Field(LuceneIndex.TEXT_FIELD, uriPostfix(uri), TextField.TYPE_STORED));
-                writer.addDocument(doc);
-            }
-
-            catch (IOException ignored) {}
-        });
         writer.close();
         directory.close();
         analyzer.close();
     }
 
-    private static Set<String> loadEntities(File kgFile) throws IOException
+    private static void loadEntities(File kgFile, IndexWriter writer) throws IOException
     {
-        Set<String> entities = new HashSet<>();
         Model m = ModelFactory.createDefaultModel();
         m.read(Files.newInputStream(kgFile.toPath()), null, "TTL");
         ExtendedIterator<Triple> iter = m.getGraph().find();
@@ -96,10 +81,12 @@ public class LuceneFactory
         while (iter.hasNext())
         {
             Triple triple = iter.next();
-            entities.add(triple.getSubject().getURI());
+            String uri = triple.getSubject().getURI();
+            Document doc = new Document();
+            doc.add(new Field(LuceneIndex.URI_FIELD, uri, TextField.TYPE_STORED));
+            doc.add(new Field(LuceneIndex.TEXT_FIELD, uriPostfix(uri), TextField.TYPE_STORED));
+            writer.addDocument(doc);
         }
-
-        return entities;
     }
 
     private static String uriPostfix(String uri)
