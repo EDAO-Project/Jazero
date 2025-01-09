@@ -41,7 +41,18 @@ public class NTReader extends RDF implements RDFReader
     {
         return readLines()
                 .stream()
-                .map(line -> line.substring(1, line.indexOf('>')))
+                .map(line -> {
+                    try
+                    {
+                        return line.substring(1, line.indexOf('>'));
+                    }
+
+                    catch (Exception e)
+                    {
+                        return "";
+                    }
+                })
+                .filter(l -> !l.isEmpty())
                 .collect(Collectors.toSet());
     }
 
@@ -51,9 +62,18 @@ public class NTReader extends RDF implements RDFReader
         return readLines()
                 .stream()
                 .map(line -> {
-                    String[] split = line.split(" ");
-                    return split[1].substring(1, split[1].indexOf('>'));
+                    try
+                    {
+                        String[] split = line.split(" ");
+                        return split[1].substring(1, split[1].indexOf('>'));
+                    }
+
+                    catch (Exception e)
+                    {
+                        return "";
+                    }
                 })
+                .filter(line -> !line.isEmpty())
                 .collect(Collectors.toSet());
     }
 
@@ -63,20 +83,29 @@ public class NTReader extends RDF implements RDFReader
         return readLines()
                 .stream()
                 .map(line -> {
-                    String[] split = line.split(" ");
-
-                    if (split[2].contains("<"))
+                    try
                     {
-                        return split[2].substring(1, split[2].indexOf('>'));
+                        String[] split = line.split(" ");
+
+                        if (split[2].contains("<"))
+                        {
+                            return split[2].substring(1, split[2].indexOf('>'));
+                        }
+
+                        else if (split[2].contains("\""))
+                        {
+                            return line.substring(line.indexOf('\"') + 1, line.lastIndexOf('\"'));
+                        }
+
+                        return split[2];
                     }
 
-                    else if (split[2].contains("\""))
+                    catch (Exception e)
                     {
-                        return line.substring(line.indexOf('\"') + 1, line.lastIndexOf('\"'));
+                        return "";
                     }
-
-                    return split[2];
                 })
+                .filter(line -> !line.isEmpty())
                 .collect(Collectors.toSet());
     }
 
@@ -88,17 +117,22 @@ public class NTReader extends RDF implements RDFReader
 
         for (String line : lines)
         {
-            String[] split = line.split(" ");
-            String subject = split[0].substring(1, split[0].length() - 1),
-                    predicate = split[1].substring(1, split[1].length() - 1),
-                    object = split[2].substring(1, split[2].length() - 1);
-
-            if (!triples.containsKey(subject))
+            try
             {
-                triples.put(subject, new HashMap<>());
+                String[] split = line.split(" ");
+                String subject = split[0].substring(1, split[0].length() - 1),
+                        predicate = split[1].substring(1, split[1].length() - 1),
+                        object = split[2].substring(1, split[2].length() - 1);
+
+                if (!triples.containsKey(subject))
+                {
+                    triples.put(subject, new HashMap<>());
+                }
+
+                triples.get(subject).put(predicate, object);
             }
 
-            triples.get(subject).put(predicate, object);
+            catch (Exception ignored) {}
         }
 
         return triples;
