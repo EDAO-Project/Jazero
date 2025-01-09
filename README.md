@@ -174,7 +174,7 @@ docker build -t jazero_web .
 Then, run a container of Jazero web.
 
 ```bash
-docker run --rm --network="host" --name jazero jazero_web
+docker run --rm --network="host" -v ${PWD}/.bm25:/bm25/ --name jazero jazero_web
 ```
 
 You can now access the Jazero web interface <a href="http://localhost:8080/">here</a>.

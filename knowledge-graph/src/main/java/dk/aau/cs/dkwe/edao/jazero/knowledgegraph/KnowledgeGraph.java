@@ -2,12 +2,17 @@ package dk.aau.cs.dkwe.edao.jazero.knowledgegraph;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import dk.aau.cs.dkwe.edao.jazero.datalake.structures.Pair;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph.Entity;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.graph.Type;
 import dk.aau.cs.dkwe.edao.jazero.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.jazero.datalake.system.Logger;
 import dk.aau.cs.dkwe.edao.jazero.knowledgegraph.connector.Neo4jEndpoint;
 import dk.aau.cs.dkwe.edao.jazero.knowledgegraph.middleware.*;
+import dk.aau.cs.dkwe.edao.jazero.knowledgegraph.search.BM25;
+import dk.aau.cs.dkwe.edao.jazero.knowledgegraph.search.KeywordResult;
+import dk.aau.cs.dkwe.edao.jazero.knowledgegraph.search.KeywordSearch;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.server.ConfigurableWebServerFactory;
@@ -30,6 +35,8 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
 {
     private static Neo4jEndpoint endpoint;
     private static final String KG_DIR = "/home/kg/";
+    private static KeywordSearch search;
+    private static final File BM25_INDEX = new File("/index/ekg_bm25/");
 
     @Override
     public void customize(ConfigurableWebServerFactory factory)
@@ -41,6 +48,19 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
     {
         try
         {
+            if (!BM25_INDEX.exists())
+            {
+                Logger.log(Logger.Level.INFO, "Constructing BM25 index...");
+                BM25_INDEX.mkdir();
+                loadBM25();
+                Logger.log(Logger.Level.INFO, "Done constructing BM25 index");
+            }
+
+            else
+            {
+                search = new BM25(BM25_INDEX.getAbsolutePath());
+            }
+
             TimeUnit.SECONDS.sleep(30);
             endpoint = Neo4JHandler.getConnector();
             SpringApplication.run(KnowledgeGraph.class, args);
@@ -54,6 +74,22 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
         catch (InterruptedException e)
         {
             throw new RuntimeException("Could not wait for Neo4J docker container to start");
+        }
+    }
+
+    private static void loadBM25() throws IOException
+    {
+        File kgDir = new File(KG_DIR);
+        search = new BM25(BM25_INDEX.getAbsolutePath());
+
+        for (File kgFile : Objects.requireNonNull(kgDir.listFiles()))
+        {
+            RDFReader reader = new NTReader(kgFile);
+
+            for (String entity : reader.readSubjects())
+            {
+                search.addEntity(entity);
+            }
         }
     }
 
@@ -118,33 +154,35 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
                 .body(json.toString());
     }
 
-    @GetMapping("/entities")
-    public ResponseEntity<String> readEntities(@RequestHeader Map<String, String> header)
+    /**
+     * Perform keyword search for KG entities using BM25
+     * @param body Must contain an entry 'query', which contains a keyword query string
+     * @return JSON array with results
+     */
+    @PostMapping("/search")
+    public synchronized ResponseEntity<String> searchEntities(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
     {
-        File kgDir = new File(KG_DIR);
-        JsonArray entities = new JsonArray();
-
-        for (File kgFile : Objects.requireNonNull(kgDir.listFiles()))
+        if (!body.containsKey("query"))
         {
-            try
-            {
-                RDFReader reader = new NTReader(kgFile);
-
-                for (String entity : reader.readSubjects())
-                {
-                    entities.add(entity);
-                }
-            }
-
-            catch (IOException ignored) {}
+            return ResponseEntity.badRequest().body("Missing 'query' field in request");
         }
 
-        JsonObject entitiesJson = new JsonObject();
-        entitiesJson.add("entities", entities);
+        String queryStr = body.get("query");
+        KeywordResult results = search.search(queryStr);
+        JsonArray jsonResults = new JsonArray();
 
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(entitiesJson.toString());
+        for (Pair<String, Double> result : results.getResults())
+        {
+            JsonObject jsonResult = new JsonObject();
+            jsonResult.add("entity", new JsonPrimitive(result.first()));
+            jsonResult.add("score", new JsonPrimitive(result.second()));
+            jsonResults.add(jsonResult);
+        }
+
+        JsonObject jsonResponse = new JsonObject();
+        jsonResponse.add("results", jsonResults);
+
+        return ResponseEntity.ok(jsonResponse.getAsString());
     }
 
     /**
