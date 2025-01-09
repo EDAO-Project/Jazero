@@ -666,7 +666,6 @@ public class SearchView extends Div
         for (int i = 0; i < table.getColumnLabels().length; i++)
         {
             int index = i;
-            System.out.println("i = " + i + ", length = " + table.getColumnLabels().length);
             grid.addColumn(row -> row.get(index)).setHeader(table.getColumnLabels()[index]);
         }
 
