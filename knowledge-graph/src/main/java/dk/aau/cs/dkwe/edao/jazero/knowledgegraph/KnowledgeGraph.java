@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWebServerFactory>
 {
     private static Neo4jEndpoint endpoint;
+    private static final String KG_DIR = "/home/kg/";
 
     @Override
     public void customize(ConfigurableWebServerFactory factory)
@@ -120,7 +121,7 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
     @GetMapping("/entities")
     public ResponseEntity<String> readEntities(@RequestHeader Map<String, String> header)
     {
-        File kgDir = new File(Neo4JHandler.getKgDir());
+        File kgDir = new File(KG_DIR);
         JsonArray entities = new JsonArray();
 
         for (File kgFile : Objects.requireNonNull(kgDir.listFiles()))
