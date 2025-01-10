@@ -102,6 +102,11 @@ public class BM25 implements KeywordSearch, Closeable
         {
             return false;
         }
+
+        finally
+        {
+            close();
+        }
     }
 
     @Override
