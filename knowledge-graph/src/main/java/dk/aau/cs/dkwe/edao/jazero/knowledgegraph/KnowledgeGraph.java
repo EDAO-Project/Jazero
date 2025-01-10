@@ -182,7 +182,7 @@ public class KnowledgeGraph implements WebServerFactoryCustomizer<ConfigurableWe
         JsonObject jsonResponse = new JsonObject();
         jsonResponse.add("results", jsonResults);
 
-        return ResponseEntity.ok(jsonResponse.getAsString());
+        return ResponseEntity.ok(jsonResponse.toString());
     }
 
     /**
