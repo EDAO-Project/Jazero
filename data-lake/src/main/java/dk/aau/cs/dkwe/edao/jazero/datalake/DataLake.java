@@ -1,5 +1,8 @@
 package dk.aau.cs.dkwe.edao.jazero.datalake;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import dk.aau.cs.dkwe.edao.jazero.datalake.connector.DBDriverBatch;
 import dk.aau.cs.dkwe.edao.jazero.datalake.connector.EmbeddingsFactory;
 import dk.aau.cs.dkwe.edao.jazero.datalake.connector.ExplainableCause;
@@ -945,5 +948,44 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         Logger.log(Logger.Level.INFO, "Count of '" + entity + "' is " + count);
 
         return ResponseEntity.ok(String.valueOf(count));
+    }
+
+    /**
+     * Performs keyword search of KG entities
+     * @param body Must contain an entry 'query' in JSON format containing the keyword query
+     * @return List of KG entities that match the keyword query
+     */
+    @PostMapping("/search")
+    public ResponseEntity<String> searchEntities(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
+    {
+        if (authenticateUser(headers) == Authenticator.Auth.NOT_AUTH)
+        {
+            return ResponseEntity.badRequest().body("User does not have read privileges");
+        }
+
+        String query = body.getOrDefault("query", null);
+
+        if (query == null)
+        {
+            return ResponseEntity.badRequest().body("Missing query entry \"query\"");
+        }
+
+        try
+        {
+            KGService kgService = new KGService(Configuration.getEKGManagerHost(), Configuration.getEKGManagerPort());
+            List<String> entities = kgService.searchEntities(query);
+            JsonArray array = new JsonArray();
+            entities.forEach(array::add);
+
+            JsonObject json = new JsonObject();
+            json.add("results", array);
+
+            return ResponseEntity.ok(json.toString());
+        }
+
+        catch (RuntimeException e)
+        {
+            return ResponseEntity.badRequest().body("EKG Manager has not completed booting. Use the ping operator to check for booting completion.");
+        }
     }
 }
