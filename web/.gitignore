@@ -4,7 +4,9 @@
 .settings
 .project
 .classpath
-
+package.json
+package-lock.json
+src/main/bundles/dev.bundle
 *.iml
 .DS_Store
 

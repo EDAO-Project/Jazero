@@ -11,6 +11,9 @@ JDLC/c/build/
 JDLC/c/lib/
 JDLC/c/.idea/
 JDLC/c/.vscode/
+web/package.json
+web/package-lock.json
+web/src/main/bundles/dev.bundle
 
 ### Mounts ###
 index/

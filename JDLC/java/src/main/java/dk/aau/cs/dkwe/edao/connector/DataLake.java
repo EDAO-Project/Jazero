@@ -13,7 +13,7 @@ public interface DataLake
     Response ping();
     Result search(Query query, int k, TableSearch.EntitySimilarity entitySimilarity, boolean prefilter);
     Result search(Query query, int k, TableSearch.EntitySimilarity entitySimilarity, int queryWait, boolean prefilter);
-    List<String> keywordSearch(String keyword);
+    Response keywordSearch(String keyword);
     Response clear();
     Response clearEmbeddings();
     Response addUser(User newUser);

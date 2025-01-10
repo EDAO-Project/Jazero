@@ -143,7 +143,7 @@ public class DataLakeService extends Service implements DataLake
      * @return List of KG entities
      */
     @Override
-    public List<String> keywordSearch(String keyword)
+    public Response keywordSearch(String keyword)
     {
         try
         {
@@ -166,7 +166,7 @@ public class DataLakeService extends Service implements DataLake
                 entities.add(entity.toString());
             }
 
-            return entities;
+            return new Response(200, entities);
         }
 
         catch (IOException e)

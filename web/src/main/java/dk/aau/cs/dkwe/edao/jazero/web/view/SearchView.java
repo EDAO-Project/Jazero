@@ -1,5 +1,6 @@
 package dk.aau.cs.dkwe.edao.jazero.web.view;
 
+import com.vaadin.componentfactory.Autocomplete;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.button.Button;
@@ -13,8 +14,6 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.*;
 import com.vaadin.flow.component.textfield.IntegerField;
-import com.vaadin.flow.component.textfield.TextArea;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.internal.Pair;
 import com.vaadin.flow.router.Route;
@@ -35,6 +34,7 @@ import org.springframework.web.servlet.View;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Route(value = "")
@@ -50,7 +50,6 @@ public class SearchView extends Div
     private Component searchComponent;
     private Component resultComponent = null;
     private String dataLake = null;
-    private static final int TEXTFIELD_WIDTH = 300;
     private static final boolean debug = true;
 
     public SearchView(View error, Main main)
@@ -147,6 +146,7 @@ public class SearchView extends Div
         removeColumnIcon.setColor("#3D423F");
         queryScroller.setWidth("1200px");
         queryScroller.setMaxWidth("1200px");
+        queryScroller.setMaxHeight("350px");
 
         Button addRowButton = new Button(new HorizontalLayout(addRowIcon, new H4("Add row")), item -> addRow());
         Button removeRowButton = new Button(new HorizontalLayout(removeRowIcon, new H4("Remove row")), item -> removeRow());
@@ -202,7 +202,7 @@ public class SearchView extends Div
         Checkbox prefilterBox = new Checkbox("Pre-filter", false);
         VerticalLayout rightColumnLayout = new VerticalLayout();
         Button searchButton = new Button("Search", event -> search(topKField.getValue(), entitySimilarities.getValue(),
-                this.dataLake, prefilterBox.getValue()));
+                prefilterBox.getValue()));
         searchButton.setWidth("200px");
         searchButton.setHeight("80px");
         searchButton.getStyle().set("background-color", "#57AF34");
@@ -275,12 +275,15 @@ public class SearchView extends Div
             for (int column = 0; column < columns; column++)
             {
                 int rowCoordinate = row, columnCoordinate = column;
+                Autocomplete textField = new Autocomplete();
                 String cellContent = this.query.get(row).get(column).toString();
-                TextField textField = new TextField("", cellContent, "");
-                textField.setWidth(TEXTFIELD_WIDTH + "px");
-                textField.getStyle().set("background-color", "#EFF0F2");
+                textField.setValue(cellContent);
                 textField.getStyle().set("font-family", "Courier New");
-                textField.addValueChangeListener(event -> {
+                textField.addChangeListener(event -> {
+                    String content = event.getValue();
+                    textField.setOptions(keywordSearch(content));
+                });
+                textField.addAutocompleteValueAppliedListener(event -> {
                     String content = event.getValue();
                     int oldContentLength = this.query.get(rowCoordinate).get(columnCoordinate).length();
                     this.query.get(rowCoordinate).get(columnCoordinate).replace(0, oldContentLength, content);
@@ -296,9 +299,42 @@ public class SearchView extends Div
         this.querySection.add(tableRowLayout);
     }
 
+    private List<String> keywordSearch(String query)
+    {
+        String dataLakeIp = ConfigReader.getIp(this.dataLake),
+                username = ConfigReader.getUsername(this.dataLake),
+                password = ConfigReader.getPassword(this.dataLake);
+        User user = new User(username, password, true);
+
+        try
+        {
+            if (debug)
+            {
+                TimeUnit.MILLISECONDS.sleep(300);
+                return List.of("https://dbpedia.org/page/Barack_Obama", "https://dbpedia.org/page/Democratic_Party_(United_States)",
+                        "https://dbpedia.org/page/Joe_Biden");
+            }
+
+            DataLakeService dl = new DataLakeService(dataLakeIp, user);
+            Response res = dl.keywordSearch(query);
+
+            if (res.getResponseCode() != 200)
+            {
+                return new ArrayList<>();
+            }
+
+            return (List<String>) res.getResponse();
+        }
+
+        catch (Exception e)
+        {
+            return new ArrayList<>();
+        }
+    }
+
     private void initializeQueryTable()
     {
-        int rows = 3, columns = 2;
+        int rows = 3, columns = 3;
 
         for (int i = 0; i < rows; i++)
         {
@@ -423,16 +459,16 @@ public class SearchView extends Div
         return Integer.parseInt((String) dl.count(entity).getResponse());
     }
 
-    private void search(int topK, String entitySimilarity, String dataLake, boolean prefilter)
+    private void search(int topK, String entitySimilarity, boolean prefilter)
     {
         if (topK <= 0 || entitySimilarity == null || dataLake == null)
         {
             return;
         }
 
-        String dataLakeIp = ConfigReader.getIp(dataLake),
-                username = ConfigReader.getUsername(dataLake),
-                password = ConfigReader.getPassword(dataLake);
+        String dataLakeIp = ConfigReader.getIp(this.dataLake),
+                username = ConfigReader.getUsername(this.dataLake),
+                password = ConfigReader.getPassword(this.dataLake);
         User user = new User(username, password, true);
         TableSearch.EntitySimilarity similarity;
         Query query = parseQuery();
@@ -596,7 +632,12 @@ public class SearchView extends Div
             H3 rankLabel = new H3(rank++ + ".");
             H3 tableIdLabel = new H3(table.getId());
             H4 scoreLabel = new H4("Score: " + score);
-            Div tableSnippet = new Div(tableSnippet(table));
+            HorizontalLayout iconLayout = new HorizontalLayout(new Icon(VaadinIcon.ELLIPSIS_DOTS_V));
+            iconLayout.setWidthFull();
+            iconLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
+            iconLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+
+            Div tableSnippet = new Div(tableSnippet(table), iconLayout);
             tableSnippet.addClickListener(event -> {
                 Button downloadTableButton = new Button(downloadContent("table.txt", "Download table",
                         table.toStr().getBytes()));
@@ -652,7 +693,7 @@ public class SearchView extends Div
             snippetGrid.addColumn(row -> row.get(i)).setHeader(table.getColumnLabels()[i]);
         }
 
-        snippetGrid.setHeight("150px");
+        snippetGrid.setHeight("130px");
         snippetGrid.setWidth("500px");
 
         return snippetGrid;
