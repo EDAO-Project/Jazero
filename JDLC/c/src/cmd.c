@@ -109,6 +109,7 @@ static response do_search(const char *ip, const char *username, const char *pass
 static response do_keyword_search(const char *ip, const char *username, const char *password, const char *query)
 {
     user u = create_user(username, password);
+    return keyword_search(ip, u, query);
 }
 
 static response do_ping(const char *ip, const char *username, const char *password)
