@@ -10,6 +10,7 @@ response load(const char *ip, user u, const char *storage_type, const char *tabl
               const char *jazero_dir, const char *table_dir, uint8_t progressive, uint8_t verbose);
 response search(const char *ip, user u, query q, uint32_t top_k, enum entity_similarity entity_sim,
         enum similarity_measure sim_measure, enum cosine_function embeddings_function, enum prefilter filter_type, int query_time);
+response keyword_search(const char *ip, user u, const char *query);
 response ping(const char *ip, user u);
 response clear(const char *ip, user u);
 response clear_embeddings(const char *ip, user u);

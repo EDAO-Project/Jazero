@@ -6,8 +6,8 @@
 #include <string.h>
 
 #define USAGE "usage: jdlc [option] ...\n" \
-                "-o, --operation : Jazero operation to perform (search, insert, insertembeddings, ping, clear, clearembeddings, adduser, removeuser, count)\n" \
-                "\nping, search, insert, insertembeddings, clear, clearembeddings, adduser, removeuser, count\n" \
+                "-o, --operation : Jazero operation to perform (search, keyword, insert, insertembeddings, ping, clear, clearembeddings, adduser, removeuser, count)\n" \
+                "\nping, search, keyword, insert, insertembeddings, clear, clearembeddings, adduser, removeuser, count\n" \
                 "-h, --host : Host of machine on which Jazero is deployed\n" \
                 "-u, --username : Username of this user\n" \
                 "-c, --password : Password for this user\n" \
@@ -18,6 +18,8 @@
                 "-m, --similaritymeasure : Similarity measure between vectors of entity scores ('EUCLIDEAN', 'COSINE')\n" \
                 "-f, --prefilter : Whether to perform search space pre-filtering with HNSW ('TRUE', 'FALSE'), which is by default FALSE\n" \
                 "-qt, --querytime : Maximum amount of seconds allowed to be spend on indexing before query execution (optional and only used during progressive indexing)\n" \
+                "\nkeyword\n" \
+                "-kw, --keywords : Keyword query string to search for KG entities\n" \
                 "\ninsert, insertembeddings\n" \
                 "-j, --jazerodir : Absolute path to Jazero directory on the machine running Jazero\n" \
                 "\ninsert\n" \
@@ -39,7 +41,7 @@
 
 struct arguments
 {
-    char *host, *query_file, *table_loc, *jazero_dir, *storage_type, *table_prefix, *kg_prefix, *embeddings_file,
+    char *host, *query_file, *keyword_query, *table_loc, *jazero_dir, *storage_type, *table_prefix, *kg_prefix, *embeddings_file,
             *delimiter, *error_msg, *this_username, *this_password, *new_username, *new_password, *old_username, *uri;
     enum operation op;
     enum cosine_function cos_func;
@@ -104,6 +106,11 @@ static response do_search(const char *ip, const char *username, const char *pass
     return search(ip, u, q, top_k, entity_sim, measure, cos_func, filter, query_time);
 }
 
+static response do_keyword_search(const char *ip, const char *username, const char *password, const char *query)
+{
+    user u = create_user(username, password);
+}
+
 static response do_ping(const char *ip, const char *username, const char *password)
 {
     user u = create_user(username, password);
@@ -159,6 +166,11 @@ error_t parse(const char *key, const char *arg, struct arguments *args)
             args->op = SEARCH;
         }
 
+        if (strcmp(arg, "keyword") == 0)
+        {
+            args->op = KEYWORD;
+        }
+
         else if (strcmp(arg, "insert") == 0)
         {
             args->op = LOAD;
@@ -209,6 +221,11 @@ error_t parse(const char *key, const char *arg, struct arguments *args)
     else if (check_key(key, "-q", "--query"))
     {
         args->query_file = (char *) arg;
+    }
+
+    else if (check_key(key, "-kw", "--keywords"))
+    {
+        args->keyword_query = (char *) arg;
     }
 
     else if (check_key(key, "-s", "--scoringtype"))
@@ -410,6 +427,7 @@ int main(int argc, char *argv[])
     args.host = NULL;
     args.jazero_dir = NULL;
     args.query_file = NULL;
+    args.keyword_query = NULL;
     args.table_loc = NULL;
     args.uri = NULL;
 
@@ -492,6 +510,16 @@ int main(int argc, char *argv[])
 
             ret = do_search(args.host, args.this_username, args.this_password, args.query_file,
                             args.entity_sim, args.cos_func, args.top_k,args.sim_measure, args.filter, args.query_time);
+            break;
+
+        case KEYWORD:
+            if (args.keyword_query == NULL)
+            {
+                ret = (response) {.status = REQUEST_ERROR, .msg = "Error: Missing keyword query\n"};
+                break;
+            }
+
+            ret = do_keyword_search(args.host, args.this_username, args.this_password, args.keyword_query);
             break;
 
         case PING:

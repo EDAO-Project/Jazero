@@ -4,6 +4,8 @@
 #include <string.h>
 #include <libgen.h>
 #include <dirent.h>
+#include <connection/request.h>
+
 #include "utils/file_utils.h"
 
 #define TABLES_MOUNT "/srv/storage/"
@@ -347,6 +349,47 @@ response search(const char *ip, user u, query q, uint32_t top_k, enum entity_sim
         addr_clear(addr);
         prop_clear(&headers);
         return (response) {.status = JAZERO_ERROR, .msg = "Could not initialize Jazero SEARCH request"};
+    }
+
+    response res = perform(request);
+    free(body);
+    addr_clear(addr);
+    prop_clear(&headers);
+
+    return res;
+}
+
+response keyword_search(const char *ip, user u, const char *query)
+{
+    jdlc request;
+    struct properties headers = init_params_search();
+    struct address addr = init_addr(ip, DL_PORT, "/keyword-search");
+    char *body = (char *) malloc(strlen(query) + 50);
+    prop_insert(&headers, "username", u.username, strlen(u.username));
+    prop_insert(&headers, "password", u.password, strlen(u.password));
+
+    if (body == NULL)
+    {
+        addr_clear(addr);
+        prop_clear(&headers);
+        return (response) {.status = JAZERO_ERROR, .msg = "Ran out of memory"};
+    }
+
+    keyword_search_body(body, query);
+
+    char *body_copy = (char *) realloc(body, strlen(body));
+
+    if (body_copy != NULL)
+    {
+        body = body_copy;
+    }
+
+    if (!init(&request, KEYWORD, addr, headers, body))
+    {
+        free(body);
+        addr_clear(addr);
+        prop_clear(&headers);
+        return (response) {.status = JAZERO_ERROR, .msg ="Could not initialize Jazero KEYWORD request"};
     }
 
     response res = perform(request);

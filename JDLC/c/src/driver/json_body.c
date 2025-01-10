@@ -30,6 +30,12 @@ const char *search_body(char *buffer, uint32_t top_k, enum entity_similarity ent
     return buffer;
 }
 
+const char *keyword_search_body(char *buffer, const char *query)
+{
+    sprintf(buffer, "{\"query\": \"%s\"}", query);
+    return buffer;
+}
+
 const char *add_user_body(char *buffer, user new_user)
 {
     sprintf(buffer, "{\"new-username\": \"%s\", \"new-password\": \"%s\"}", new_user.username, new_user.password);

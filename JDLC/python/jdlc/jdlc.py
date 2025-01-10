@@ -178,7 +178,7 @@ class Connector:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('JDLC Connector')
     parser.add_argument('--host', metavar = 'Host', type = str, help = 'Host of machine on which Jazero is deployed', required = True)
-    parser.add_argument('-o', '--operation', metavar = 'Op', type = str, help = 'Jazero operation to perform (ping, search, keyword, insert, loadembeddings, clear, clearembeddings, count)', choices = ['ping', 'search', 'insert', 'loadembeddings', 'clear', 'clearembeddings'], required = True)
+    parser.add_argument('-o', '--operation', metavar = 'Op', type = str, help = 'Jazero operation to perform (ping, search, keyword, insert, loadembeddings, clear, clearembeddings, count)', choices = ['ping', 'search', 'keyword', 'insert', 'loadembeddings', 'clear', 'clearembeddings'], required = True)
     parser.add_argument('-u', '--username', metavar = 'Username', type = str, help = 'Username of user', required = True)
     parser.add_argument('-c', '--password', metavar = 'Password', type = str, help = 'Password for user', required = True)
     parser.add_argument('-q', '--query', metavar = 'Query', type = str, help = 'Query file path', required = False)

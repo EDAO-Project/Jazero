@@ -11,6 +11,7 @@ enum operation
     INSERT_EMBEDDINGS,
     LOAD,
     SEARCH,
+    KEYWORD,
     PING,
     CLEAR,
     CLEAR_EMBEDDINGS,
@@ -88,6 +89,7 @@ const char *load_embeddings_body(char *buffer, const char *file, const char *del
 const char *load_body(char *buffer, const char *table_dir, const char *table_entity_prefix, const char *kg_prefix, uint8_t progressive);
 const char *search_body(char *buffer, uint32_t top_k, enum entity_similarity entity_sim, enum cosine_function function,
         enum similarity_measure sim, enum prefilter prefilter, int query_time, query q);
+const char *keyword_search_body(char *buffer, const char *query);
 uint8_t init(jdlc *restrict conn, enum operation op, struct address addr, struct properties headers, const char *body);
 response perform(jdlc conn);
 
