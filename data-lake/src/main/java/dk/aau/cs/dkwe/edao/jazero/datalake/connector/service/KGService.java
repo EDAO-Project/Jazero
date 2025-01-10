@@ -111,7 +111,7 @@ public class KGService extends Service
                 "URL for KG service to retrieve KG entities by keyword search",
                 "IOException when sending POST request for KG entities", true);
         JsonElement parsed = JsonParser.parseString((String) response.getResponse());
-        JsonArray array = parsed.getAsJsonObject().getAsJsonArray("entities").getAsJsonArray();
+        JsonArray array = parsed.getAsJsonObject().get("results").getAsJsonArray();
 
         for (JsonElement element : array)
         {
