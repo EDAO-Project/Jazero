@@ -979,6 +979,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
             JsonObject json = new JsonObject();
             json.add("results", array);
+            analysis.record("keyword-search", 1);
 
             return ResponseEntity.ok(json.toString());
         }
