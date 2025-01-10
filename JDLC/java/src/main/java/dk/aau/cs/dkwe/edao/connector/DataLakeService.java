@@ -12,7 +12,9 @@ import dk.aau.cs.dkwe.edao.structures.Query;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class DataLakeService extends Service implements DataLake
@@ -132,6 +134,44 @@ public class DataLakeService extends Service implements DataLake
         catch (IOException e)
         {
             throw new RuntimeException("Search request error", e);
+        }
+    }
+
+    /**
+     * Perform keyword search over KG entities
+     * @param keyword Keyword query
+     * @return List of KG entities
+     */
+    @Override
+    public List<String> keywordSearch(String keyword)
+    {
+        try
+        {
+            Communicator comm = ServiceCommunicator.init(getHost(), DL_PORT, "keyword-search");
+            JsonObject body = new JsonObject();
+            body.add("query", new JsonPrimitive(keyword));
+
+            Response response = comm.send(body.toString(), this.headers);
+
+            if (response.getResponseCode() != 200)
+            {
+                throw new RuntimeException("Keyword search request failed. Received response code " + response.getResponseCode() + ".");
+            }
+
+            JsonElement json = JsonParser.parseString((String) response.getResponse());
+            List<String> entities = new ArrayList<>();
+
+            for (JsonElement entity : json.getAsJsonObject().getAsJsonArray("results"))
+            {
+                entities.add(entity.toString());
+            }
+
+            return entities;
+        }
+
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
         }
     }
 

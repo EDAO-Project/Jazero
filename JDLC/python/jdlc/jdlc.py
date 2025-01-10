@@ -94,6 +94,17 @@ class Connector:
             return 'Failed searching: ' + req.text
 
         return req.text
+    
+    def keywordSearch(self, query):
+        headers =  {'Content-Type': 'application/json', 'username': self.__username, 'password': self.__password}
+        content = '{"query": "' + query + '"}'
+        j = json.loads(content)
+        req = requests.post(self.__host + ':' + str(self.__sdlPort) + '/keyword-search', json = j, headers = headers)
+
+        if (req.status_code != 200):
+            return 'Failed keyword search: ' + req.text
+        
+        return req.text
 
     def __toString(self, query):
         strTable = ''
@@ -167,13 +178,14 @@ class Connector:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('JDLC Connector')
     parser.add_argument('--host', metavar = 'Host', type = str, help = 'Host of machine on which Jazero is deployed', required = True)
-    parser.add_argument('-o', '--operation', metavar = 'Op', type = str, help = 'Jazero operation to perform (ping, search, insert, loadembeddings, clear, clearembeddings, count)', choices = ['ping', 'search', 'insert', 'loadembeddings', 'clear', 'clearembeddings'], required = True)
+    parser.add_argument('-o', '--operation', metavar = 'Op', type = str, help = 'Jazero operation to perform (ping, search, keyword, insert, loadembeddings, clear, clearembeddings, count)', choices = ['ping', 'search', 'insert', 'loadembeddings', 'clear', 'clearembeddings'], required = True)
     parser.add_argument('-u', '--username', metavar = 'Username', type = str, help = 'Username of user', required = True)
     parser.add_argument('-c', '--password', metavar = 'Password', type = str, help = 'Password for user', required = True)
     parser.add_argument('-q', '--query', metavar = 'Query', type = str, help = 'Query file path', required = False)
     parser.add_argument('-sq', '--scoringtype', metavar = 'ScoringType', type = str, help = 'Type of entity scoring (\'TYPES\', \'PREDICATES\', \'COSINE_NORM\', \'COSINE_ABS\', \'COSINE_ANG\')', choices = ['TYPES', 'PREDICATES', 'COSINE_NORM', 'COSINE_ABS', 'COSINE_ANG'], required = False, default = 'TYPE')
     parser.add_argument('-k', '--topk', metavar = 'Top-K', type = str, help = 'Top-K value', required = False, default = '100')
     parser.add_argument('-sm', '--similaritymeasure', metavar = 'SimilarityMeasure', type = str, help = 'Similarity measure between vectors of entity scores (\'EUCLIDEAN\', \'COSINE\')', choices = ['EUCLIDEAN', 'COSINE'], required = False, default = 'EUCLIDEAN')
+    parser.add_argument('-kw', '--keyword', metavar = 'KeywordSearch', type = str, help = 'Keyword search query', required = False)
     parser.add_argument('-loc', '--location', metavar = 'Location', type = str, help = 'Absolute path to table corpus directory on machine running Jazero', required = False)
     parser.add_argument('-jd', '--jazerodir', metavar = 'JazeroDirectory', type = str, help = 'Absolute path to Jazero directory on the machine running Jazero', required = False)
     parser.add_argument('-st', '--storagetype', metavar = 'StorageType', type = str, help = 'Type of storage for inserted table corpus (\'NATIVE\', \'HDFS\' (recommended))', choices = ['NATIVE', 'HDFS'], required = False, default = 'NATIVE')
@@ -227,6 +239,15 @@ if __name__ == '__main__':
                 query.append(rowData)
 
         output = conn.search(topK, scoringType, query, similarityMeasure, prefilter)
+
+    elif (op == 'keyword'):
+        query = args.keyword
+
+        if (query == None):
+            print('Missing keyword query')
+            exit(1)
+        
+        output = conn.keywordSearch(query)
 
     elif (op == 'insert'):
         location = args.location

@@ -955,7 +955,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
      * @param body Must contain an entry 'query' in JSON format containing the keyword query
      * @return List of KG entities that match the keyword query
      */
-    @PostMapping("/search")
+    @PostMapping("/keyword-search")
     public ResponseEntity<String> searchEntities(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
     {
         if (authenticateUser(headers) == Authenticator.Auth.NOT_AUTH)
