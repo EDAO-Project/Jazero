@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @SpringBootApplication
 @RestController
@@ -35,7 +36,18 @@ public class EntityLinker implements WebServerFactoryCustomizer<ConfigurableWebS
 
     public static void main(String[] args)
     {
-        luceneLinker = new LuceneLinker();
+        while (true)
+        {
+            try
+            {
+                TimeUnit.SECONDS.sleep(10);
+                luceneLinker = new LuceneLinker();
+                break;
+            }
+
+            catch (Exception ignored) {}
+        }
+
         SpringApplication.run(EntityLinker.class, args);
     }
 
