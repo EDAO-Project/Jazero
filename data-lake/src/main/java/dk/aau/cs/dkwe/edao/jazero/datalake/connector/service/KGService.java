@@ -65,6 +65,7 @@ public class KGService extends Service
     {
         JsonObject content = new JsonObject();
         content.add("entity", new JsonPrimitive(entity));
+
         Response response = performSend(content.toString(), "types",
                 "URL for KG service to retrieve entity types is malformed",
                 "IOException when sending POST request for entity types", true);
@@ -84,6 +85,7 @@ public class KGService extends Service
     {
         JsonObject content = new JsonObject();
         content.add("entity", new JsonPrimitive(entity));
+
         Response response = performSend(content.toString(), "predicates",
                 "URL for KG service to retrieve entity types is malformed",
                 "IOException when sending POST request for entity types", true);
@@ -99,10 +101,31 @@ public class KGService extends Service
         return predicates;
     }
 
+    public List<String> searchEntities(String query)
+    {
+        List<String> entities = new ArrayList<>();
+        JsonObject body = new JsonObject();
+        body.add("query", new JsonPrimitive(query));
+
+        Response response = performSend(body.toString(), "search",
+                "URL for KG service to retrieve KG entities by keyword search",
+                "IOException when sending POST request for KG entities", true);
+        JsonElement parsed = JsonParser.parseString((String) response.getResponse());
+        JsonArray array = parsed.getAsJsonObject().getAsJsonArray("entities").getAsJsonArray();
+
+        for (JsonElement element : array)
+        {
+            entities.add(element.getAsString());
+        }
+
+        return entities;
+    }
+
     public boolean insertLinks(File dir)
     {
         JsonObject folder = new JsonObject();
         folder.add("folder", new JsonPrimitive(dir.getAbsolutePath()));
+
         Response response = performSend(folder.toString(), "insert-links",
                 "Malformed URL when inserting links",
                 "IOException when inserting links", false);

@@ -1,4 +1,4 @@
-package dk.aau.cs.dkwe.edao.jazero.entitylinker.indexing;
+package dk.aau.cs.dkwe.edao.jazero.knowledgegraph.search;
 
 import dk.aau.cs.dkwe.edao.jazero.datalake.store.Index;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -11,13 +11,16 @@ import org.apache.lucene.search.ScoreDoc;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
-public class LuceneIndex implements Index<String, String>, Serializable
+public class LuceneIndex implements Index<String, List<String>>, Serializable
 {
     private final IndexSearcher searcher;
     private final QueryParser parser = new QueryParser(TEXT_FIELD, new StandardAnalyzer());
     public static final String URI_FIELD = "uri";
     public static final String TEXT_FIELD = "text";
+    private static final int K = 10;
 
     public LuceneIndex(IndexSearcher searcher)
     {
@@ -25,7 +28,7 @@ public class LuceneIndex implements Index<String, String>, Serializable
     }
 
     @Override
-    public void insert(String key, String value)
+    public void insert(String key, List<String> value)
     {
         throw new UnsupportedOperationException("Not supported: " + this.getClass().getName());
     }
@@ -37,25 +40,27 @@ public class LuceneIndex implements Index<String, String>, Serializable
     }
 
     @Override
-    public String find(String key)
+    public List<String> find(String key)
     {
         try
         {
             Query query = this.parser.parse(key);
-            ScoreDoc[] hits = this.searcher.search(query, 1).scoreDocs;
+            ScoreDoc[] hits = this.searcher.search(query, K).scoreDocs;
+            List<String> ranked = new ArrayList<>();
 
-            if (hits.length == 0)
+            for (ScoreDoc hit : hits)
             {
-                return null;
+                Document doc = this.searcher.doc(hit.doc);
+                String uri = doc.get(URI_FIELD);
+                ranked.add(uri);
             }
 
-            Document doc = this.searcher.doc(hits[0].doc);
-            return doc.get(URI_FIELD);
+            return ranked;
         }
 
         catch (IOException | ParseException | IllegalArgumentException e)
         {
-            return null;
+            return new ArrayList<>();
         }
     }
 

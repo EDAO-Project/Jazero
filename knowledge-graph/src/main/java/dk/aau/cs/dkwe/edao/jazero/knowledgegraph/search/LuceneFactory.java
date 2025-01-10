@@ -1,9 +1,10 @@
-package dk.aau.cs.dkwe.edao.jazero.entitylinker.indexing;
+package dk.aau.cs.dkwe.edao.jazero.knowledgegraph.search;
 
 import dk.aau.cs.dkwe.edao.jazero.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.jazero.datalake.system.Logger;
 import org.apache.jena.graph.Triple;
-import org.apache.jena.rdf.model.*;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.util.iterator.ExtendedIterator;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;

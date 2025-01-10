@@ -6,7 +6,6 @@ import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.TableDeserializer;
 import dk.aau.cs.dkwe.edao.jazero.datalake.structures.table.TableSerializer;
 import dk.aau.cs.dkwe.edao.jazero.datalake.system.Configuration;
 import dk.aau.cs.dkwe.edao.jazero.datalake.system.Logger;
-import dk.aau.cs.dkwe.edao.jazero.entitylinker.indexing.LuceneFactory;
 import dk.aau.cs.dkwe.edao.jazero.entitylinker.link.LuceneLinker;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -34,25 +33,9 @@ public class EntityLinker implements WebServerFactoryCustomizer<ConfigurableWebS
         factory.setPort(Configuration.getEntityLinkerPort());
     }
 
-    public static void main(String[] args) throws IOException
+    public static void main(String[] args)
     {
-        if (!LuceneFactory.isBuild())
-        {
-            Logger.log(Logger.Level.INFO, "No Lucene index found");
-
-            File kgDir = new File(Configuration.getKGDir());
-
-            if (!kgDir.exists())
-            {
-                Logger.log(Logger.Level.ERROR, "Missing KG files or KG directory. Read the README.md instructions to setup Jazero correctly.");
-                System.exit(1);
-            }
-
-            LuceneFactory.build(kgDir, true);
-            Logger.log(Logger.Level.INFO, "Lucene index build finished");
-        }
-
-        luceneLinker = new LuceneLinker(LuceneFactory.get());
+        luceneLinker = new LuceneLinker();
         SpringApplication.run(EntityLinker.class, args);
     }
 

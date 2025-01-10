@@ -2,17 +2,20 @@ package dk.aau.cs.dkwe.edao.jazero.entitylinker.link;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import dk.aau.cs.dkwe.edao.jazero.entitylinker.indexing.LuceneIndex;
+import dk.aau.cs.dkwe.edao.jazero.datalake.connector.service.KGService;
+import dk.aau.cs.dkwe.edao.jazero.datalake.system.Configuration;
+
+import java.util.List;
 
 public class LuceneLinker implements EntityLink<String, String>
 {
-    private LuceneIndex luceneIndex;
     private Cache<String, String> cache;
+    private KGService kg;
 
-    public LuceneLinker(LuceneIndex luceneIndex)
+    public LuceneLinker()
     {
-        this.luceneIndex = luceneIndex;
         this.cache = CacheBuilder.newBuilder().maximumSize(1000).build();
+        this.kg = new KGService(Configuration.getEKGManagerHost(), Configuration.getEKGManagerPort());
     }
 
     @Override
@@ -25,13 +28,16 @@ public class LuceneLinker implements EntityLink<String, String>
             return link;
         }
 
-        link = this.luceneIndex.find(key);
+        List<String> kgEntities = this.kg.searchEntities(key);
 
-        if (link != null)
+        if (!kgEntities.isEmpty())
         {
+            link = kgEntities.get(0);
             this.cache.put(key, link);
+
+            return link;
         }
 
-        return link;
+        return null;
     }
 }
