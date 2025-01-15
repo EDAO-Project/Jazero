@@ -4,6 +4,7 @@ import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.stepstone.search.hnswlib.jna.exception.ItemCannotBeInsertedIntoTheVectorSpaceException;
 import dk.aau.cs.dkwe.edao.jazero.datalake.connector.DBDriverBatch;
 import dk.aau.cs.dkwe.edao.jazero.datalake.connector.service.ELService;
 import dk.aau.cs.dkwe.edao.jazero.datalake.connector.service.KGService;
@@ -209,7 +210,13 @@ public class IndexWriter implements IndexIO
 
         entityId = linker.uriLookup(uri);
         entityTable.insert(entityId, entity);
-        hnsw.insert(uri, Collections.emptySet());   // The index does not require a list of tables, it is ignored
+
+        try
+        {
+            hnsw.insert(uri, Collections.emptySet());   // The index does not require a list of tables, it is ignored
+        }
+
+        catch (ItemCannotBeInsertedIntoTheVectorSpaceException ignored) {}
     }
 
     protected void indexKGEntity(String uri)
