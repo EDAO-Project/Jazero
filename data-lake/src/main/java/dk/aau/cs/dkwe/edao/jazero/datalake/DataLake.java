@@ -1019,7 +1019,7 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
             types.addAll(entity.getTypes());
             predicates.addAll(entity.getPredicates());
 
-            if (entity.getEmbedding().getDimension() > 0)
+            if (entity.getEmbedding() != null && entity.getEmbedding().getDimension() > 0)
             {
                 embeddings++;
             }
