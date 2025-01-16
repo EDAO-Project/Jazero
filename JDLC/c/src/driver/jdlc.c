@@ -31,7 +31,7 @@ response perform(jdlc conn)
 
     switch (conn.op)
     {
-        case PING: case CLEAR: case COUNT:
+        case PING: case CLEAR: case COUNT: case STATS:
             operation = GET;
             break;
 

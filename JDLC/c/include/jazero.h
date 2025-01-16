@@ -17,5 +17,6 @@ response clear_embeddings(const char *ip, user u);
 response add_user(const char *ip, user u, user new_user);
 response remove_user(const char *ip, user u, const char *old_username);
 response count(const char *ip, user u, const char *uri);
+response stats(const char *ip, user u);
 
 #endif

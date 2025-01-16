@@ -144,6 +144,15 @@ class Connector:
             return 'Failed retrieving count for \'' + uri + '\''
         
         return req.text
+    
+    def stats(self):
+        headers = {'username': self.__username, 'password': self.__password}
+        req = requests.get(self.__host + ':' + str(self.__sdlPort) + '/stats', headers = headers)
+
+        if (req.status_code != 200):
+            return 'Failed retrieving statistics'
+        
+        return req.text
 
 # Use --host to specify host and -o for operation
 # Operations:
@@ -178,7 +187,7 @@ class Connector:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('JDLC Connector')
     parser.add_argument('--host', metavar = 'Host', type = str, help = 'Host of machine on which Jazero is deployed', required = True)
-    parser.add_argument('-o', '--operation', metavar = 'Op', type = str, help = 'Jazero operation to perform (ping, search, keyword, insert, loadembeddings, clear, clearembeddings, count)', choices = ['ping', 'search', 'keyword', 'insert', 'loadembeddings', 'clear', 'clearembeddings'], required = True)
+    parser.add_argument('-o', '--operation', metavar = 'Op', type = str, help = 'Jazero operation to perform (ping, search, keyword, insert, loadembeddings, clear, clearembeddings, count, stats)', choices = ['ping', 'search', 'keyword', 'insert', 'loadembeddings', 'clear', 'clearembeddings', 'count', 'stats'], required = True)
     parser.add_argument('-u', '--username', metavar = 'Username', type = str, help = 'Username of user', required = True)
     parser.add_argument('-c', '--password', metavar = 'Password', type = str, help = 'Password for user', required = True)
     parser.add_argument('-q', '--query', metavar = 'Query', type = str, help = 'Query file path', required = False)
@@ -291,5 +300,8 @@ if __name__ == '__main__':
     elif (op == 'count'):
         uri = args.count
         output = conn.count(uri)
+    
+    elif (op == 'stats'):
+        output = conn.stats()
 
     print(output)

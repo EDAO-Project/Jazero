@@ -311,4 +311,23 @@ public class DataLakeService extends Service implements DataLake
             this.headers.remove("entity");
         }
     }
+
+    /**
+     * Statistics of Jazero, such as index sizes, number of tables, and number of linked table cells
+     * @return Data lake statistics of tables and KG
+     */
+    @Override
+    public Response stats()
+    {
+        try
+        {
+            Communicator comm = ServiceCommunicator.init(getHost(), DL_PORT, "stats");
+            return comm.receive(this.headers);
+        }
+
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
 }

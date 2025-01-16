@@ -20,4 +20,5 @@ public interface DataLake
     Response removeUser(User removedUser);
     Response removeTable(String tableId);
     Response count(String uri);
+    Response stats();
 }

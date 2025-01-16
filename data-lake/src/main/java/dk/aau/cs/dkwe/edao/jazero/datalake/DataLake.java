@@ -1,8 +1,8 @@
 package dk.aau.cs.dkwe.edao.jazero.datalake;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import dk.aau.cs.dkwe.edao.jazero.datalake.connector.DBDriverBatch;
 import dk.aau.cs.dkwe.edao.jazero.datalake.connector.EmbeddingsFactory;
 import dk.aau.cs.dkwe.edao.jazero.datalake.connector.ExplainableCause;
@@ -988,5 +988,60 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
         {
             return ResponseEntity.badRequest().body("EKG Manager has not completed booting. Use the ping operator to check for booting completion.");
         }
+    }
+
+    /**
+     * Returns data lake statistics containing number of indexed entities, RDF types, KG predicates, embeddings, tables, and total number of linked table cells
+     * @return Data lake statistics
+     */
+    @GetMapping("/stats")
+    public ResponseEntity<String> stats(@RequestHeader Map<String, String> headers)
+    {
+        if (authenticateUser(headers) == Authenticator.Auth.NOT_AUTH)
+        {
+            return ResponseEntity.badRequest().body("User does not have read privileges");
+        }
+
+        else if (!Configuration.areIndexesLoaded())
+        {
+            return ResponseEntity.badRequest().body("Indexes have not been loaded. Use the '/insert' endpoint.");
+        }
+
+        long entities = entityTable.size(), embeddings = 0, linkedCells = 0;
+        Iterator<Id> entityIds = entityTable.allIds(), cellIds = linker.cellIds();
+        Set<Type> types = new HashSet<>();
+        Set<String> predicates = new HashSet<>();
+
+        while (entityIds.hasNext())
+        {
+            Id id = entityIds.next();
+            Entity entity = entityTable.find(id);
+            types.addAll(entity.getTypes());
+            predicates.addAll(entity.getPredicates());
+
+            if (entity.getEmbedding().getDimension() > 0)
+            {
+                embeddings++;
+            }
+        }
+
+        while (cellIds.hasNext())
+        {
+            linkedCells++;
+            cellIds.next();
+        }
+
+        StorageHandler storageHandler = new StorageHandler(Configuration.getStorageType());
+        int tables = storageHandler.count();
+        JsonObject json = new JsonObject();
+        json.add("entities", new JsonPrimitive(entities));
+        json.add("types", new JsonPrimitive(types.size()));
+        json.add("predicates", new JsonPrimitive(predicates.size()));
+        json.add("embeddings", new JsonPrimitive(embeddings));
+        json.add("linked cells", new JsonPrimitive(linkedCells));
+        json.add("tables", new JsonPrimitive(tables));
+        analysis.record("stats", 1);
+
+        return ResponseEntity.ok(json.toString());
     }
 }

@@ -360,9 +360,9 @@ public class TableSearch extends AbstractSearch
     private List<List<Integer>> getQueryToColumnMapping(Table<String> query, Table<String> table)
     {
         List<List<List<Double>>> entityToColumnScore = new ArrayList<>();
-        int tableRows = table.rowCount();
+        int tableRows = table.rowCount(), queryRows = query.rowCount();
 
-        for (int row = 0; row < query.rowCount(); row++)
+        for (int row = 0; row < queryRows; row++)
         {
             int rowSize = query.getRow(row).size();
             entityToColumnScore.add(new ArrayList<>(rowSize));
@@ -390,7 +390,7 @@ public class TableSearch extends AbstractSearch
 
                 if (curEntity != null)
                 {
-                    for (int queryRow = 0; queryRow < query.rowCount(); queryRow++)    // Loop over each query tuple and each entity in a tuple and compute a score between the query entity and 'curEntity'
+                    for (int queryRow = 0; queryRow < queryRows; queryRow++)    // Loop over each query tuple and each entity in a tuple and compute a score between the query entity and 'curEntity'
                     {
                         for (int queryEntityCounter = 0; queryEntityCounter < query.getRow(queryRow).size(); queryEntityCounter++)
                         {

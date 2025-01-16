@@ -17,7 +17,8 @@ enum operation
     CLEAR_EMBEDDINGS,
     ADD_USER,
     REMOVE_USER,
-    COUNT
+    COUNT,
+    STATS
 };
 
 enum response_status

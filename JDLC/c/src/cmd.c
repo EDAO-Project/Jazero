@@ -6,8 +6,8 @@
 #include <string.h>
 
 #define USAGE "usage: jdlc [option] ...\n" \
-                "-o, --operation : Jazero operation to perform (search, keyword, insert, insertembeddings, ping, clear, clearembeddings, adduser, removeuser, count)\n" \
-                "\nping, search, keyword, insert, insertembeddings, clear, clearembeddings, adduser, removeuser, count\n" \
+                "-o, --operation : Jazero operation to perform (search, keyword, insert, insertembeddings, ping, clear, clearembeddings, adduser, removeuser, count, stats)\n" \
+                "\nping, search, keyword, insert, insertembeddings, clear, clearembeddings, adduser, removeuser, count, stats\n" \
                 "-h, --host : Host of machine on which Jazero is deployed\n" \
                 "-u, --username : Username of this user\n" \
                 "-c, --password : Password for this user\n" \
@@ -147,10 +147,16 @@ static response do_remove_user(const char *ip, const char *username, const char 
     return remove_user(ip, u, old_username);
 }
 
-static response do_count(char *ip, const char *username, const char *password, const char *uri)
+static response do_count(const char *ip, const char *username, const char *password, const char *uri)
 {
     user u = create_user(username, password);
     return count(ip, u, uri);
+}
+
+static response do_stats(const char *ip, const char *username, const char *password)
+{
+    user u = create_user(username, password);
+    return stats(ip, u);
 }
 
 error_t parse(const char *key, const char *arg, struct arguments *args)
@@ -210,6 +216,11 @@ error_t parse(const char *key, const char *arg, struct arguments *args)
         else if (strcmp(arg, "count") == 0)
         {
             args->op = COUNT;
+        }
+
+        else if (strcmp(arg, "stats") == 0)
+        {
+            args->op = STATS;
         }
 
         else
@@ -563,6 +574,10 @@ int main(int argc, char *argv[])
             }
 
             ret = do_count(args.host, args.this_username, args.this_password, args.uri);
+            break;
+
+        case STATS:
+            ret = do_stats(args.host, args.this_username, args.this_password);
             break;
 
         default:

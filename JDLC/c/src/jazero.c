@@ -504,3 +504,25 @@ response count(const char *ip, user u, const char *uri)
 
     return res;
 }
+
+response stats(const char *ip, user u)
+{
+    jdlc request;
+    struct properties headers = init_params_search();
+    struct address addr = init_addr(ip, DL_PORT, "/stats");
+    prop_insert(&headers, "username", u.username, strlen(u.username));
+    prop_insert(&headers, "password", u.password, strlen(u.password));
+
+    if (!init(&request, COUNT, addr, headers, NULL))
+    {
+        prop_clear(&headers);
+        addr_clear(addr);
+        return (response) {.status = JAZERO_ERROR, .msg = "Could not initialize Jazero STATS request"};
+    }
+
+    response res = perform(request);
+    addr_clear(addr);
+    prop_clear(&headers);
+
+    return res;
+}
