@@ -51,6 +51,7 @@ public class SearchView extends Div
     private Component resultComponent = null;
     private String dataLake = null;
     private static final boolean debug = true;
+    private static final Random random = new Random();
 
     public SearchView(View error, Main main)
     {
@@ -310,7 +311,34 @@ public class SearchView extends Div
         {
             if (debug)
             {
+                query = query.toLowerCase();
                 TimeUnit.MILLISECONDS.sleep(300);
+
+                if (query.startsWith("m"))
+                {
+                    return List.of("https://dbpedia.org/page/MERS", "https://dbpedia.org/page/Measles", "https://dbpedia.org/page/Malaria", "https://dbpedia.org/page/Middle_East");
+                }
+
+                else if (query.startsWith("r"))
+                {
+                    return List.of("https://dbpedia.org/page/Rabies", "https://dbpedia.org/page/Respiratory_system", "https://dbpedia.org/page/Respiratory_syncytial_virus");
+                }
+
+                else if (query.startsWith("b"))
+                {
+                    return List.of("https://dbpedia.org/page/Bird", "https://dbpedia.org/page/Bat", "https://dbpedia.org/page/Bronchitis");
+                }
+
+                else if (query.startsWith("c"))
+                {
+                    return List.of("https://dbpedia.org/page/Chimpanzee", "https://dbpedia.org/page/Cancer", "https://dbpedia.org/page/Cholera");
+                }
+
+                else if (query.startsWith("i"))
+                {
+                    return List.of("https://dbpedia.org/page/Influenza", "https://dbpedia.org/page/India");
+                }
+
                 return List.of("https://dbpedia.org/page/Barack_Obama", "https://dbpedia.org/page/Democratic_Party_(United_States)",
                         "https://dbpedia.org/page/Joe_Biden");
             }
@@ -362,7 +390,6 @@ public class SearchView extends Div
         int rows = table.rowCount();
         this.query.clear();
 
-        // TODO: Remove non-entity column and row without entities
         for (int row = 0; row < rows; row++)
         {
             Table.Row<String> tableRow = table.getRow(row);
@@ -371,10 +398,37 @@ public class SearchView extends Div
 
             for (int column = 0; column < columns; column++)
             {
-                columnItems.add(new StringBuilder(table.getRow(row).get(column)));
+                String cell = table.getRow(row).get(column);
+                List<String> links = keywordSearch(cell);
+
+                if (!links.isEmpty())
+                {
+                    columnItems.add(new StringBuilder(links.get(0)));
+                }
+
+                else
+                {
+                    columnItems.add(new StringBuilder());
+                }
             }
 
-            this.query.add(columnItems);
+            if (!columnItems.isEmpty())
+            {
+                this.query.add(columnItems);
+            }
+        }
+
+        if (!this.query.isEmpty())
+        {
+            for (int i = 0; i < this.query.get(0).size(); i++)
+            {
+                int column = i;
+
+                if (this.query.stream().allMatch(row -> row.get(column).isEmpty()))
+                {
+                    this.query.forEach(row -> row.remove(column));
+                }
+            }
         }
 
         updateEntityCounts();
@@ -445,11 +499,21 @@ public class SearchView extends Div
 
     private int count(String entity)
     {
-        if (this.dataLake == null)
+        if (debug)
+        {
+            return Math.abs(random.nextInt() % 100000);
+        }
+
+        else if (this.dataLake == null)
         {
             Dialog errorDialog = errorDialog("Please select a data lake");
             errorDialog.open();
 
+            return -1;
+        }
+
+        else if (debug)
+        {
             return -1;
         }
 
@@ -533,7 +597,7 @@ public class SearchView extends Div
 
     private Result parseDebugResult()
     {
-        try (BufferedReader reader = new BufferedReader(new FileReader("debug_output.json")))
+        try (BufferedReader reader = new BufferedReader(new FileReader("first_output.json")))
         {
             int c;
             StringBuilder builder = new StringBuilder();
@@ -609,8 +673,8 @@ public class SearchView extends Div
     {
         Dialog dialog = new Dialog("Statistics");
         VerticalLayout layout = new VerticalLayout();
-        H4 runtime = new H4("Runtime: " + this.result.getRuntime() + "s"),
-                reduction = new H4("Search space reduction: " + this.result.getReduction() + "%");
+        H4 runtime = new H4("Runtime: " + this.result.getRuntime() / 1000000000 + "s"),
+                reduction = new H4("Search space reduction: " + this.result.getReduction() * 100 + "%");
         layout.add(runtime, reduction);
         dialog.add(layout);
 
@@ -623,15 +687,12 @@ public class SearchView extends Div
     private Component buildResultsList()
     {
         VerticalLayout layout = new VerticalLayout();
-        int rank = 1;
 
         for (var resultTable : this.result.getTables())
         {
             double score = resultTable.first();
             Table<String> table = resultTable.second();
-            H3 rankLabel = new H3(rank++ + ".");
-            H3 tableIdLabel = new H3(table.getId());
-            H4 scoreLabel = new H4("Score: " + score);
+            H3 tableIdLabel = new H3(table.getId().replace(".json", "") + " (score: " + score + ")");
             HorizontalLayout iconLayout = new HorizontalLayout(new Icon(VaadinIcon.ELLIPSIS_DOTS_V));
             iconLayout.setWidthFull();
             iconLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
@@ -659,8 +720,8 @@ public class SearchView extends Div
             toQueryButton.getStyle().set("--vaadin-button-text-color", "white");
             toQueryButton.getStyle().set("background-color", "#636363");
 
-            VerticalLayout tableLayout = new VerticalLayout(tableIdLabel, scoreLabel, tableSnippet, toQueryButton);
-            HorizontalLayout resultLayout = new HorizontalLayout(rankLabel, tableLayout);
+            VerticalLayout tableLayout = new VerticalLayout(tableIdLabel, tableSnippet, toQueryButton);
+            HorizontalLayout resultLayout = new HorizontalLayout(tableLayout);
             layout.add(resultLayout);
         }
 
