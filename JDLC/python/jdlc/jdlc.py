@@ -153,6 +153,16 @@ class Connector:
             return 'Failed retrieving statistics'
         
         return req.text
+    
+    def table_stats(self, table_id):
+        headers = {'username': self.__username, 'password': self.__password}
+        body = "{\"table\": \"table_id\"}"
+        req = requests.post(self.__host + ':' + str(self.__sdlPort) + '/table-stats', json = json.loads(body), headers = headers)
+        
+        if (req.status_code != 200):
+            return 'Failed retrieving index stats for table \'' + table_id + '\': ' + req.text
+        
+        return req.text
 
 # Use --host to specify host and -o for operation
 # Operations:
