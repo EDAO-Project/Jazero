@@ -1,5 +1,7 @@
 package dk.aau.cs.dkwe.edao.jazero.web.view;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.vaadin.componentfactory.Autocomplete;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Html;
@@ -49,7 +51,9 @@ public class SearchView extends Div
     private Result result;
     private Component searchComponent;
     private Component resultComponent = null;
+    private Component statsComponent;
     private String dataLake = null;
+    private Map<String, Integer> stats = null;
     private static final boolean debug = true;
     private static final Random random = new Random();
 
@@ -67,6 +71,45 @@ public class SearchView extends Div
         add(this.layout);
         setHeightFull();
         this.main = main;
+    }
+
+    private void loadDLStatistics(String ip, User user)
+    {
+        this.stats = new HashMap<>();
+
+        if (debug)
+        {
+            int entities = Math.abs(random.nextInt()) % 10000000;
+            this.stats.put("Entities", entities);
+            this.stats.put("Types", (int) Math.ceil(entities * 3.8));
+            this.stats.put("Predicates", (int) Math.ceil(entities * 5.5));
+            this.stats.put("Embeddings", (int) Math.ceil(entities * 0.8));
+            this.stats.put("Linked cells", entities);
+            this.stats.put("Tables", (int) Math.ceil((double) entities / 175));
+            return;
+        }
+
+        try
+        {
+            DataLakeService dl = new DataLakeService(ip, user);
+            Response response = dl.stats();
+
+            if (response.getResponseCode() != 200)
+            {
+                this.stats = null;
+                return;
+            }
+
+            JsonObject json = JsonParser.parseString((String) response.getResponse()).getAsJsonObject();
+            this.stats.put("Entities", json.get("entities").getAsInt());
+            this.stats.put("Types", json.get("types").getAsInt());
+            this.stats.put("Predicates", json.get("predicates").getAsInt());
+            this.stats.put("Embeddings", json.get("embeddings").getAsInt());
+            this.stats.put("Linked cells", json.get("linked cells").getAsInt());
+            this.stats.put("Tables", json.get("tables").getAsInt());
+        }
+
+        catch (Exception ignored) {}
     }
 
     private Component buildHeader()
@@ -108,8 +151,33 @@ public class SearchView extends Div
         dataLakes.addValueChangeListener(event -> {
             this.dataLake = dataLakes.getValue();
             this.searchComponent.setVisible(true);
+            String ip = ConfigReader.getIp(this.dataLake),
+                    username = ConfigReader.getUsername(this.dataLake),
+                    password = ConfigReader.getPassword(this.dataLake);
+            loadDLStatistics(ip, new User(username, password, true));
+            this.statsComponent.setVisible(true);
         });
-        layout.add(label, dataLakes);
+        this.statsComponent = new Button(new Icon(VaadinIcon.INFO_CIRCLE), statsEvent -> {
+            Dialog stats = new Dialog("Statistics");
+            VerticalLayout statsLayout = new VerticalLayout();
+
+            for (Map.Entry<String, Integer> stat : this.stats.entrySet())
+            {
+                HorizontalLayout statLayout = new HorizontalLayout();
+                H4 text = new H4(stat.getKey() + ": " + stat.getValue());
+                statLayout.add(text);
+                statsLayout.add(statLayout);
+            }
+
+            Button closeButton = new Button(new Icon("lumo", "cross"), buttonEvent -> stats.close());
+            statsLayout.setAlignItems(FlexComponent.Alignment.END);
+            statsLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
+            stats.add(statsLayout);
+            stats.getHeader().add(closeButton);
+            stats.open();
+        });
+        this.statsComponent.setVisible(false);
+        layout.add(label, dataLakes, this.statsComponent);
         layout.addClassNames(LumoUtility.AlignItems.CENTER, LumoUtility.AlignContent.CENTER,
                 LumoUtility.JustifyContent.CENTER);
 
