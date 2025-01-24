@@ -39,7 +39,7 @@
                 "\ncount\n" \
                 "-n, --count : URI of entity to retrieve count of in data lake tables" \
                 "\ntablestats\n" \
-                "-s, --table : Table file ID to retrieve stats for" \
+                "-r, --table : Table file ID to retrieve stats for" \
 
 struct arguments
 {
@@ -432,7 +432,7 @@ error_t parse(const char *key, const char *arg, struct arguments *args)
         args->uri = (char *) arg;
     }
 
-    else if (check_key(key, '-s', '--table'))
+    else if (check_key(key, "-r", "--table"))
     {
         args->table_id = (char *) arg;
     }
