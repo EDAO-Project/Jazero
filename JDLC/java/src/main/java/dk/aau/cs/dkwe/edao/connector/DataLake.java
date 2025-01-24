@@ -21,4 +21,5 @@ public interface DataLake
     Response removeTable(String tableId);
     Response count(String uri);
     Response stats();
+    Response tableStats(String filename);
 }

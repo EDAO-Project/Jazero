@@ -1044,4 +1044,53 @@ public class DataLake implements WebServerFactoryCustomizer<ConfigurableWebServe
 
         return ResponseEntity.ok(json.toString());
     }
+
+    /**
+     * Similar to the stats method, but this is only for a single table
+     * @param body Must contain an entry 'table' which is the file name of the table
+     * @return Index statistics of a provided table
+     */
+    @PostMapping("/table-stats")
+    public ResponseEntity<String> tableStats(@RequestHeader Map<String, String> headers, @RequestBody Map<String, String> body)
+    {
+        if (authenticateUser(headers) == Authenticator.Auth.NOT_AUTH)
+        {
+            return ResponseEntity.badRequest().body("User does not have read privileges");
+        }
+
+        else if (!Configuration.areIndexesLoaded())
+        {
+            return ResponseEntity.badRequest().body("Indexes have not been loaded. Use the '/insert' endpoint.");
+        }
+
+        else if (!body.containsKey("table"))
+        {
+            return ResponseEntity.badRequest().body("Missing 'table' field in request body");
+        }
+
+        String tableId = body.get("table");
+        Set<Id> tableEntities = tableLink.tableToEntities(tableId);
+        int types = 0, predicates = 0, embeddings = 0;
+
+        for (Id entityId : tableEntities)
+        {
+            Entity entity = entityTable.find(entityId);
+
+            if (entity != null)
+            {
+                types += entity.getTypes().size();
+                predicates += entity.getPredicates().size();
+                embeddings += entity.getEmbedding().getDimension() > 0 ? 1 : 0;
+            }
+        }
+
+        JsonObject json = new JsonObject();
+        json.add("entities", new JsonPrimitive(tableEntities.size()));
+        json.add("types", new JsonPrimitive(types));
+        json.add("predicates", new JsonPrimitive(predicates));
+        json.add("embeddings", new JsonPrimitive(embeddings));
+        analysis.record("table-stats", 1);
+
+        return ResponseEntity.ok(json.toString());
+    }
 }

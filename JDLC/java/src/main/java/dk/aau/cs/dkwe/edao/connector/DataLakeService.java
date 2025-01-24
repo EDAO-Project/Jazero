@@ -330,4 +330,22 @@ public class DataLakeService extends Service implements DataLake
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public Response tableStats(String filename)
+    {
+        JsonObject body = new JsonObject();
+        body.add("table", new JsonPrimitive(filename));
+
+        try
+        {
+            Communicator comm = ServiceCommunicator.init(getHost(), DL_PORT, "table-stats");
+            return comm.send(body.toString(), this.headers);
+        }
+
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
 }

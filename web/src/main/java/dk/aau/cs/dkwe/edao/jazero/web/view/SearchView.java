@@ -788,7 +788,25 @@ public class SearchView extends Div
             toQueryButton.getStyle().set("--vaadin-button-text-color", "white");
             toQueryButton.getStyle().set("background-color", "#636363");
 
-            VerticalLayout tableLayout = new VerticalLayout(tableIdLabel, tableSnippet, toQueryButton);
+            Button tableStatsButton = new Button(new Icon(VaadinIcon.INFO_CIRCLE), statsEvent -> {
+                Dialog statsDialog = new Dialog("Table statistics");
+                VerticalLayout statsLayout = new VerticalLayout();
+                Map<String, Integer> stats = tableStats(table.getId());
+
+                for (Map.Entry<String, Integer> stat : stats.entrySet())
+                {
+                    H4 statContent = new H4(stat.getKey() + ": " + stat.getValue());
+                    statsLayout.add(statContent);
+                }
+
+                Button closeButton = new Button(new Icon("lumo", "cross"), buttonEvent -> statsDialog.close());
+                statsLayout.setAlignItems(FlexComponent.Alignment.END);
+                statsLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
+                statsDialog.add(statsLayout);
+                statsDialog.getHeader().add(closeButton);
+                statsDialog.open();
+            });
+            VerticalLayout tableLayout = new VerticalLayout(tableIdLabel, tableSnippet, new HorizontalLayout(toQueryButton, tableStatsButton));
             HorizontalLayout resultLayout = new HorizontalLayout(tableLayout);
             layout.add(resultLayout);
         }
@@ -849,5 +867,45 @@ public class SearchView extends Div
         anchor.getElement().setAttribute("download", true);
 
         return anchor;
+    }
+
+    private Map<String, Integer> tableStats(String filename)
+    {
+        Map<String, Integer> stats = new HashMap<>();
+
+        if (debug)
+        {
+            int entities = Math.abs(random.nextInt()) % 10000;
+            stats.put("Entities", entities);
+            stats.put("Types", (int) Math.ceil(entities * 3.8));
+            stats.put("Predicates", (int) Math.ceil(entities * 5.5));
+            stats.put("Embeddings", (int) Math.ceil(entities * 0.8));
+
+            return stats;
+        }
+
+        try
+        {
+            DataLakeService dl = new DataLakeService(null, null);
+            Response response = dl.tableStats(filename);
+
+            if (response.getResponseCode() != 200)
+            {
+                return new HashMap<>();
+            }
+
+            JsonObject json = JsonParser.parseString((String) response.getResponse()).getAsJsonObject();
+            stats.put("Entities", json.get("entities").getAsInt());
+            stats.put("Types", json.get("types").getAsInt());
+            stats.put("Predicates", json.get("predicates").getAsInt());
+            stats.put("Embeddings", json.get("embeddings").getAsInt());
+
+            return stats;
+        }
+
+        catch (Exception e)
+        {
+            return stats;
+        }
     }
 }

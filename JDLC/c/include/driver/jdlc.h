@@ -18,7 +18,8 @@ enum operation
     ADD_USER,
     REMOVE_USER,
     COUNT,
-    STATS
+    STATS,
+    TABLE_STATS
 };
 
 enum response_status
