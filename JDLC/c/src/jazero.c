@@ -531,7 +531,7 @@ response table_stats(const char *ip, user u, const char *table_id)
 {
     jdlc request;
     struct properties headers = init_params_search();
-    struct address addr = init_addr(ip, DL_PORT, "/stats");
+    struct address addr = init_addr(ip, DL_PORT, "/table-stats");
     prop_insert(&headers, "username", u.username, strlen(u.username));
     prop_insert(&headers, "password", u.password, strlen(u.password));
     prop_insert(&headers, "table", table_id, strlen(table_id));
