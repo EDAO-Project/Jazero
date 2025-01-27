@@ -178,7 +178,7 @@ docker run --rm --network="host" --name jazero jazero_web
 ```
 
 You can now access the Jazero web interface <a href="http://localhost:8080/">here</a>.
-For demonstration purposes, we already have an instance of Jazero running, and it can be accessed using its web interface <a href="http://130.225.39.148:8080/">here</a>.
+For demonstration purposes, we already have an instance of Jazero running, and it can be accessed using its web interface <a href="http://jazero.dk">here</a>.
 
 You can stop the Jazero web interface with the following command in another terminal window.
 
