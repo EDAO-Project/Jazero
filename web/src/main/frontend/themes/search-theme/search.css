@@ -20,3 +20,7 @@ html {
     --lumo-primary-text-color: grey;
     --lumo-primary-color: grey;
 }
+
+.entity-count-grid .v-grid-header th {
+    font-weight: bold;
+}

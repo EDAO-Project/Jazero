@@ -8,6 +8,7 @@ import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.*;
@@ -389,12 +390,12 @@ public class SearchView extends Div
 
                 else if (query.startsWith("r"))
                 {
-                    return List.of("https://dbpedia.org/page/Rabies", "https://dbpedia.org/page/Respiratory_system", "https://dbpedia.org/page/Respiratory_syncytial_virus");
+                    return List.of("https://dbpedia.org/page/Rhinovirus", "https://dbpedia.org/page/Rabies", "https://dbpedia.org/page/Respiratory_system", "https://dbpedia.org/page/Respiratory_syncytial_virus");
                 }
 
                 else if (query.startsWith("b"))
                 {
-                    return List.of("https://dbpedia.org/page/Bird", "https://dbpedia.org/page/Bat", "https://dbpedia.org/page/Bronchitis");
+                    return List.of("https://dbpedia.org/page/Biota", "https://dbpedia.org/page/Bird", "https://dbpedia.org/page/Bat", "https://dbpedia.org/page/Bronchitis");
                 }
 
                 else if (query.startsWith("c"))
@@ -404,7 +405,37 @@ public class SearchView extends Div
 
                 else if (query.startsWith("i"))
                 {
-                    return List.of("https://dbpedia.org/page/Influenza", "https://dbpedia.org/page/India");
+                    return List.of("https://dbpedia.org/page/Italy", "https://dbpedia.org/page/Influenza", "https://dbpedia.org/page/India");
+                }
+
+                else if (query.startsWith("sa"))
+                {
+                    return List.of("https://dbpedia.org/page/SARS");
+                }
+
+                else if (query.startsWith("sw"))
+                {
+                    return List.of("https://dbpedia.org/page/Switzerland");
+                }
+
+                else if (query.startsWith("un"))
+                {
+                    return List.of("https://dbpedia.org/page/University_of_Basel");
+                }
+
+                else if (query.startsWith("u"))
+                {
+                    return List.of("https://dbpedia.org/page/USA");
+                }
+
+                else if (query.startsWith("ad"))
+                {
+                    return List.of("https://dbpedia.org/page/Adenovirus");
+                }
+
+                else if (query.startsWith("a"))
+                {
+                    return List.of("https://dbpedia.org/page/AOU");
                 }
 
                 return List.of("https://dbpedia.org/page/Barack_Obama", "https://dbpedia.org/page/Democratic_Party_(United_States)",
