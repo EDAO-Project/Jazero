@@ -1,177 +1,154 @@
 {
   "scores": [
     {
-      "table ID": "table-0842-786.json",
-      "headers": [
-        "Treatment",
-        "Outcome measure"
-      ],
-      "table": [
-        [
-          {
-            "text": "BiMVA-MERS-S_DF1rds"
-          },
-          {
-            "text": "Immunogenicity"
-          }
-        ],
-        [
-          {
-            "text": "ChAdOx1 MERS"
-          },
-          {
-            "text": "Immunogenicity"
-          }
-        ],
-        [
-          {
-            "text": "MVA-MERS-S"
-          },
-          {
-            "text": "Immunogenicity"
-          }
-        ]
-      ],
-      "score": 0.89
-    },
-    {
-      "table ID": "table-0863-65.json",
-      "headers": [
-        "Disease",
-        "Study location",
-        "Collaborators"
-      ],
-      "table": [
-        [
-          {
-            "text": "SARS"
-          },
-          {
-            "text": "Switzerland"
-          },
-          {
-            "text": "University of Basel"
-          }
-        ],
-        [
-          {
-            "text": "Rhinovirus"
-          },
-          {
-            "text": "USA"
-          },
-          {
-            "text": "Biota"
-          }
-        ],
-        [
-          {
-            "text": "Adenovirus"
-          },
-          {
-            "text": "Italy"
-          },
-          {
-            "text": "A.O.U."
-          }
-        ]
-      ],
-      "score": 0.78
-    },
-    {
-      "table ID": "table-0857-411.json",
+      "table ID": "table-0823-973.json",
       "headers": [
         "Virus",
-        "Treatment",
-        "Contact"
+        "Drug name",
+        "Year approved",
+        "Manufacturer"
       ],
       "table": [
         [
           {
-            "text": "Adenovirus"
+            "text": "Influenza"
           },
           {
-            "text": "Brincidofovir"
+            "text": "Zanamivir"
           },
           {
-            "text": "Claudia Bondone, MD"
-          }
-        ],
-        [
-          {
-            "text": "Coronovirus"
-          },
-          {
-            "text": "Lopinavir"
-          },
-          {
-            "text": "Linghua Li"
-          }
-        ],
-        [
-          {
-            "text": "Enterovirus"
-          },
-          {
-            "text": "EV68-228-N"
-          },
-          {
-            "text": "NIAID"
-          }
-        ],
-        [
-          {
-            "text": "Herpesvirus"
-          },
-          {
-            "text": "Valaciclovir"
+            "text": "1999"
           },
           {
             "text": "GlaxoSmithKline"
           }
+        ],
+        [
+          {
+            "text": "Influenza"
+          },
+          {
+            "text": "Peramivir"
+          },
+          {
+            "text": "2014"
+          },
+          {
+            "text": "BioCryst Pharmaceuticals"
+          }
         ]
       ],
-      "score": 0.63
+      "score": 0.81
     },
     {
-      "table ID": "table-0823-973.json",
+      "table ID": "table-0857-411.json",
       "headers": [
-        "Researcher",
-        "Area",
-        "Location",
-        "Hospital"
+        "Symptom(s)",
+        "OTC Medicine"
       ],
       "table": [
         [
           {
-            "text": "Lianxin Liu"
+            "text": "Myalgia"
           },
           {
-            "text": "Cancer"
-          },
-          {
-            "text": "China"
-          },
-          {
-            "text": "Anhui Hospital"
+            "text": "Analgesic"
           }
         ],
         [
           {
-            "text": "Dimitris Voliotis"
+            "text": "Nasal congestion"
           },
           {
-            "text": "Brain"
+            "text": "Decongestant"
+          }
+        ],
+        [
+          {
+            "text": "Sore throat"
           },
           {
-            "text": "USA"
+            "text": "Anesthetic"
+          }
+        ],
+        [
+          {
+            "text": "Conjunctivitis"
           },
           {
-            "text": "BAMF Health"
+            "text": "Antihistamine"
           }
         ]
       ],
-      "score": 0.57
+      "score": 0.72
+    },
+    {
+      "table ID": "table-0842-786.json",
+      "headers": [
+        "Class",
+        "Example agents"
+      ],
+      "table": [
+        [
+          {
+            "text": "Cereblon E3 ligase"
+          },
+          {
+            "text": "Thalidomide"
+          }
+        ],
+        [
+          {
+            "text": "Interleukin"
+          },
+          {
+            "text": "IL-2"
+          }
+        ],
+        [
+          {
+            "text": "Cytokine"
+          },
+          {
+            "text": "Interferon"
+          }
+        ]
+      ],
+      "score": 0.56
+    },
+    {
+      "table ID": "table-0863-65.json",
+      "headers": [
+        "Cancer type",
+        "Antigens"
+      ],
+      "table": [
+        [
+          {
+            "text": "Bladder cancer"
+          },
+          {
+            "text": "NY-ESO-1"
+          }
+        ],
+        [
+          {
+            "text": "Breast cancer"
+          },
+          {
+            "text": "HER2"
+          }
+        ],
+        [
+          {
+            "text": "Leukemia"
+          },
+          {
+            "text": "Wilms' tumor"
+          }
+        ]
+      ],
+      "score": 0.54
     }
   ],
   "runtime": 21561200646,
