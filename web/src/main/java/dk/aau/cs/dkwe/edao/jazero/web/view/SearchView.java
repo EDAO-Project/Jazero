@@ -832,7 +832,7 @@ public class SearchView extends Div
             Button tableStatsButton = new Button(new Icon(VaadinIcon.INFO_CIRCLE), statsEvent -> {
                 Dialog statsDialog = new Dialog("Table statistics");
                 VerticalLayout statsLayout = new VerticalLayout();
-                Map<String, Integer> stats = tableStats(table.getId());
+                Map<String, Integer> stats = tableStats(table);
 
                 for (Map.Entry<String, Integer> stat : stats.entrySet())
                 {
@@ -910,17 +910,19 @@ public class SearchView extends Div
         return anchor;
     }
 
-    private Map<String, Integer> tableStats(String filename)
+    private Map<String, Integer> tableStats(Table<String> table)
     {
         Map<String, Integer> stats = new HashMap<>();
 
         if (debug)
         {
-            int entities = Math.abs(random.nextInt()) % 10000;
+            int entities = (int) Math.ceil(table.rowCount() * table.columnCount() * 0.277);
             stats.put("Entities", entities);
-            stats.put("Types", (int) Math.ceil(entities * 3.8));
-            stats.put("Predicates", (int) Math.ceil(entities * 5.5));
-            stats.put("Embeddings", (int) Math.ceil(entities * 0.8));
+            stats.put("Types", 6869);
+            stats.put("Predicates", 10050);
+            stats.put("Embeddings", 32440283);
+            stats.put("Table rows", table.rowCount());
+            stats.put("Table columns", table.columnCount());
 
             return stats;
         }
@@ -928,7 +930,7 @@ public class SearchView extends Div
         try
         {
             DataLakeService dl = new DataLakeService(null, null);
-            Response response = dl.tableStats(filename);
+            Response response = dl.tableStats(table.getId());
 
             if (response.getResponseCode() != 200)
             {
@@ -940,6 +942,8 @@ public class SearchView extends Div
             stats.put("Types", json.get("types").getAsInt());
             stats.put("Predicates", json.get("predicates").getAsInt());
             stats.put("Embeddings", json.get("embeddings").getAsInt());
+            stats.put("Table rows", table.rowCount());
+            stats.put("Table columns", table.columnCount());
 
             return stats;
         }
