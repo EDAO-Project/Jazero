@@ -388,6 +388,16 @@ public class SearchView extends Div
                     return List.of("https://dbpedia.org/page/MERS", "https://dbpedia.org/page/Measles", "https://dbpedia.org/page/Malaria", "https://dbpedia.org/page/Middle_East");
                 }
 
+                else if (query.startsWith("z"))
+                {
+                    return List.of("https://dbpedia.org/page/Zanamivir");
+                }
+
+                else if (query.startsWith("o"))
+                {
+                    return List.of("https://dbpedia.org/page/Oseltamivir");
+                }
+
                 else if (query.startsWith("r"))
                 {
                     return List.of("https://dbpedia.org/page/Rhinovirus", "https://dbpedia.org/page/Rabies", "https://dbpedia.org/page/Respiratory_system", "https://dbpedia.org/page/Respiratory_syncytial_virus");
@@ -395,7 +405,7 @@ public class SearchView extends Div
 
                 else if (query.startsWith("b"))
                 {
-                    return List.of("https://dbpedia.org/page/Biota", "https://dbpedia.org/page/Bird", "https://dbpedia.org/page/Bat", "https://dbpedia.org/page/Bronchitis");
+                    return List.of("https://dbpedia.org/page/Baloxavir", "https://dbpedia.org/page/Bird", "https://dbpedia.org/page/Bat", "https://dbpedia.org/page/Bronchitis");
                 }
 
                 else if (query.startsWith("c"))
