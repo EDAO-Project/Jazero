@@ -415,7 +415,7 @@ public class SearchView extends Div
 
                 else if (query.startsWith("i"))
                 {
-                    return List.of("https://dbpedia.org/page/Italy", "https://dbpedia.org/page/Influenza", "https://dbpedia.org/page/India");
+                    return List.of("https://dbpedia.org/page/Influenza", "https://dbpedia.org/page/Italy", "https://dbpedia.org/page/India");
                 }
 
                 else if (query.startsWith("sa"))
@@ -448,8 +448,17 @@ public class SearchView extends Div
                     return List.of("https://dbpedia.org/page/AOU");
                 }
 
-                return List.of("https://dbpedia.org/page/Barack_Obama", "https://dbpedia.org/page/Democratic_Party_(United_States)",
-                        "https://dbpedia.org/page/Joe_Biden");
+                else if (query.startsWith("p"))
+                {
+                    return List.of("https://dbpedia.org/page/Peramivir");
+                }
+
+                else if (query.startsWith("g"))
+                {
+                    return List.of("https://dbpedia.org/page/GlaxoSmithKline");
+                }
+
+                return List.of();
             }
 
             DataLakeService dl = new DataLakeService(dataLakeIp, user);
