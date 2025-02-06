@@ -165,26 +165,14 @@ There is both a C, Java connector, and Python connector.
 ### Jazero Web
 This repository has a web interface to interact with an instance of Jazero.
 Insert the host names of the running Jazero instances in `web/config.json`.
-Build the Docker image from within the `web/` directory.
+Start the Jazero Web interface with the following command:
 
 ```bash
-docker build -t jazero_web .
-```
-
-Then, run a container of Jazero web.
-
-```bash
-docker run --rm --network="host" --name jazero jazero_web
+docker compose up
 ```
 
 You can now access the Jazero web interface <a href="http://localhost:8080/">here</a>.
 For demonstration purposes, we already have an instance of Jazero running, and it can be accessed using its web interface <a href="http://jazero.dk">here</a>.
-
-You can stop the Jazero web interface with the following command in another terminal window.
-
-```bash
-docker stop jazero
-```
 
 ## Setting Up Jazero in an IDE
 Most of the components in Jazero are dependent on the `communication` module.
