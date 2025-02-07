@@ -15,6 +15,7 @@ RUN mkdir web/
 ADD .mvn/ .mvn/
 ADD dependencies/ dependencies/
 ADD config.json .
+ADD first_output.json .
 ADD pom.xml .
 ADD src/ src/
 
