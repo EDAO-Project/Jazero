@@ -8,7 +8,6 @@ import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.*;
@@ -66,6 +65,7 @@ public class SearchView extends Div
         this.searchComponent = searchBar;
         this.searchComponent.setVisible(false);
         this.error = error;
+        this.entityCounts.setHeight("200px");
 
         Div mainPage = new Div(selectDL, searchBar);
         this.layout.add(header, mainPage);
@@ -188,12 +188,12 @@ public class SearchView extends Div
     private Component buildSearchBar()
     {
         VerticalLayout layout = new VerticalLayout();
-        HorizontalLayout queryLayout = new HorizontalLayout();
         Component queryInput = buildQueryInput();
         Component entityCounts = buildEntityCounts();
         Component actionComponent = buildSearchComponent();
-        queryLayout.add(queryInput, entityCounts);
-        layout.add(queryLayout, actionComponent);
+        layout.add(entityCounts, queryInput, actionComponent);
+        layout.setAlignItems(FlexComponent.Alignment.CENTER);
+        layout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
 
         return layout;
     }
@@ -214,8 +214,8 @@ public class SearchView extends Div
         removeRowIcon.setColor("#3D423F");
         addColumnIcon.setColor("#3D423F");
         removeColumnIcon.setColor("#3D423F");
-        queryScroller.setWidth("1200px");
         queryScroller.setMaxWidth("1200px");
+        queryScroller.setMinWidth("630px");
         queryScroller.setMaxHeight("350px");
 
         Button addRowButton = new Button(new HorizontalLayout(addRowIcon, new H4("Add row")), item -> addRow());
